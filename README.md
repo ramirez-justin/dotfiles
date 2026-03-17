@@ -104,6 +104,25 @@ export TG_ROLE_ARN="arn:aws:iam::..."   # non-secret, machine-specific
 # aws-ecr-login alias with account-specific ECR URL
 ```
 
+## Editing a Config
+
+**Repo files are real. `~/.config/...` paths are symlinks pointing into the repo.**
+
+```
+~/.config/tmux  →  ~/Repositories/dotfiles/tmux/.config/tmux  (real files here)
+~/.zshrc        →  ~/Repositories/dotfiles/zsh/.zshrc          (real file here)
+```
+
+So editing `~/.config/tmux/tmux.conf` edits through the symlink directly into the repo. The change is live immediately and already staged — just commit:
+
+```bash
+nvim ~/.config/tmux/tmux.conf   # edits the repo file via symlink
+dots
+git add tmux/
+git commit -m "feat(tmux): ..."
+git push
+```
+
 ## Adding a New Topic
 
 ```bash

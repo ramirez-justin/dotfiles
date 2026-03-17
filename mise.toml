@@ -26,6 +26,18 @@ run = "git -C {{config_root}} pull --rebase && mise run link"
 description = "Regenerate Brewfile (review and curate after running)"
 run = "brew bundle dump --force --file={{config_root}}/Brewfile"
 
+[tasks.submodule-update]
+description = "Pull latest commits for all submodules (nvim, eza-themes)"
+run = "git -C {{config_root}} submodule update --remote --merge"
+
+[tasks.nvim-update]
+description = "Update nvim to latest and commit the pointer"
+run = """
+  git -C {{config_root}} submodule update --remote --merge nvim/.config/nvim
+  git -C {{config_root}} add nvim/.config/nvim
+  git -C {{config_root}} commit -m "chore: update nvim to latest"
+"""
+
 [tasks.inject-secrets]
 description = "Write 1Password secrets into live tool configs"
 depends = ["brew-install"]

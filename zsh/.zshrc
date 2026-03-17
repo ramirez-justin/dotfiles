@@ -237,5 +237,8 @@ export PATH="$PATH:/Users/justin/.local/bin"
 # dbt aliases
 alias dbtf=/Users/justin/.local/bin/dbt
 
+# Dotfiles shortcut
+alias dots="cd ~/Repositories/dotfiles"
+
 # Machine-specific config and secrets (not tracked in dotfiles)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

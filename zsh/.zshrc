@@ -1,0 +1,241 @@
+# If you come from bash you might have to change your $PATH.
+export PATH=$HOME/bin:/usr/local/bin:$PATH
+# Add julia to path
+export PATH="/Applications/Julia-1.9.app/Contents/Resources/julia/bin:$PATH"
+# Path to your oh-my-zsh installation.
+export ZSH="$HOME/.oh-my-zsh"
+# Path to lvim installation
+export PATH="$HOME/.local/bin":$PATH
+
+export LDFLAGS="-L/opt/homebrew/opt/ruby/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/ruby/include"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/ruby/lib/pkgconfig"
+
+# terraform
+export TENV_GITHUB_TOKEN="$(op read "op://employee/github_token/token" 2>/dev/null)"
+export TG_LOG_FORMAT=bare
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+source $(brew --prefix)/opt/spaceship/spaceship.zsh
+# For plugins
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# for Claude Code
+export ENABLE_LSP_TOOLS=1
+if [[ "$CLAUDECODE" != "1" ]]; then
+    eval "$(zoxide init --cmd cd zsh)"
+fi
+
+# Set list of themes to pick from when loading at random
+# Setting this variable when ZSH_THEME=random will cause zsh to load
+# a theme from this variable instead of looking in $ZSH/themes/
+# If set to an empty array, this variable will have no effect.
+# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+
+# redefine prompt_context for hiding user@hostname
+prompt_context () { }
+
+# Uncomment one of the following lines to change the auto-update behavior
+# zstyle ':omz:update' mode disabled  # disable automatic updates
+zstyle ':omz:update' mode auto      # update automatically without asking
+# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+
+# Uncomment the following line to change how often to auto-update (in days).
+zstyle ':omz:update' frequency 15
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# You can also set it to another string to have that shown instead of the default red dots.
+# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
+# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
+COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# You can set one of the optional three formats:
+# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# or set a custom format using the strftime function format specifications,
+# see 'man strftime' for details.
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(
+    git
+    alias-tips
+    autojump
+    brew
+    npm
+    terraform
+)
+
+fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
+
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local
+export EDITOR='nvim'
+
+# Compilation flags
+# export ARCHFLAGS="-arch x86_64"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+alias zshconfig="nv ~/.zshrc"
+alias ohmyzsh="cd ~/.oh-my-zsh"
+alias ghosttyconfig="nv ~/.config/ghostty/config"
+alias av="aws-vault"
+alias aws-me="aws-vault exec justin.ramirez --duration=8h"
+# aws-ecr-login alias (with account-specific ECR URL) is set in ~/.zshrc.local
+alias nv="nvim"
+alias jlab="jupyter lab"
+alias lg="lazygit"
+alias gstart='git checkout main && git pull && git checkout -b'
+alias ls="eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions"
+alias la="eza --color=always --long --git --icons=always --no-time --all"
+alias fk="thefuck"
+
+# TF vars
+# SNOWFLAKE_USER is set in ~/.zshrc.local
+
+# Terragrunt
+# Helper function for setting Snowflake credentials from 1Password
+function set_snowflake_creds() {
+  local env=$1
+  # Get private key and passphrase from 1Password, using sed to remove any quotes
+  export SNOWFLAKE_PRIVATE_KEY=$(op item get "Snowflake Terraform Admin (Justin_Ramirez) - $env" --vault "Data Eng - Snowflake Service Users" --field private_key --reveal | sed 's/^"//;s/"$//')
+  export SNOWFLAKE_PRIVATE_KEY_PASSPHRASE=$(op item get "Snowflake Terraform Admin (Justin_Ramirez) - $env" --vault "Data Eng - Snowflake Service Users" --field passphrase --reveal | sed 's/^"//;s/"$//')
+}
+
+# TG_ROLE_ARN is set in ~/.zshrc.local
+alias tg=terragrunt
+alias tgp="terragrunt plan"
+alias tga="terragrunt apply"
+alias tgi="terragrunt init"
+
+# Function to clean terragrunt output
+tg_clean_output() {
+  sed 's/\x1B\[[0-9;]*[mK]//g' | sed 's/^[0-9:.]\+ STDOUT terraform: //g' | grep -v 'Refreshing state' | grep -v 'Read complete after'
+}
+# Generic terragrunt plan to file
+alias tgp_file="terragrunt plan -no-color | tg_clean_output > ~/Desktop/tfplan.txt"
+# Staging environment
+alias tgp_staging_file='export AWS_REGION=us-west-2 && export SNOWFLAKE_PRIVATE_KEY=$(<"/Users/justin/.ssh/snowflake_staging.p8") && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_staging.txt'
+# Production environment
+alias tgp_prod_file='export AWS_REGION=us-west-2 && export SNOWFLAKE_PRIVATE_KEY=$(<"/Users/justin/.ssh/snowflake_production.p8") && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_production.txt'
+#####################################
+##### Snowflake Terraform alias #####
+#####################################
+# Staging environment aliases
+alias tga_staging='set_snowflake_creds staging && terragrunt apply -parallelism=30'
+alias tgc_staging='set_snowflake_creds staging && terragrunt console'
+alias tgo_staging='set_snowflake_creds staging && terragrunt output'
+alias tgp_staging='set_snowflake_creds staging && terragrunt plan -parallelism=30'
+alias tgp_staging_file='set_snowflake_creds staging && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_staging.txt'
+alias tgs_staging='set_snowflake_creds staging && terragrunt state'
+alias tgsh_staging='set_snowflake_creds staging && terragrunt show'
+
+# Production environment aliases
+alias tga_prod='set_snowflake_creds production && terragrunt apply -parallelism=30'
+alias tgc_prod='set_snowflake_creds production && terragrunt console'
+alias tgo_prod='set_snowflake_creds production && terragrunt output'
+alias tgp_prod='set_snowflake_creds production && terragrunt plan -parallelism=30'
+alias tgp_prod_file='set_snowflake_creds production && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_production.txt'
+alias tgs_prod='set_snowflake_creds production && terragrunt state'
+alias tgsh_prod='set_snowflake_creds production && terragrunt show'
+
+alias resync_airflow_staging='aws s3 sync s3://gametime-airflow-production/dags s3://gametime-airflow-staging/dags --delete'
+
+# DBT
+alias setup_dbt='cd ~/gametime/gametime-data/airflow/dags/dbt && pyenv deactivate || true && pipenv shell'
+alias defer_dbt_run='dbt run --state prod_artifacts --defer --favor-state -s'
+alias defer_dbt_test='dbt test --state prod_artifacts --defer --favor-state -s'
+alias defer_dbt_build='dbt build --state prod_artifacts --defer --favor-state -s'
+
+# Enable Bash-style tab completion in Zsh for Terraform, so you get autocompletion of commands, subcommands, and flags when working with terraform
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /opt/homebrew/bin/terraform terraform
+
+eval "$(rbenv init - zsh)"
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+
+
+
+# Snowsql
+# function snowsql_connect {
+#   account=$1
+#   private_key_path=$2
+#   snowsql -a $account -u $SNOWFLAKE_USER --private-key-path $2
+# }
+# function snowsql_jramirez {
+#   snowsql_connect NSB37759 /Users/justin/.ssh/snowflake.p8
+# }
+
+complete -o nospace -C /opt/homebrew/bin/terragrunt terragrunt
+
+# 1password cli autocomplete
+eval "$(op completion zsh)"; compdef _op op
+
+# Setup fzf key bindings and completion
+eval "$(fzf --zsh)"
+
+# Mise-en-place
+eval "$(/opt/homebrew/bin/mise activate zsh)"
+
+# EZA Theme
+export EZA_CONFIG_DIR="~/.config/eza"
+
+# Direnv Hook
+eval "$(direnv hook zsh)"
+
+# Added by dbt installer
+export PATH="$PATH:/Users/justin/.local/bin"
+
+# dbt aliases
+alias dbtf=/Users/justin/.local/bin/dbt
+
+# Machine-specific config and secrets (not tracked in dotfiles)
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

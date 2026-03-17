@@ -1,0 +1,6 @@
+[submodule "eza/.config/eza/eza-themes"]
+	path = eza/.config/eza/eza-themes
+	url = https://github.com/eza-community/eza-themes.git
+[submodule "nvim/.config/nvim"]
+	path = nvim/.config/nvim
+	url = https://github.com/ramirez-justin/mothership.nvim

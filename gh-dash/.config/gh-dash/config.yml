@@ -1,0 +1,135 @@
+prSections:
+  - title: Needs My Review
+    filters: is:open review-requested:@me
+  - title: My PRs - Action Needed
+    filters: is:open author:@me review:changes_requested
+  - title: My PRs - Approved
+    filters: is:open author:@me review:approved
+  - title: My PRs - Waiting
+    filters: is:open author:@me -review:approved -review:changes_requested
+  - title: Involved
+    filters: is:open involves:@me -author:@me -review-requested:@me
+  - title: gametimesf Recent
+    filters: is:open org:gametimesf sort:updated
+
+issuesSections:
+  - title: Assigned to Me
+    filters: is:open assignee:@me
+  - title: My Issues
+    filters: is:open author:@me
+  - title: gametimesf Issues
+    filters: is:open org:gametimesf sort:updated
+
+notificationsSections:
+  - title: Unread
+    filters: is:unread
+  - title: Read
+    filters: is:read
+
+defaults:
+  preview:
+    open: true
+    width: 0.5
+  prsLimit: 25
+  issuesLimit: 20
+  notificationsLimit: 25
+  view: prs
+  confirmQuit: false
+  dateFormat: relative
+  layout:
+    prs:
+      updatedAt:
+        width: 7
+      repo:
+        width: 15
+      author:
+        width: 15
+      assignees:
+        width: 20
+        hidden: true
+      base:
+        width: 15
+        hidden: true
+      lines:
+        width: 16
+    issues:
+      updatedAt:
+        width: 7
+      repo:
+        width: 15
+      creator:
+        width: 10
+      assignees:
+        width: 20
+        hidden: true
+  refetchIntervalMinutes: 15
+
+keybindings:
+  universal:
+    - key: s
+      builtin: search
+  prs:
+    - key: c
+      builtin: checkout
+    - key: e
+      builtin: summaryViewMore
+    - key: v
+      name: open in editor
+      command: cd {{.RepoPath}} && nvim
+    - key: g
+      name: lazygit
+      command: cd {{.RepoPath}} && lazygit
+    - key: a
+      builtin: approve
+    - key: m
+      builtin: merge
+    - key: x
+      builtin: close
+    - key: R
+      builtin: ready
+    - key: w
+      builtin: watchChecks
+    - key: d
+      name: diff with diffnav
+      command: gh pr diff {{.PrNumber}} --repo {{.RepoName}} | diffnav
+    - key: b
+      name: open in browser
+      command: gh pr view {{.PrNumber}} --repo {{.RepoName}} --web
+  issues:
+    - key: a
+      builtin: assign
+    - key: l
+      builtin: label
+    - key: x
+      builtin: close
+    - key: v
+      name: open in editor
+      command: cd {{.RepoPath}} && nvim
+    - key: g
+      name: lazygit
+      command: cd {{.RepoPath}} && lazygit
+
+repoPaths:
+  gametimesf/guide: ~/gametime/guide
+  gametimesf/lambdas: ~/gametime/lambdas
+  gametimesf/labs: ~/gametime/labs
+  gametimesf/terraform: ~/gametime/terraform
+  gametimesf/snowflake-tf: ~/gametime/snowflake-tf
+  gametimesf/protos: ~/gametime/protos
+  gametimesf/claude: ~/gametime/claude
+  gametimesf/gametime-data: ~/gametime/gametime-data
+  gametimesf/data-api: ~/gametime/data-api
+  gametimesf/mlplatform: ~/gametime/mlplatform
+  gametimesf/ext-accounts: ~/gametime/ext-accounts
+  gametimesf/streamflow: ~/gametime/streamflow
+  gametimesf/notebooks: ~/gametime/notebooks
+  gametimesf/periscope: ~/gametime/periscope
+
+theme:
+  ui:
+    sectionsShowCount: true
+    showSeparators: true
+    compact: false
+
+pager:
+  diff: diffnav

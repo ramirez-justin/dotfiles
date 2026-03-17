@@ -1,0 +1,13 @@
+# This is Git's per-user configuration file.
+[user]
+# Please adapt and uncomment the following lines:
+	name = jramirez
+	email = justin.ramirez@gametime.co
+[push]
+	autoSetupRemote = true
+[core]
+	editor = nvim
+[fetch]
+	prune = true
+[pull]
+	rebase = true

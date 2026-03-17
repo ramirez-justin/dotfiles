@@ -30,7 +30,7 @@ run = "brew bundle dump --force --file={{config_root}}/Brewfile"
 description = "Write 1Password secrets into live tool configs"
 depends = ["brew-install"]
 run = """
-  JIRA_TOKEN=$(op read "op://Work/Jira API Token/credential")
+  JIRA_TOKEN=$(op read "op://Employee/JRamirez Atlassian API Token/API token")
   jq --arg token "$JIRA_TOKEN" '.env.JIRA_API_TOKEN = $token' \
     "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
 """

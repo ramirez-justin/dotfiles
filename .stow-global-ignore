@@ -1,0 +1,7 @@
+# Repo meta — never symlink these
+.git
+.gitignore
+docs
+README.md
+mise.toml
+Brewfile

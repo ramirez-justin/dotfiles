@@ -1,0 +1,36 @@
+[tools]
+python = "3.12"
+
+[tasks.bootstrap]
+description = "Full machine setup (after 1Password is authenticated)"
+depends = ["brew-install", "inject-secrets", "link"]
+
+[tasks.brew-install]
+description = "Install all packages from Brewfile"
+run = "brew bundle --file={{config_root}}/Brewfile"
+
+[tasks.link]
+description = "Stow all topics into $HOME"
+depends = ["brew-install"]
+run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo"
+
+[tasks.unlink]
+description = "Remove all stow symlinks"
+run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo"
+
+[tasks.update]
+description = "Pull latest dotfiles and re-link"
+run = "git -C {{config_root}} pull --rebase && mise run link"
+
+[tasks.brew-dump]
+description = "Regenerate Brewfile (review and curate after running)"
+run = "brew bundle dump --force --file={{config_root}}/Brewfile"
+
+[tasks.inject-secrets]
+description = "Write 1Password secrets into live tool configs"
+depends = ["brew-install"]
+run = """
+  JIRA_TOKEN=$(op read "op://Work/Jira API Token/credential")
+  jq --arg token "$JIRA_TOKEN" '.env.JIRA_API_TOKEN = $token' \
+    "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
+"""

@@ -43,6 +43,11 @@ description = "Write 1Password secrets into live tool configs"
 depends = ["brew-install"]
 run = """
   JIRA_TOKEN=$(op read "op://Employee/JRamirez Atlassian API Token/API token")
-  jq --arg token "$JIRA_TOKEN" '.env.JIRA_API_TOKEN = $token' \
+  FIVETRAN_KEY=$(op read "op://Employee/JRamirez Fivetran API Key/username")
+  FIVETRAN_SECRET=$(op read "op://Employee/JRamirez Fivetran API Key/password")
+  jq --arg jira "$JIRA_TOKEN" \
+     --arg fkey "$FIVETRAN_KEY" \
+     --arg fsecret "$FIVETRAN_SECRET" \
+     '.env.JIRA_API_TOKEN = $jira | .env.FIVETRAN_API_KEY = $fkey | .env.FIVETRAN_API_SECRET = $fsecret' \
     "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
 """

@@ -3,6 +3,9 @@
     "JIRA_HOST": "gametime.atlassian.net",
     "JIRA_EMAIL": "justin.ramirez@gametime.co",
     "JIRA_API_TOKEN": "",
+    "FIVETRAN_API_KEY": "",
+    "FIVETRAN_API_SECRET": "",
+    "FIVETRAN_GROUP_ID": "",
     "ENABLE_LSP_TOOL": "1"
   },
   "includeCoAuthoredBy": false,
@@ -36,6 +39,7 @@
     "superpowers@superpowers-marketplace": true,
     "jira@productivity-plugins": true,
     "dbt@dbt-agent-marketplace": true,
+    "fivetran@productivity-plugins": true,
     "playwright@claude-plugins-official": true,
     "terraform-lsp@terraform-lsp-claude-code": true,
     "typescript-lsp@claude-plugins-official": true

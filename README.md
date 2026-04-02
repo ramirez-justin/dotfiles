@@ -4,13 +4,13 @@ Personal macOS development environment managed with mise + GNU Stow + Homebrew +
 
 ## Stack
 
-| Tool | Role |
-|------|------|
-| [mise](https://mise.jdx.dev) | Task runner, tool version management |
-| [GNU Stow](https://www.gnu.org/software/stow/) | Symlink management |
-| [Homebrew](https://brew.sh) | Package management via `Brewfile` |
-| [1Password CLI](https://developer.1password.com/docs/cli/) | Secret injection |
-| git branches | Machine-specific config (`main` = personal, `gametime` = work) |
+| Tool                                                       | Role                                                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------- |
+| [mise](https://mise.jdx.dev)                               | Task runner, tool version management                           |
+| [GNU Stow](https://www.gnu.org/software/stow/)             | Symlink management                                             |
+| [Homebrew](https://brew.sh)                                | Package management via `Brewfile`                              |
+| [1Password CLI](https://developer.1password.com/docs/cli/) | Secret injection                                               |
+| git branches                                               | Machine-specific config (`main` = personal, `gametime` = work) |
 
 ## Structure
 
@@ -66,9 +66,9 @@ mise run link
 
 ## Branches
 
-| Branch | Machine |
-|--------|---------|
-| `main` | Personal Mac |
+| Branch     | Machine             |
+| ---------- | ------------------- |
+| `main`     | Personal Mac        |
 | `gametime` | Work Mac (Gametime) |
 
 Work on shared config on `main`. Merge into `gametime` to pick up changes:

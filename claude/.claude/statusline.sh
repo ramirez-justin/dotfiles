@@ -6,10 +6,8 @@
 input=$(cat)
 
 # Extract info from JSON
-user=$(whoami)
 current_dir=$(echo "$input" | jq -r '.workspace.current_dir' | sed "s|$HOME|~|")
 model=$(echo "$input" | jq -r '.model.display_name')
-session_id=$(echo "$input" | jq -r '.session_id' | cut -c1-8)
 cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
 lines_added=$(echo "$input" | jq -r '.cost.total_lines_added // 0')
 lines_removed=$(echo "$input" | jq -r '.cost.total_lines_removed // 0')
@@ -32,11 +30,8 @@ fi
 # Build status line with sections separated by |
 status_line=""
 
-# User section
-status_line="👤 $user"
-
 # Directory section
-status_line="$status_line | 📁 $current_dir"
+status_line="📁 $current_dir"
 
 # Git section (if available)
 if [ -n "$git_info" ]; then
@@ -45,11 +40,6 @@ fi
 
 # Model section
 status_line="$status_line | 🤖 $model"
-
-# Session info
-if [ "$session_id" != "null" ] && [ -n "$session_id" ]; then
-	status_line="$status_line | 🎯 $session_id"
-fi
 
 # Context window usage
 context_info=""

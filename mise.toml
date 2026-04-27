@@ -12,11 +12,11 @@ run = "brew bundle --file={{config_root}}/Brewfile"
 [tasks.link]
 description = "Stow all topics into $HOME"
 depends = ["brew-install"]
-run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo"
+run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo aws lazygit rectangle"
 
 [tasks.unlink]
 description = "Remove all stow symlinks"
-run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo"
+run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo aws lazygit rectangle"
 
 [tasks.update]
 description = "Pull latest dotfiles and re-link"

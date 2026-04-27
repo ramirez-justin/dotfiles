@@ -1,0 +1,27 @@
+gui:
+  showFileTree: true
+  mouseEvents: true
+  showRandomTip: false
+  theme:
+    lightTheme: false
+    activeBorderColor:
+      - green
+      - bold
+    inactiveBorderColor:
+      - white
+    selectedLineBgColor:
+      - blue
+git:
+  autoFetch: true
+  autoRefresh: true
+  commitLength:
+    show: true
+keybinding:
+  universal:
+    commitChanges: "C"
+    pushFiles: "P"
+    pullFiles: "p"
+    refresh: "R"
+    quit: "q"
+  commits:
+    copyCommitHash: "y"

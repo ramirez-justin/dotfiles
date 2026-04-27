@@ -1,11 +1,18 @@
 {
-  "env": {
-    "JIRA_HOST": "gametime.atlassian.net",
-    "JIRA_EMAIL": "justin.ramirez@gametime.co",
-    "JIRA_API_TOKEN": "",
-    "ENABLE_LSP_TOOL": "1"
-  },
+  "model": "opus",
+  "autoCompact": false,
+  "autoCompactEnabled": false,
   "includeCoAuthoredBy": false,
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "TRELLO_API_KEY": "op://Telophase QS/Trello API key/API key",
+    "TRELLO_TOKEN": "op://Telophase QS/Trello API key/Trello Token",
+    "TRELLO_BOARD_ID": "DyXW6UrW",
+    "ALPACA_API_KEY": "op://Private/Alpaca Paper Trading/Key",
+    "ALPACA_API_SECRET": "op://Private/Alpaca Paper Trading/Secret",
+    "ALPACA_PAPER": "true",
+    "ENABLE_LSP_TOOL": 1
+  },
   "hooks": {
     "Stop": [
       {
@@ -20,11 +27,12 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/Users/justin/.claude/statusline.sh"
+    "command": "/Users/justinramirez/.claude/statusline.sh"
   },
   "enabledPlugins": {
-    "context7@claude-plugins-official": true,
     "workflow@productivity-plugins": true,
+    "alpaca@productivity-plugins": true,
+    "ruff-lsp@productivity-plugins": true,
     "bash-ls@productivity-plugins": true,
     "docker-ls@productivity-plugins": true,
     "markdown-oxide@productivity-plugins": true,
@@ -33,12 +41,8 @@
     "pyright-lsp@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
     "superpowers@superpowers-marketplace": true,
-    "jira@productivity-plugins": true,
-    "dbt@dbt-agent-marketplace": true,
-    "playwright@claude-plugins-official": true,
-    "terraform-lsp@terraform-lsp-claude-code": true,
-    "typescript-lsp@claude-plugins-official": true
-  },
-  "autoCompactEnabled": false
+    "trello@productivity-plugins": true
+  }
 }

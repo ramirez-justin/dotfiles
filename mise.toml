@@ -46,3 +46,17 @@ run = """
   jq --arg token "$JIRA_TOKEN" '.env.JIRA_API_TOKEN = $token' \
     "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
 """
+
+[tasks.inject-claude-mcp]
+description = "Merge MCP servers (gmail, google-calendar) into ~/.claude.json"
+run = """
+set -e
+CLAUDE_JSON="$HOME/.claude.json"
+MCP_JSON='{"gmail":{"command":"npx","args":["@gongrzhe/server-gmail-autoauth-mcp"]},"google-calendar":{"command":"npx","args":["@cocal/google-calendar-mcp"],"env":{"GOOGLE_OAUTH_CREDENTIALS":"'"$HOME"'/.gmail-mcp/gcp-oauth.keys.json"}}}'
+if [ -f "$CLAUDE_JSON" ]; then
+    jq --argjson mcp "$MCP_JSON" '.mcpServers = $mcp' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+else
+    jq -n --argjson mcp "$MCP_JSON" '{"mcpServers": $mcp}' > "$CLAUDE_JSON"
+fi
+echo "MCP servers injected into $CLAUDE_JSON"
+"""

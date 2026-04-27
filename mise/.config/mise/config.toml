@@ -1,4 +1,5 @@
 [tools]
+"aqua:go-task/task" = "latest"
 python = "3.12"
 
 [settings]
@@ -6,4 +7,5 @@ idiomatic_version_file_enable_tools = ["python"]
 experimental = true
 
 [settings.python]
+default_packages_file = "~/.default-python-packages"
 uv_venv_auto = true

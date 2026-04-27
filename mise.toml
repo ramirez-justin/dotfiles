@@ -3,7 +3,7 @@ python = "3.12"
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"
-depends = ["brew-install", "inject-secrets", "link"]
+depends = ["brew-install", "link"]
 
 [tasks.brew-install]
 description = "Install all packages from Brewfile"
@@ -36,15 +36,6 @@ run = """
   git -C {{config_root}} submodule update --remote --merge nvim/.config/nvim
   git -C {{config_root}} add nvim/.config/nvim
   git -C {{config_root}} commit -m "chore: update nvim to latest"
-"""
-
-[tasks.inject-secrets]
-description = "Write 1Password secrets into live tool configs"
-depends = ["brew-install"]
-run = """
-  JIRA_TOKEN=$(op read "op://Employee/JRamirez Atlassian API Token/API token")
-  jq --arg token "$JIRA_TOKEN" '.env.JIRA_API_TOKEN = $token' \
-    "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
 """
 
 [tasks.inject-claude-mcp]

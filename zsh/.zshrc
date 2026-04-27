@@ -1,7 +1,5 @@
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:/usr/local/bin:$PATH
-# Add julia to path
-export PATH="/Applications/Julia-1.9.app/Contents/Resources/julia/bin:$PATH"
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 # Path to lvim installation
@@ -12,7 +10,6 @@ export CPPFLAGS="-I/opt/homebrew/opt/ruby/include"
 export PKG_CONFIG_PATH="/opt/homebrew/opt/ruby/lib/pkgconfig"
 
 # terraform
-export TENV_GITHUB_TOKEN="$(op read "op://employee/github_token/token" 2>/dev/null)"
 export TG_LOG_FORMAT=bare
 
 # Set name of the theme to load --- if set to "random", it will
@@ -127,9 +124,6 @@ export EDITOR='nvim'
 alias zshconfig="nv ~/.zshrc"
 alias ohmyzsh="cd ~/.oh-my-zsh"
 alias ghosttyconfig="nv ~/.config/ghostty/config"
-alias av="aws-vault"
-alias aws-me="aws-vault exec justin.ramirez --duration=8h"
-# aws-ecr-login alias (with account-specific ECR URL) is set in ~/.zshrc.local
 alias nv="nvim"
 alias jlab="jupyter lab"
 alias lg="lazygit"
@@ -141,80 +135,9 @@ alias fk="thefuck"
 # TF vars
 # SNOWFLAKE_USER is set in ~/.zshrc.local
 
-# Terragrunt
-# Helper function for setting Snowflake credentials from 1Password
-function set_snowflake_creds() {
-  local env=$1
-  # Get private key and passphrase from 1Password, using sed to remove any quotes
-  export SNOWFLAKE_PRIVATE_KEY=$(op item get "Snowflake Terraform Admin (Justin_Ramirez) - $env" --vault "Data Eng - Snowflake Service Users" --field private_key --reveal | sed 's/^"//;s/"$//')
-  export SNOWFLAKE_PRIVATE_KEY_PASSPHRASE=$(op item get "Snowflake Terraform Admin (Justin_Ramirez) - $env" --vault "Data Eng - Snowflake Service Users" --field passphrase --reveal | sed 's/^"//;s/"$//')
-}
-
-# TG_ROLE_ARN is set in ~/.zshrc.local
-alias tg=terragrunt
-alias tgp="terragrunt plan"
-alias tga="terragrunt apply"
-alias tgi="terragrunt init"
-
-# Function to clean terragrunt output
-tg_clean_output() {
-  sed 's/\x1B\[[0-9;]*[mK]//g' | sed 's/^[0-9:.]\+ STDOUT terraform: //g' | grep -v 'Refreshing state' | grep -v 'Read complete after'
-}
-# Generic terragrunt plan to file
-alias tgp_file="terragrunt plan -no-color | tg_clean_output > ~/Desktop/tfplan.txt"
-# Staging environment
-alias tgp_staging_file='export AWS_REGION=us-west-2 && export SNOWFLAKE_PRIVATE_KEY=$(<"/Users/justin/.ssh/snowflake_staging.p8") && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_staging.txt'
-# Production environment
-alias tgp_prod_file='export AWS_REGION=us-west-2 && export SNOWFLAKE_PRIVATE_KEY=$(<"/Users/justin/.ssh/snowflake_production.p8") && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_production.txt'
-#####################################
-##### Snowflake Terraform alias #####
-#####################################
-# Staging environment aliases
-alias tga_staging='set_snowflake_creds staging && terragrunt apply -parallelism=30'
-alias tgc_staging='set_snowflake_creds staging && terragrunt console'
-alias tgo_staging='set_snowflake_creds staging && terragrunt output'
-alias tgp_staging='set_snowflake_creds staging && terragrunt plan -parallelism=30'
-alias tgp_staging_file='set_snowflake_creds staging && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_staging.txt'
-alias tgs_staging='set_snowflake_creds staging && terragrunt state'
-alias tgsh_staging='set_snowflake_creds staging && terragrunt show'
-
-# Production environment aliases
-alias tga_prod='set_snowflake_creds production && terragrunt apply -parallelism=30'
-alias tgc_prod='set_snowflake_creds production && terragrunt console'
-alias tgo_prod='set_snowflake_creds production && terragrunt output'
-alias tgp_prod='set_snowflake_creds production && terragrunt plan -parallelism=30'
-alias tgp_prod_file='set_snowflake_creds production && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_production.txt'
-alias tgs_prod='set_snowflake_creds production && terragrunt state'
-alias tgsh_prod='set_snowflake_creds production && terragrunt show'
-
-alias resync_airflow_staging='aws s3 sync s3://gametime-airflow-production/dags s3://gametime-airflow-staging/dags --delete'
-
-# DBT
-alias setup_dbt='cd ~/gametime/gametime-data/airflow/dags/dbt && pyenv deactivate || true && pipenv shell'
-alias defer_dbt_run='dbt run --state prod_artifacts --defer --favor-state -s'
-alias defer_dbt_test='dbt test --state prod_artifacts --defer --favor-state -s'
-alias defer_dbt_build='dbt build --state prod_artifacts --defer --favor-state -s'
-
 # Enable Bash-style tab completion in Zsh for Terraform, so you get autocompletion of commands, subcommands, and flags when working with terraform
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
-
-eval "$(rbenv init - zsh)"
-export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
-
-
-
-# Snowsql
-# function snowsql_connect {
-#   account=$1
-#   private_key_path=$2
-#   snowsql -a $account -u $SNOWFLAKE_USER --private-key-path $2
-# }
-# function snowsql_jramirez {
-#   snowsql_connect NSB37759 /Users/justin/.ssh/snowflake.p8
-# }
-
-complete -o nospace -C /opt/homebrew/bin/terragrunt terragrunt
 
 # 1password cli autocomplete
 eval "$(op completion zsh)"; compdef _op op
@@ -226,19 +149,18 @@ eval "$(fzf --zsh)"
 eval "$(/opt/homebrew/bin/mise activate zsh)"
 
 # EZA Theme
-export EZA_CONFIG_DIR="~/.config/eza"
+export EZA_CONFIG_DIR="$HOME/.config/eza"
 
 # Direnv Hook
 eval "$(direnv hook zsh)"
 
-# Added by dbt installer
-export PATH="$PATH:/Users/justin/.local/bin"
-
-# dbt aliases
-alias dbtf=/Users/justin/.local/bin/dbt
-
 # Dotfiles shortcut
-alias dots="cd ~/Repositories/dotfiles"
+alias dots="cd ~/dev/dotfiles"
+
+# Custom keybindings and widgets (ported from Nix home-manager)
+[[ -f $HOME/.config/zsh/keybindings.zsh ]] && source $HOME/.config/zsh/keybindings.zsh
+# Curated personal aliases (ported from Nix home-manager)
+[[ -f $HOME/.config/zsh/aliases.zsh ]] && source $HOME/.config/zsh/aliases.zsh
 
 # Machine-specific config and secrets (not tracked in dotfiles)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

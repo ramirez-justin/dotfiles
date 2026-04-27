@@ -1,13 +1,24 @@
-# This is Git's per-user configuration file.
 [user]
-# Please adapt and uncomment the following lines:
-	name = jramirez
-	email = justin.ramirez@gametime.co
+	name = Justin Ramirez
+	email = ramirez.justin@gmail.com
+[init]
+	defaultBranch = develop
 [push]
 	autoSetupRemote = true
 [core]
 	editor = nvim
+	autocrlf = input
+	excludesfile = ~/.config/git/ignore
 [fetch]
 	prune = true
 [pull]
 	rebase = true
+[color]
+	ui = true
+[alias]
+	st = status
+	ci = commit
+	br = branch
+	co = checkout
+	df = diff
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit

@@ -1,0 +1,26 @@
+# Neovim integration
+pynvim
+
+# lsp
+pyright
+
+# Code quality and formatting
+ruff
+mypy
+isort
+black
+codespell
+
+# Development utilities
+ipython
+pip-tools
+wheel
+setuptools
+
+# Testing
+pytest
+pytest-cov
+
+# Common data science packages (optional)
+requests
+click

@@ -12,11 +12,11 @@ run = "brew bundle --file={{config_root}}/Brewfile"
 [tasks.link]
 description = "Stow all topics into $HOME"
 depends = ["brew-install"]
-run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo aws lazygit rectangle"
+run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo aws lazygit rectangle sofia"
 
 [tasks.unlink]
 description = "Remove all stow symlinks"
-run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo aws lazygit rectangle"
+run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo aws lazygit rectangle sofia"
 
 [tasks.update]
 description = "Pull latest dotfiles and re-link"
@@ -73,3 +73,24 @@ fi
 echo "gcloud installed/updated at $INSTALL_DIR"
 echo "PATH and completion will load on new shells via aliases.zsh"
 """
+
+[tasks.sofia-init]
+description = "Bootstrap SOFIA second brain (deps, DB, LaunchAgent)"
+run = """
+set -e
+cd ~/.local/share/sofia/src
+uv sync
+~/.local/bin/sofia init
+mkdir -p ~/.local/state/sofia
+launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.sofia.indexer.plist || true
+launchctl enable gui/$UID/com.sofia.indexer || true
+echo "SOFIA bootstrapped. Next: open Claude Code in ~/dev/SOFIA and run /sofia-init"
+"""
+
+[tasks.sofia-status]
+description = "Check SOFIA health"
+run = "~/.local/bin/sofia doctor"
+
+[tasks.sofia-reindex]
+description = "Drop and rebuild SOFIA search index"
+run = "~/.local/bin/sofia index --rebuild"

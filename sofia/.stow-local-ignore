@@ -1,0 +1,7 @@
+docs
+tests
+__pycache__
+\.pyc$
+\.pytest_cache
+\.venv
+\.ruff_cache

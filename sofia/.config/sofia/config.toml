@@ -1,0 +1,40 @@
+# SOFIA second brain — runtime config
+# Env overrides (read at startup):
+#   SOFIA_VAULT     → vault path (overrides `vault` below)
+#   SOFIA_CONTEXT   → personal | work | both (overrides PWD-based detection)
+
+vault = "~/dev/SOFIA"
+index_db = "~/.local/share/sofia/index.db"
+state_dir = "~/.local/state/sofia"
+
+[embed]
+model = "sentence-transformers/all-MiniLM-L6-v2"
+dim = 384
+cache_dir = "~/.cache/fastembed"
+
+[chunk]
+max_tokens = 512
+overlap_tokens = 64
+
+[search]
+vec_weight = 0.7
+fts_weight = 0.3
+default_limit = 20
+
+[index]
+# Glob patterns (relative to vault root) to skip
+ignore = [
+  ".obsidian/**",
+  ".trash/**",
+  "**/*.secret.md",
+  "**/private/**",
+  "**/*credentials*",
+  "**/*token*",
+  "**/*api-key*",
+]
+
+[hooks]
+# Max characters of injected SessionStart context (~8000 tokens at 4 chars/token)
+session_start_max_chars = 32000
+# How many MEMORY entries (top-most) to include before truncating
+memory_max_entries = 20

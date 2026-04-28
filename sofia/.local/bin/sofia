@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# sofia — wrapper that runs the typer CLI from the stowed src dir
+# Resolves the repo path and invokes uv run regardless of $PWD.
+set -uo pipefail
+
+SOFIA_SRC="${SOFIA_SRC:-$HOME/.local/share/sofia/src}"
+
+if [[ ! -d "$SOFIA_SRC" ]]; then
+  echo "sofia: source not found at $SOFIA_SRC" >&2
+  echo "Did you run 'mise run link' to stow the sofia topic?" >&2
+  exit 1
+fi
+
+cd "$SOFIA_SRC"
+exec uv run --quiet python -m sofia.cli "$@"

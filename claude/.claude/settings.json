@@ -14,18 +14,21 @@
     "OBSIDIAN_API_URL": "https://127.0.0.1:27124",
     "OBSIDIAN_API_KEY": "op://dev_vault/obsidian_local_rest_api_key/add more/API Key",
     "OBSIDIAN_API_CERT": "/Users/justinramirez/.config/sofia/cert.pem",
+    "SOFIA_VAULT": "/Users/justinramirez/dev/SOFIA",
     "ENABLE_LSP_TOOL": 1
   },
   "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "$HOME/.claude/hooks/sofia-session-start.sh"}]}
+    ],
+    "PreCompact": [
+      {"hooks": [{"type": "command", "command": "$HOME/.claude/hooks/sofia-pre-compact.sh"}]}
+    ],
+    "SessionEnd": [
+      {"hooks": [{"type": "command", "command": "$HOME/.claude/hooks/sofia-session-end.sh"}]}
+    ],
     "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Submarine.aiff"
-          }
-        ]
-      }
+      {"hooks": [{"type": "command", "command": "afplay /System/Library/Sounds/Submarine.aiff"}]}
     ]
   },
   "statusLine": {

@@ -11,6 +11,9 @@
     "ALPACA_API_KEY": "op://Private/Alpaca Paper Trading/Key",
     "ALPACA_API_SECRET": "op://Private/Alpaca Paper Trading/Secret",
     "ALPACA_PAPER": "true",
+    "OBSIDIAN_API_URL": "https://127.0.0.1:27124",
+    "OBSIDIAN_API_KEY": "op://dev_vault/obsidian_local_rest_api_key/add more/API Key",
+    "OBSIDIAN_API_CERT": "/Users/justinramirez/.config/sofia/cert.pem",
     "ENABLE_LSP_TOOL": 1
   },
   "hooks": {

@@ -242,3 +242,14 @@ alias ghps="gh pr search"
 function gitdefaultbranch() {
     git remote show origin | grep 'HEAD' | cut -d':' -f2 | sed -e 's/^ *//g' -e 's/ *$//g'
 }
+
+# SOFIA Obsidian Local REST API — materialize the self-signed cert from 1Password
+# to $OBSIDIAN_API_CERT. Run once after setup, and again if the plugin reports
+# `regenerateRecommended: true` (cert rotates yearly).
+function sofia-cert() {
+    local dest="${OBSIDIAN_API_CERT:-$HOME/.config/sofia/cert.pem}"
+    mkdir -p "$(dirname "$dest")"
+    op document get obsidian_local_rest_api_cert --vault dev_vault --output "$dest" --force \
+      && chmod 600 "$dest" \
+      && echo "Wrote $dest"
+}

@@ -194,9 +194,12 @@ alias gci="gcloud config list"
 alias gpl="gcloud projects list"
 alias gps="gcloud config set project"
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-# Source gcloud completion if installed via Brew cask
-if [ -f "$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc" ]; then
-    source "$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc"
+# Source gcloud path + completion (installed via mise run gcloud-install)
+if [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ]; then
+    source "$HOME/google-cloud-sdk/path.zsh.inc"
+fi
+if [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ]; then
+    source "$HOME/google-cloud-sdk/completion.zsh.inc"
 fi
 
 # gh — interactive functions and aliases (ported from github.nix)

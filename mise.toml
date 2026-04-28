@@ -51,3 +51,25 @@ else
 fi
 echo "MCP servers injected into $CLAUDE_JSON"
 """
+
+[tasks.gcloud-install]
+description = "Install or update Google Cloud SDK at ~/google-cloud-sdk (decoupled from Homebrew python)"
+run = """
+set -e
+INSTALL_DIR="$HOME/google-cloud-sdk"
+if [ -d "$INSTALL_DIR" ]; then
+    echo "Updating existing gcloud SDK at $INSTALL_DIR..."
+    "$INSTALL_DIR/bin/gcloud" components update --quiet
+else
+    echo "Installing gcloud SDK to $INSTALL_DIR..."
+    TMPDIR=$(mktemp -d)
+    TARBALL="$TMPDIR/gcloud.tar.gz"
+    curl -fsSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-darwin-arm.tar.gz" -o "$TARBALL"
+    tar xzf "$TARBALL" -C "$HOME"
+    rm -rf "$TMPDIR"
+    "$INSTALL_DIR/install.sh" --quiet --usage-reporting=false --rc-path=/dev/null --command-completion=false --path-update=false
+fi
+"$INSTALL_DIR/bin/gcloud" components install gke-gcloud-auth-plugin --quiet
+echo "gcloud installed/updated at $INSTALL_DIR"
+echo "PATH and completion will load on new shells via aliases.zsh"
+"""

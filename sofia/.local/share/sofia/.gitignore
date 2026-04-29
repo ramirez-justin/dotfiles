@@ -1,0 +1,5 @@
+# Runtime state (search index, etc.)
+index.db
+index.db-journal
+index.db-wal
+index.db-shm

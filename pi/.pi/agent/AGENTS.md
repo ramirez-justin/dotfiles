@@ -37,6 +37,12 @@ Prioritize LSP tools as the first choice for code intelligence tasks when availa
 
 Fall back to grep/find/read when LSP returns no results, for non-code searches, or for file types without LSP support.
 
+## Documentation Awareness
+
+- When working with third-party libraries, frameworks, SDKs, or version-sensitive APIs, prefer Context7 documentation lookup before relying on model memory.
+- Use Context7 selectively when documentation freshness matters; do not call it for simple local-code questions where repository files already answer the question.
+- If Context7 cannot resolve a library, ask for a more specific package/library name or fall back to local docs and repository files.
+
 ## Jira Preferences
 
 When creating Jira tickets during working sessions:

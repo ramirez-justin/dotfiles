@@ -3,7 +3,7 @@ python = "3.12"
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"
-depends = ["brew-install", "inject-secrets", "link"]
+depends = ["brew-install", "link", "inject-secrets"]
 
 [tasks.brew-install]
 description = "Install all packages from Brewfile"
@@ -50,11 +50,14 @@ run = """
   if [ -n "${NOTION_API_KEY_OP_REF:-}" ]; then
     NOTION_API_KEY=$(op read "$NOTION_API_KEY_OP_REF")
   fi
-  jq --arg jira "$JIRA_TOKEN" \
+
+  mkdir -p ~/.claude
+  jq -n --arg jira "$JIRA_TOKEN" \
      --arg fkey "$FIVETRAN_KEY" \
      --arg fsecret "$FIVETRAN_SECRET" \
-     '.env.JIRA_API_TOKEN = $jira | .env.FIVETRAN_API_KEY = $fkey | .env.FIVETRAN_API_SECRET = $fsecret' \
-    "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
+     '{env: {JIRA_API_TOKEN: $jira, FIVETRAN_API_KEY: $fkey, FIVETRAN_API_SECRET: $fsecret}}' \
+    > ~/.claude/settings.local.json
+  chmod 600 ~/.claude/settings.local.json
 
   mkdir -p ~/.pi/agent
   cat > ~/.pi/agent/env.local.zsh <<EOF

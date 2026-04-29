@@ -28,7 +28,7 @@ dotfiles/
 ├── gh/              # → ~/.config/gh/config.yml
 ├── git/             # → ~/.gitconfig, ~/.config/git/
 ├── mise/            # → ~/.config/mise/
-├── claude/          # → ~/.claude/CLAUDE.md, statusline.sh
+├── claude/          # → ~/.claude/settings.json, CLAUDE.md, statusline.sh
 ├── pi/              # → ~/.pi/agent/settings.json, AGENTS.md, env.zsh, prompts/
 ├── eza/             # → ~/.config/eza/ (submodule: eza-themes)
 └── marimo/          # → ~/.config/marimo/

@@ -1,4 +1,6 @@
 {
+  "model": "opus",
+  "effort": "medium",
   "env": {
     "JIRA_HOST": "gametime.atlassian.net",
     "JIRA_EMAIL": "justin.ramirez@gametime.co",
@@ -6,7 +8,8 @@
     "FIVETRAN_API_KEY": "",
     "FIVETRAN_API_SECRET": "",
     "FIVETRAN_GROUP_ID": "",
-    "ENABLE_LSP_TOOL": "1"
+    "ENABLE_LSP_TOOL": "1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   },
   "includeCoAuthoredBy": false,
   "hooks": {
@@ -44,5 +47,6 @@
     "terraform-lsp@terraform-lsp-claude-code": true,
     "typescript-lsp@claude-plugins-official": true
   },
-  "autoCompactEnabled": false
+  "autoCompactEnabled": false,
+  "effortLevel": "high"
 }

@@ -1,15 +1,5 @@
 [tools]
 python = "3.12"
-"npm:@4ier/notion-cli" = "0.5.0"
-"npm:@mariozechner/pi-coding-agent" = "0.70.6"
-"npm:bash-language-server" = "5.6.0"
-"npm:dockerfile-language-server-nodejs" = "0.15.0"
-"npm:neovim" = "5.3.0"
-"npm:npm" = "11.12.1"
-"npm:npm-check-updates" = "18.3.0"
-"npm:serverless" = "3.38.0"
-"npm:vim-language-server" = "2.3.1"
-"npm:yaml-language-server" = "1.19.2"
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"

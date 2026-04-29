@@ -29,6 +29,7 @@
       "prompts": [],
       "themes": []
     },
-    "npm:@zenobius/pi-rose-pine"
+    "npm:@zenobius/pi-rose-pine",
+    "npm:pi-mcp-adapter"
   ]
 }

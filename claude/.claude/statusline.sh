@@ -6,7 +6,6 @@
 input=$(cat)
 
 # Extract info from JSON
-user=$(whoami)
 current_dir=$(echo "$input" | jq -r '.workspace.current_dir' | sed "s|$HOME|~|")
 model=$(echo "$input" | jq -r '.model.display_name')
 session_id=$(echo "$input" | jq -r '.session_id' | cut -c1-8)
@@ -32,11 +31,8 @@ fi
 # Build status line with sections separated by |
 status_line=""
 
-# User section
-status_line="👤 $user"
-
 # Directory section
-status_line="$status_line | 📁 $current_dir"
+status_line="📁 $current_dir"
 
 # Git section (if available)
 if [ -n "$git_info" ]; then

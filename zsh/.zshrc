@@ -98,6 +98,7 @@ plugins=(
     brew
     npm
     terraform
+    terragrunt
 )
 
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
@@ -131,6 +132,7 @@ alias gstart='git checkout main && git pull && git checkout -b'
 alias ls="eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions"
 alias la="eza --color=always --long --git --icons=always --no-time --all"
 alias fk="thefuck"
+alias tg="terragrunt"
 
 # TF vars
 # SNOWFLAKE_USER is set in ~/.zshrc.local

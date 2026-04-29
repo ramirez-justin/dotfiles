@@ -52,17 +52,20 @@ git checkout gametime  # work machine — skip for personal
 # 4. Install packages (includes 1password-cli)
 mise run brew-install
 
-# 5. Authenticate 1Password CLI (open 1Password desktop app first)
+# 5. Install oh-my-zsh + third-party plugins (alias-tips, zsh-completions)
+mise run install-omz
+
+# 6. Authenticate 1Password CLI (open 1Password desktop app first)
 op account add
 
-# 6. Inject secrets and link
+# 7. Inject secrets and link
 mise run inject-secrets
 mise run link
 
-# 7. Open a new shell, then create ~/.zshrc.local with machine-specific secrets
+# 8. Open a new shell, then create ~/.zshrc.local with machine-specific secrets
 ```
 
-> On subsequent runs `mise run bootstrap` does steps 4–6 in one command (requires 1Password already authenticated).
+> On subsequent runs `mise run bootstrap` does steps 4, 5, and 7 in one command (requires 1Password already authenticated).
 
 ## Branches
 

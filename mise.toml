@@ -3,11 +3,37 @@ python = "3.12"
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"
-depends = ["brew-install", "link"]
+depends = ["brew-install", "install-omz", "link"]
 
 [tasks.brew-install]
 description = "Install all packages from Brewfile"
 run = "brew bundle --file={{config_root}}/Brewfile"
+
+[tasks.install-omz]
+description = "Install oh-my-zsh and third-party custom plugins (alias-tips, zsh-completions)"
+depends = ["brew-install"]
+run = """
+set -e
+ZSH_DIR="${ZSH:-$HOME/.oh-my-zsh}"
+if [ ! -d "$ZSH_DIR" ]; then
+    echo "Installing oh-my-zsh into $ZSH_DIR..."
+    RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+else
+    echo "oh-my-zsh already present at $ZSH_DIR"
+fi
+ZSH_CUSTOM_DIR="${ZSH_CUSTOM:-$ZSH_DIR/custom}"
+for repo in djui/alias-tips zsh-users/zsh-completions; do
+    name="${repo##*/}"
+    dest="$ZSH_CUSTOM_DIR/plugins/$name"
+    if [ ! -d "$dest" ]; then
+        echo "Cloning $repo -> $dest"
+        git clone --depth=1 "https://github.com/$repo" "$dest"
+    else
+        echo "Plugin $name already present"
+    fi
+done
+echo "oh-my-zsh ready"
+"""
 
 [tasks.link]
 description = "Stow all topics into $HOME"

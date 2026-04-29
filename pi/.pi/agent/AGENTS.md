@@ -43,13 +43,13 @@ Fall back to grep/find/read when LSP returns no results, for non-code searches, 
 - Use Context7 selectively when documentation freshness matters; do not call it for simple local-code questions where repository files already answer the question.
 - If Context7 cannot resolve a library, ask for a more specific package/library name or fall back to local docs and repository files.
 
-## Jira Preferences
+## Linear Preferences
 
-When creating Jira tickets during working sessions:
+We are migrating from Jira to Linear. For issue tracking going forward:
 
-- Always assign to user: `712020:7757ba7e-3a31-44e7-87f5-e74d04928405`
-- Priority names: use "Major" or "Minor" (not "Medium" or "High")
-- Transition to start work: use "Start working" (not "In Progress")
+- Prefer Linear over Jira for searching, creating, updating, and commenting on issues.
+- Use the Linear skill/API when the user asks about tickets, issues, assigned work, or project tracking.
+- Do not create or update Jira tickets unless the user explicitly asks for Jira.
 
 ## PR Review Preferences
 

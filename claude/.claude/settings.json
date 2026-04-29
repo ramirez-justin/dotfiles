@@ -1,6 +1,4 @@
 {
-  "model": "opus",
-  "effort": "medium",
   "env": {
     "JIRA_HOST": "gametime.atlassian.net",
     "JIRA_EMAIL": "justin.ramirez@gametime.co",
@@ -8,10 +6,10 @@
     "FIVETRAN_API_KEY": "",
     "FIVETRAN_API_SECRET": "",
     "FIVETRAN_GROUP_ID": "",
-    "ENABLE_LSP_TOOL": "1",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+    "ENABLE_LSP_TOOL": "1"
   },
   "includeCoAuthoredBy": false,
+  "model": "opus",
   "hooks": {
     "Stop": [
       {
@@ -22,7 +20,8 @@
           }
         ]
       }
-    ]
+    ],
+    "SessionStart": []
   },
   "statusLine": {
     "type": "command",
@@ -30,6 +29,7 @@
   },
   "enabledPlugins": {
     "context7@claude-plugins-official": true,
+    "context-mode@context-mode": true,
     "workflow@productivity-plugins": true,
     "bash-ls@productivity-plugins": true,
     "docker-ls@productivity-plugins": true,
@@ -47,6 +47,14 @@
     "terraform-lsp@terraform-lsp-claude-code": true,
     "typescript-lsp@claude-plugins-official": true
   },
+  "effortLevel": "medium",
   "autoCompactEnabled": false,
-  "effortLevel": "high"
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    }
+  }
 }

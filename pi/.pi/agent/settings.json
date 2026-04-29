@@ -4,11 +4,20 @@
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
   "theme": "rose-pine",
+  "powerline": {
+    "preset": "default"
+  },
   "compaction": {
     "enabled": false
   },
   "enableInstallTelemetry": false,
-  "npmCommand": ["mise", "exec", "node@20", "--", "npm"],
+  "npmCommand": [
+    "mise",
+    "exec",
+    "node@20",
+    "--",
+    "npm"
+  ],
   "enableSkillCommands": true,
   "packages": [
     {
@@ -30,6 +39,11 @@
       "themes": []
     },
     "npm:@zenobius/pi-rose-pine",
-    "npm:pi-mcp-adapter"
-  ]
+    "npm:pi-mcp-adapter",
+    "npm:pi-powerline-footer",
+    "npm:context-mode"
+  ],
+  "env": {
+    "POWERLINE_NERD_FONTS": 1
+  }
 }

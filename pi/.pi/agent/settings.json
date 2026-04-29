@@ -3,6 +3,7 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
+  "theme": "rose-pine",
   "compaction": {
     "enabled": false
   },
@@ -27,6 +28,7 @@
       "extensions": [],
       "prompts": [],
       "themes": []
-    }
+    },
+    "npm:@zenobius/pi-rose-pine"
   ]
 }

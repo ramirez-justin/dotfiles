@@ -1,5 +1,6 @@
 {
   "model": "opus",
+  "effort": "high",
   "autoCompact": false,
   "autoCompactEnabled": false,
   "includeCoAuthoredBy": false,
@@ -19,16 +20,44 @@
   },
   "hooks": {
     "SessionStart": [
-      {"hooks": [{"type": "command", "command": "$HOME/.claude/hooks/sofia-session-start.sh"}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/sofia-session-start.sh"
+          }
+        ]
+      }
     ],
     "PreCompact": [
-      {"hooks": [{"type": "command", "command": "$HOME/.claude/hooks/sofia-pre-compact.sh"}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/sofia-pre-compact.sh"
+          }
+        ]
+      }
     ],
     "SessionEnd": [
-      {"hooks": [{"type": "command", "command": "$HOME/.claude/hooks/sofia-session-end.sh"}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/sofia-session-end.sh"
+          }
+        ]
+      }
     ],
     "Stop": [
-      {"hooks": [{"type": "command", "command": "afplay /System/Library/Sounds/Submarine.aiff"}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Submarine.aiff"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

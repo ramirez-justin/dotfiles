@@ -12,11 +12,11 @@ run = "brew bundle --file={{config_root}}/Brewfile"
 [tasks.link]
 description = "Stow all topics into $HOME"
 depends = ["brew-install"]
-run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo"
+run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo"
 
 [tasks.unlink]
 description = "Remove all stow symlinks"
-run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude eza marimo"
+run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo"
 
 [tasks.update]
 description = "Pull latest dotfiles and re-link"
@@ -45,9 +45,24 @@ run = """
   JIRA_TOKEN=$(op read "op://Employee/JRamirez Atlassian API Token/API token")
   FIVETRAN_KEY=$(op read "op://Employee/JRamirez Fivetran API Key/username")
   FIVETRAN_SECRET=$(op read "op://Employee/JRamirez Fivetran API Key/password")
+  LINEAR_API_KEY=$(op read "op://Employee/linear_api_key/API key")
+  NOTION_API_KEY=""
+  if [ -n "${NOTION_API_KEY_OP_REF:-}" ]; then
+    NOTION_API_KEY=$(op read "$NOTION_API_KEY_OP_REF")
+  fi
   jq --arg jira "$JIRA_TOKEN" \
      --arg fkey "$FIVETRAN_KEY" \
      --arg fsecret "$FIVETRAN_SECRET" \
      '.env.JIRA_API_TOKEN = $jira | .env.FIVETRAN_API_KEY = $fkey | .env.FIVETRAN_API_SECRET = $fsecret' \
     "{{config_root}}/claude/.claude/settings.json" > ~/.claude/settings.json
+
+  mkdir -p ~/.pi/agent
+  cat > ~/.pi/agent/env.local.zsh <<EOF
+export JIRA_API_TOKEN='$JIRA_TOKEN'
+export FIVETRAN_API_KEY='$FIVETRAN_KEY'
+export FIVETRAN_API_SECRET='$FIVETRAN_SECRET'
+export LINEAR_API_KEY='$LINEAR_API_KEY'
+export NOTION_API_KEY='$NOTION_API_KEY'
+EOF
+  chmod 600 ~/.pi/agent/env.local.zsh
 """

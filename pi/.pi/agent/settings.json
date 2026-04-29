@@ -1,0 +1,32 @@
+{
+  "lastChangelogVersion": "0.70.6",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "medium",
+  "compaction": {
+    "enabled": false
+  },
+  "enableInstallTelemetry": false,
+  "npmCommand": ["mise", "exec", "node@20", "--", "npm"],
+  "enableSkillCommands": true,
+  "packages": [
+    {
+      "source": "git:https://github.com/obra/superpowers.git@v5.0.7",
+      "skills": [
+        "skills/brainstorming/**",
+        "skills/writing-plans/**",
+        "skills/executing-plans/**",
+        "skills/systematic-debugging/**",
+        "skills/test-driven-development/**",
+        "skills/verification-before-completion/**",
+        "skills/finishing-a-development-branch/**",
+        "skills/receiving-code-review/**",
+        "skills/requesting-code-review/**",
+        "skills/using-git-worktrees/**"
+      ],
+      "extensions": [],
+      "prompts": [],
+      "themes": []
+    }
+  ]
+}

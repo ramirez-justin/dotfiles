@@ -29,3 +29,11 @@ When creating Jira tickets during working sessions:
 - **Always assign to user**: Use account ID `712020:7757ba7e-3a31-44e7-87f5-e74d04928405`
 - **Priority names**: Use "Major" or "Minor" (not "Medium" or "High")
 - **Transition to start work**: Use "Start working" (not "In Progress")
+
+## PR Review Preferences
+
+When the user asks to review a pull request in natural language ("review PR N",
+"look at this PR", "what do you think of this diff", "re-review after the
+push"), always invoke the `workflow:reviewing-prs-with-verification` skill
+before responding. Do not fall back to the built-in `/review` slash command
+unless the user explicitly types `/review`.

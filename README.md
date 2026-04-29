@@ -29,6 +29,7 @@ dotfiles/
 ├── git/             # → ~/.gitconfig, ~/.config/git/
 ├── mise/            # → ~/.config/mise/
 ├── claude/          # → ~/.claude/CLAUDE.md, statusline.sh
+├── pi/              # → ~/.pi/agent/settings.json, AGENTS.md, env.zsh, prompts/
 ├── eza/             # → ~/.config/eza/ (submodule: eza-themes)
 └── marimo/          # → ~/.config/marimo/
 ```
@@ -85,7 +86,15 @@ git merge main
 ```bash
 mise run link            # re-stow all topics (safe to run anytime)
 mise run update          # git pull --rebase + re-link
-mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.json
+mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.json and ~/.pi/agent/env.local.zsh
+
+# Optional Pi Notion secret, if IT grants an integration/OAuth token later:
+# export NOTION_API_KEY_OP_REF="op://..."
+# mise run inject-secrets
+# Linear is injected from 1Password item: Employee/linear_api_key/API key.
+
+# pi workflow shortcuts, backed by the Superpowers skills package:
+# /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
 mise run brew-dump       # regenerate Brewfile after installing new packages
 mise run nvim-update     # pull latest nvim config and commit the submodule pointer
 mise run submodule-update # update all submodules to latest
@@ -133,6 +142,7 @@ mkdir -p ~/Repositories/dotfiles/mytool/.config/mytool
 cp -r ~/.config/mytool ~/Repositories/dotfiles/mytool/.config/mytool
 
 # 3. Add topic to the stow commands in mise.toml (link, unlink tasks)
+#    Current topics include: zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo
 
 # 4. Stow it
 stow --dir=~/Repositories/dotfiles --target=$HOME --restow mytool

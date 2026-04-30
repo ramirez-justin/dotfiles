@@ -17,7 +17,7 @@ type HookInput = {
 	trigger?: string;
 };
 
-const HOOK_DIR = join(homedir(), ".pi", "agent", "hooks");
+const HOOK_DIR = join(homedir(), ".pi", "agent", "scripts", "sofia");
 const SOFIA_MARKER = "# SOFIA — your second brain context";
 
 let sessionContext = "";

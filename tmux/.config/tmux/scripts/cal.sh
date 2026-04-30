@@ -7,10 +7,11 @@ ALERT_IF_IN_NEXT_MINUTES=20
 ALERT_POPUP_BEFORE_SECONDS=10
 NERD_FONT_FREE="󱁕     "
 NERD_FONT_MEETING="󰤙  "
+NERD_FONT_AUTH="󰒃 cal setup"
 
-# Exit silently if not set up yet
+# Show setup indicator if not set up yet
 if [[ ! -f "$CREDENTIALS_FILE" ]]; then
-	echo "$NERD_FONT_FREE"
+	echo "$NERD_FONT_AUTH"
 	exit 0
 fi
 
@@ -35,7 +36,7 @@ if [[ "$NOW" -ge "$EXPIRY" ]]; then
 	EXPIRES_IN=$(echo "$TOKEN_RESPONSE" | jq -r '.expires_in // empty')
 
 	if [[ -z "$NEW_ACCESS_TOKEN" ]]; then
-		echo "$NERD_FONT_FREE"
+		echo "$NERD_FONT_AUTH"
 		exit 0
 	fi
 

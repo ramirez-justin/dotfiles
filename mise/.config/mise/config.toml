@@ -1,6 +1,6 @@
 [tools]
 python = "3.12"
-"npm:@4ier/notion-cli" = "0.5.0"
+"go:github.com/lox/notion-cli" = "latest"
 "npm:@mariozechner/pi-coding-agent" = "0.70.6"
 "npm:bash-language-server" = "5.6.0"
 "npm:dockerfile-language-server-nodejs" = "0.15.0"

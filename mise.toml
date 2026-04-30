@@ -125,48 +125,40 @@ depends = ["brew-install"]
 run = """
 set -e
 
-JIRA_TOKEN=$(op read "op://Employee/JRamirez Atlassian API Token/API token")
-FIVETRAN_KEY=$(op read "op://Employee/JRamirez Fivetran API Key/username")
-FIVETRAN_SECRET=$(op read "op://Employee/JRamirez Fivetran API Key/password")
-LINEAR_API_KEY=$(op read "op://Employee/linear_api_key/API key")
-
-read_optional_secret() {
-    ref_var="$1"
-    ref_value=$(printenv "$ref_var" || true)
+read_secret_ref() {
+    ref_value="$1"
     if [ -n "$ref_value" ]; then
         op read "$ref_value"
     fi
 }
 
+read_optional_secret() {
+    ref_var="$1"
+    ref_value=$(printenv "$ref_var" || true)
+    read_secret_ref "$ref_value"
+}
+
+OBSIDIAN_API_KEY_OP_REF="${OBSIDIAN_API_KEY_OP_REF:-op://dev_vault/obsidian_local_rest_api_key/add more/API Key}"
+OBSIDIAN_API_CERT_ITEM="${OBSIDIAN_API_CERT_ITEM:-obsidian_local_rest_api_cert}"
+OBSIDIAN_API_CERT_VAULT="${OBSIDIAN_API_CERT_VAULT:-dev_vault}"
+OBSIDIAN_API_KEY=$(read_secret_ref "$OBSIDIAN_API_KEY_OP_REF")
 NOTION_API_KEY=$(read_optional_secret NOTION_API_KEY_OP_REF)
 OPENAI_API_KEY=$(read_optional_secret OPENAI_API_KEY_OP_REF)
 ANTHROPIC_API_KEY=$(read_optional_secret ANTHROPIC_API_KEY_OP_REF)
 GEMINI_API_KEY=$(read_optional_secret GEMINI_API_KEY_OP_REF)
 
-mkdir -p "$HOME/.claude"
-CLAUDE_SETTINGS="$HOME/.claude/settings.local.json"
-CLAUDE_ENV=$(jq -n --arg jira "$JIRA_TOKEN" \
-   --arg fkey "$FIVETRAN_KEY" \
-   --arg fsecret "$FIVETRAN_SECRET" \
-   '{JIRA_API_TOKEN: $jira, FIVETRAN_API_KEY: $fkey, FIVETRAN_API_SECRET: $fsecret}')
-if [ -f "$CLAUDE_SETTINGS" ]; then
-    jq --argjson env "$CLAUDE_ENV" '.env = ((.env // {}) + $env)' "$CLAUDE_SETTINGS" > "$CLAUDE_SETTINGS.tmp" && mv "$CLAUDE_SETTINGS.tmp" "$CLAUDE_SETTINGS"
-else
-    jq -n --argjson env "$CLAUDE_ENV" '{env: $env}' > "$CLAUDE_SETTINGS"
-fi
-chmod 600 "$CLAUDE_SETTINGS"
+mkdir -p "$HOME/.config/sofia"
+op document get "$OBSIDIAN_API_CERT_ITEM" --vault "$OBSIDIAN_API_CERT_VAULT" --out-file "$HOME/.config/sofia/cert.pem"
+chmod 600 "$HOME/.config/sofia/cert.pem"
 
 mkdir -p "$HOME/.pi/agent"
-export JIRA_TOKEN FIVETRAN_KEY FIVETRAN_SECRET LINEAR_API_KEY NOTION_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY GEMINI_API_KEY
+export OBSIDIAN_API_KEY NOTION_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY GEMINI_API_KEY
 python3 <<'PY' > "$HOME/.pi/agent/env.local.zsh"
 import os
 import shlex
 
 values = {
-    "JIRA_API_TOKEN": os.environ.get("JIRA_TOKEN", ""),
-    "FIVETRAN_API_KEY": os.environ.get("FIVETRAN_KEY", ""),
-    "FIVETRAN_API_SECRET": os.environ.get("FIVETRAN_SECRET", ""),
-    "LINEAR_API_KEY": os.environ.get("LINEAR_API_KEY", ""),
+    "OBSIDIAN_API_KEY": os.environ.get("OBSIDIAN_API_KEY", ""),
     "NOTION_API_KEY": os.environ.get("NOTION_API_KEY", ""),
     "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
     "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),

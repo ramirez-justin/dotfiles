@@ -89,7 +89,7 @@ git merge main
 ```bash
 mise run link            # re-stow all topics (safe to run anytime)
 mise run update          # git pull --rebase + re-link
-mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.json
+mise run inject-secrets  # write 1Password secrets into local-only Pi/SOFIA env files
 mise run brew-dump       # regenerate Brewfile after installing new packages
 mise run nvim-update     # pull latest nvim config and commit the submodule pointer
 mise run submodule-update # update all submodules to latest

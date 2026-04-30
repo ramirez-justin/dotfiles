@@ -1,1 +1,3 @@
 .pi-lens/
+__pycache__/
+*.py[cod]

@@ -1,0 +1,8 @@
+.pi-lens/
+__pycache__/
+*.py[cod]
+
+gh/.config/gh/hosts.yml
+tmux/.config/tmux/plugins/
+tmux/.config/tmux/scripts/.credentials.json
+tmux/.config/tmux/scripts/.client-secret.json

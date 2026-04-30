@@ -21,7 +21,16 @@
         ]
       }
     ],
-    "SessionStart": []
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/opt/homebrew/Cellar/node/25.9.0_2/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
     "type": "command",
@@ -32,9 +41,7 @@
     "context-mode@context-mode": true,
     "workflow@productivity-plugins": true,
     "bash-ls@productivity-plugins": true,
-    "docker-ls@productivity-plugins": true,
     "markdown-oxide@productivity-plugins": true,
-    "vim-ls@productivity-plugins": true,
     "yaml-ls@productivity-plugins": true,
     "pyright-lsp@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
@@ -47,8 +54,6 @@
     "terraform-lsp@terraform-lsp-claude-code": true,
     "typescript-lsp@claude-plugins-official": true
   },
-  "effortLevel": "medium",
-  "autoCompactEnabled": false,
   "extraKnownMarketplaces": {
     "context-mode": {
       "source": {
@@ -56,5 +61,7 @@
         "repo": "mksglu/context-mode"
       }
     }
-  }
+  },
+  "effortLevel": "medium",
+  "autoCompactEnabled": false
 }

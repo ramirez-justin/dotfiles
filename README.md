@@ -29,6 +29,7 @@ dotfiles/
 ├── git/             # → ~/.gitconfig, ~/.config/git/
 ├── mise/            # → ~/.config/mise/
 ├── claude/          # → ~/.claude/CLAUDE.md, statusline.sh
+├── pi/              # → ~/.pi/agent/settings.json, AGENTS.md, env.zsh, prompts/
 ├── eza/             # → ~/.config/eza/ (submodule: eza-themes)
 └── marimo/          # → ~/.config/marimo/
 ```
@@ -136,6 +137,7 @@ mkdir -p ~/Repositories/dotfiles/mytool/.config/mytool
 cp -r ~/.config/mytool ~/Repositories/dotfiles/mytool/.config/mytool
 
 # 3. Add topic to the stow commands in mise.toml (link, unlink tasks)
+#    Current topics include: zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo aws lazygit rectangle sofia
 
 # 4. Stow it
 stow --dir=~/Repositories/dotfiles --target=$HOME --restow mytool

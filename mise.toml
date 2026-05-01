@@ -1,5 +1,6 @@
 [tools]
 python = "3.12"
+bun = "latest"
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"

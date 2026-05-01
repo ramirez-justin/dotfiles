@@ -7,3 +7,4 @@ tmux/.config/tmux/plugins/
 tmux/.config/tmux/scripts/.credentials.json
 tmux/.config/tmux/scripts/.client-secret.json
 sofia/cloud/supabase/.temp/
+supabase/.temp/

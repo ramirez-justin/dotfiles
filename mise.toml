@@ -4,7 +4,13 @@ bun = "latest"
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"
-depends = ["brew-install", "tools-install", "install-omz", "link", "inject-secrets"]
+depends = [
+  "brew-install",
+  "tools-install",
+  "install-omz",
+  "link",
+  "inject-secrets",
+]
 
 [tasks.brew-install]
 description = "Install all packages from Brewfile"
@@ -106,20 +112,6 @@ run = """
   git -C {{config_root}} commit -m "chore: update nvim to latest"
 """
 
-[tasks.inject-claude-mcp]
-description = "Merge MCP servers (gmail, google-calendar) into ~/.claude.json"
-run = """
-set -e
-CLAUDE_JSON="$HOME/.claude.json"
-MCP_JSON='{"gmail":{"command":"npx","args":["@gongrzhe/server-gmail-autoauth-mcp"]},"google-calendar":{"command":"npx","args":["@cocal/google-calendar-mcp"],"env":{"GOOGLE_OAUTH_CREDENTIALS":"'"$HOME"'/.gmail-mcp/gcp-oauth.keys.json"}}}'
-if [ -f "$CLAUDE_JSON" ]; then
-    jq --argjson mcp "$MCP_JSON" '.mcpServers = ((.mcpServers // {}) + $mcp)' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
-else
-    jq -n --argjson mcp "$MCP_JSON" '{"mcpServers": $mcp}' > "$CLAUDE_JSON"
-fi
-echo "MCP servers merged into $CLAUDE_JSON"
-"""
-
 [tasks.inject-secrets]
 description = "Write 1Password secrets into local-only tool env files"
 depends = ["brew-install"]
@@ -198,8 +190,37 @@ echo "gcloud installed/updated at $INSTALL_DIR"
 echo "PATH and completion will load on new shells via aliases.zsh"
 """
 
-[tasks.sofia-init]
-description = "Bootstrap SOFIA second brain (deps, DB, LaunchAgent)"
+[tasks."sofia-cloud:test"]
+description = "Run SOFIA cloud Edge Function tests"
+run = "cd {{config_root}}/sofia/cloud/supabase/functions/sofia-core && deno test"
+
+[tasks."sofia-cloud:check"]
+description = "Type-check SOFIA cloud Edge Function entrypoint"
+run = "cd {{config_root}}/sofia/cloud/supabase/functions/sofia-core && deno check index.ts"
+
+[tasks."sofia-cloud:deploy"]
+description = "Deploy SOFIA cloud Edge Function to Supabase"
+run = """
+set -e
+project_ref="${SUPABASE_SOFIA_PROJECT_REF:-$(op read 'op://dev_vault/Supabase SOFIA/project id')}"
+supabase functions deploy sofia-core \
+  --workdir {{config_root}}/sofia/cloud \
+  --no-verify-jwt \
+  --project-ref "$project_ref"
+"""
+
+[tasks."sofia-cloud:functions-list"]
+description = "List deployed SOFIA Supabase Edge Functions"
+run = """
+set -e
+project_ref="${SUPABASE_SOFIA_PROJECT_REF:-$(op read 'op://dev_vault/Supabase SOFIA/project id')}"
+supabase functions list \
+  --workdir {{config_root}}/sofia/cloud \
+  --project-ref "$project_ref"
+"""
+
+[tasks."sofia-local:init"]
+description = "Legacy local SOFIA bootstrap (transitional until cloud replaces local runtime)"
 run = """
 set -e
 cd ~/.local/share/sofia/src
@@ -208,13 +229,13 @@ uv sync
 mkdir -p ~/.local/state/sofia
 launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.sofia.indexer.plist || true
 launchctl enable gui/$UID/com.sofia.indexer || true
-echo "SOFIA bootstrapped. Next: open Claude Code in ~/dev/SOFIA and run /sofia-init"
+echo "SOFIA local runtime bootstrapped. Next: open Claude Code in ~/dev/SOFIA and run /sofia-init"
 """
 
-[tasks.sofia-status]
-description = "Check SOFIA health"
+[tasks."sofia-local:status"]
+description = "Legacy local SOFIA health check"
 run = "~/.local/bin/sofia doctor"
 
-[tasks.sofia-reindex]
-description = "Drop and rebuild SOFIA search index"
+[tasks."sofia-local:reindex"]
+description = "Legacy local SOFIA search index rebuild"
 run = "~/.local/bin/sofia index --rebuild"

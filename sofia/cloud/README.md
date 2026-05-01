@@ -51,7 +51,7 @@ Keep secret values in 1Password. Store only references in notes/docs. Never past
 5. Deploy function:
 
    ```bash
-   supabase functions deploy sofia-core --no-verify-jwt
+   mise run sofia-cloud:deploy
    ```
 
 6. MCP URL:
@@ -65,6 +65,21 @@ Keep secret values in 1Password. Store only references in notes/docs. Never past
    ```text
    https://<project-ref>.supabase.co/functions/v1/sofia-core?key=<generated-key>
    ```
+
+## Operator tasks
+
+Reusable tasks live in the repo `mise.toml`:
+
+```bash
+mise run sofia-cloud:test
+mise run sofia-cloud:check
+mise run sofia-cloud:deploy
+mise run sofia-cloud:functions-list
+```
+
+`sofia-cloud:deploy` and `sofia-cloud:functions-list` read the Supabase project ref from `SUPABASE_SOFIA_PROJECT_REF` when set, otherwise from the 1Password ref `op://dev_vault/Supabase SOFIA/project id`.
+
+Legacy local-vault runtime tasks are grouped under `sofia-local:*` during the transition to cloud canonical storage.
 
 ## Pi MCP client setup
 

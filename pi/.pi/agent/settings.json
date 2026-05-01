@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.70.6",
+  "lastChangelogVersion": "0.71.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
@@ -11,7 +11,13 @@
     "enabled": false
   },
   "enableInstallTelemetry": false,
-  "npmCommand": ["mise", "exec", "node@20", "--", "npm"],
+  "npmCommand": [
+    "mise",
+    "exec",
+    "node@20",
+    "--",
+    "npm"
+  ],
   "enableSkillCommands": true,
   "packages": [
     {

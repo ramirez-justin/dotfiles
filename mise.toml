@@ -20,8 +20,12 @@ description = "Remove all stow symlinks"
 run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo"
 
 [tasks.update]
-description = "Pull latest dotfiles and re-link"
-run = "git -C {{config_root}} pull --rebase && mise run link"
+description = "Pull latest dotfiles, re-link, and update Pi packages"
+run = "git -C {{config_root}} pull --rebase && mise run link && mise run pi-update"
+
+[tasks.pi-update]
+description = "Update Pi packages/extensions"
+run = "pi update --extensions"
 
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"

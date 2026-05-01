@@ -1,10 +1,18 @@
 {
+  "settings": {
+    "autoAuth": true
+  },
   "mcpServers": {
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"],
       "lifecycle": "lazy",
       "directTools": true
+    },
+    "linear": {
+      "url": "https://mcp.linear.app/mcp",
+      "auth": "oauth",
+      "lifecycle": "lazy"
     }
   }
 }

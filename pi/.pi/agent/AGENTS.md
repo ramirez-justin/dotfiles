@@ -55,6 +55,8 @@ We are migrating from Jira to Linear. For issue tracking going forward:
 - Prefer Linear over Jira for searching, creating, updating, and commenting on issues.
 - Use the Linear skill/API when the user asks about tickets, issues, assigned work, or project tracking.
 - Do not create or update Jira tickets unless the user explicitly asks for Jira.
+- Remember that this Pi setup uses `pi-mcp-adapter` for MCP. Do not assume Pi lacks MCP support; inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the adapter's `mcp` proxy/direct tools when Linear or other MCP servers are configured.
+- Prefer Linear MCP via `pi-mcp-adapter` for Linear interactions when available. Keep preview-before-mutation approval rules even when using MCP tools.
 
 ## PR Review Preferences
 

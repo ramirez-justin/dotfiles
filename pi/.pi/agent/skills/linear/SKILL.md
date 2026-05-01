@@ -1,47 +1,72 @@
 ---
 name: linear
-description: Search, read, create, update, and comment on Linear issues using the Linear API. Use when the user asks about Linear issues, teams, assigned work, or wants to create/update/comment on Linear tickets.
+description: Search, read, create, update, and comment on Linear issues using Linear MCP. Use when the user asks about tickets, issues, assigned work, or project tracking.
 ---
 
 # Linear
 
-Use `scripts/linear-api.py` from this skill directory. It requires `LINEAR_API_KEY` or `LINEAR_API_TOKEN` in the environment.
+Prefer Linear MCP through `pi-mcp-adapter`. This Pi setup uses `pi-mcp-adapter`; do not assume Pi lacks MCP support.
 
-## Read-only commands
+Before Linear work, check MCP availability with the `mcp` proxy:
 
-```bash
-./scripts/linear-api.py viewer
-./scripts/linear-api.py teams
-./scripts/linear-api.py assigned --first 25
-./scripts/linear-api.py search "query text" --first 25
-./scripts/linear-api.py get ABC-123
+```text
+mcp({})
+mcp({ connect: "linear" })
+mcp({ server: "linear" })
 ```
 
-## Mutating commands require approval
+Current preferred server config is the official Linear remote MCP server at `https://mcp.linear.app/mcp` with OAuth via the adapter.
+
+## Common MCP tools
+
+Use tool discovery for exact schemas:
+
+```text
+mcp({ describe: "linear_get_issue" })
+mcp({ describe: "linear_list_issues" })
+mcp({ describe: "linear_save_issue" })
+mcp({ describe: "linear_list_comments" })
+mcp({ describe: "linear_save_comment" })
+```
+
+Typical operations:
+
+- Read issue: `linear_get_issue`
+- Search/list issues: `linear_list_issues`
+- Create/update issue: `linear_save_issue`
+- Read comments: `linear_list_comments`
+- Create/update comment: `linear_save_comment`
+
+## Mutation approval workflow
 
 Creating, updating, and commenting are allowed, but only after explicit user approval.
 
-Workflow:
+1. Build the proposed mutation as structured JSON.
+2. Show the exact proposed payload to the user.
+3. Ask for explicit approval.
+4. Only after approval, call the mutating MCP tool.
 
-1. Build the proposed mutation.
-2. Run the command **without** `--yes` to preview the exact API payload.
-3. Show the payload to the user and ask for approval.
-4. Only after the user explicitly approves, rerun the same command with `--yes`.
+Example preview before calling `linear_save_issue`:
 
-```bash
-./scripts/linear-api.py create --team-id <team-id> --title "Title" --description "Body"
-./scripts/linear-api.py update ABC-123 --title "New title"
-./scripts/linear-api.py comment ABC-123 --body "Comment text"
+```json
+{
+  "tool": "linear_save_issue",
+  "args": {
+    "id": "DAT-123",
+    "description": "Line 1\n\n- Line 2"
+  }
+}
 ```
 
-After approval:
+## Markdown formatting rules
 
-```bash
-./scripts/linear-api.py comment ABC-123 --body "Comment text" --yes
-```
+- Use MCP structured arguments for normal Linear writes.
+- Do not pass multiline Markdown through shell-escaped command arguments.
+- For MCP descriptions/comments, provide literal newlines in the string. Linear's MCP schema says: "Do not escape the string — use literal newlines and special characters, not escape sequences."
+- For very large mechanical repair jobs, prefer a deterministic local transform that fetches current content, changes only the target bytes, and writes it back after approval. Do not manually reconstruct huge descriptions in chat.
 
 ## Safety rules
 
-- Never use `--yes` before showing the preview payload and receiving explicit approval.
-- Do not invent team IDs, state IDs, or assignee IDs. Use `teams`, `viewer`, `get`, or existing issue data to verify IDs first.
+- Never mutate Linear before showing the proposed payload and receiving explicit approval.
+- Do not invent team IDs, state IDs, assignee IDs, or labels. Verify with Linear MCP reads first.
 - Prefer linking to Linear issue URLs in final responses.

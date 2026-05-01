@@ -76,3 +76,27 @@ Deno.test("parseClassifierResponse repairs common model formatting mistakes", ()
 	assert.equal(parsed[0].recommended_action, "auto_promote");
 	assert.deepEqual(parsed[0].entities, []);
 });
+
+Deno.test("parseClassifierResponse repairs generic event candidate type", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "event",
+					candidate_text:
+						"SOFIA cloud was merged into main after verification.",
+					title: "SOFIA cloud merged",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Project status update.",
+					entities: [],
+					metadata: {},
+				},
+			],
+		}),
+	);
+
+	assert.equal(parsed[0].candidate_type, "fact");
+});

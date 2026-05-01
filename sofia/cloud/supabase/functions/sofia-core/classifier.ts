@@ -59,6 +59,7 @@ function normalizeClassifierResponse(json: unknown): unknown {
 			const record = candidate as Record<string, unknown>;
 			return {
 				...record,
+				candidate_type: normalizeCandidateType(record.candidate_type),
 				worthiness_score: normalizeScore(record.worthiness_score),
 				confidence: normalizeScore(record.confidence),
 				recommended_action: normalizeRecommendedAction(
@@ -68,6 +69,29 @@ function normalizeClassifierResponse(json: unknown): unknown {
 			};
 		}),
 	};
+}
+
+function normalizeCandidateType(value: unknown): unknown {
+	if (typeof value !== "string") return value;
+	const normalized = value
+		.toLowerCase()
+		.trim()
+		.replaceAll(/[\s-]+/g, "_");
+	const candidateTypes = new Set([
+		"fact",
+		"preference",
+		"decision",
+		"lesson",
+		"gotcha",
+		"project_context",
+		"person_context",
+		"operating_rule",
+		"todo",
+		"open_loop",
+	]);
+	if (candidateTypes.has(normalized)) return normalized;
+	if (["event", "note", "memory"].includes(normalized)) return "fact";
+	return value;
 }
 
 function normalizeScore(value: unknown): unknown {

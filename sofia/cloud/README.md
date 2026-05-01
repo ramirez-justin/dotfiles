@@ -57,5 +57,40 @@ Keep secret values in 1Password. Store only references in notes/docs. Never past
 6. MCP URL:
 
    ```text
+   https://<project-ref>.supabase.co/functions/v1/sofia-core
+   ```
+
+   For clients that cannot set custom headers, the endpoint also accepts:
+
+   ```text
    https://<project-ref>.supabase.co/functions/v1/sofia-core?key=<generated-key>
    ```
+
+## Pi MCP client setup
+
+Pi uses `pi-mcp-adapter` and reads `~/.pi/agent/mcp.json` from this dotfiles repo. The SOFIA cloud server is configured with a custom header rather than putting the access key in the URL:
+
+```json
+{
+  "mcpServers": {
+    "sofia-cloud": {
+      "url": "https://<project-ref>.supabase.co/functions/v1/sofia-core",
+      "headers": {
+        "x-sofia-key": "${SOFIA_MCP_ACCESS_KEY}"
+      },
+      "auth": false,
+      "lifecycle": "lazy"
+    }
+  }
+}
+```
+
+`~/.pi/agent/env.zsh` populates `SOFIA_MCP_ACCESS_KEY` from the 1Password ref `op://dev_vault/SOFIA MCP/access key` if it is not already set. After changing MCP config in a running Pi session, run `/reload` before using the new server.
+
+Available tools:
+
+- `capture_event`
+- `search_memory`
+- `list_recent`
+- `review_candidates`
+- `get_artifact`

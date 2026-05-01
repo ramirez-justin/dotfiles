@@ -13,6 +13,7 @@ import {
 	promoteExistingCandidate,
 } from "./db.ts";
 import { formatJson, textResponse } from "./format.ts";
+import { shouldPatchMcpAcceptHeader } from "./http.ts";
 import { redactSecrets } from "./redact.ts";
 import { routeCandidate } from "./router.ts";
 import type { CaptureEventInput, SofiaContext } from "./types.ts";
@@ -321,7 +322,23 @@ app.all("*", async (c: any) => {
 		);
 	}
 
-	if (!c.req.header("accept")?.includes("text/event-stream")) {
+	if (
+		c.req.method === "GET" &&
+		!c.req.header("accept")?.includes("text/event-stream")
+	) {
+		return c.json(
+			{
+				name: "sofia-cloud",
+				status: "ok",
+				message:
+					"SOFIA MCP endpoint is deployed. Connect with an MCP client, or POST JSON-RPC with Accept: application/json, text/event-stream.",
+			},
+			200,
+			corsHeaders,
+		);
+	}
+
+	if (shouldPatchMcpAcceptHeader(c.req.method, c.req.header("accept"))) {
 		const headers = new Headers(c.req.raw.headers);
 		headers.set("Accept", "application/json, text/event-stream");
 		const patched = new Request(c.req.raw.url, {

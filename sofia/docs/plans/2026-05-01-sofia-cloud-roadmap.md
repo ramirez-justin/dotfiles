@@ -1,6 +1,6 @@
 # SOFIA Cloud Roadmap
 
-- **Status:** draft
+- **Status:** Phase 1–3 core implemented/deployed; later phases deferred
 - **Date:** 2026-05-01
 - **Purpose:** phased roadmap for SOFIA vNext after reviewing OB1/Open Brain
 
@@ -29,6 +29,18 @@ Raw events
 ## Implementation plans
 
 - [Phase 1–2 Implementation](2026-05-01-sofia-cloud-phase-1-2-implementation.md)
+
+## Current status (2026-05-01)
+
+Implemented and verified on branch `sofia/cloud-core-phase-1-2`:
+
+- Supabase cloud core schema and deployed `sofia-core` Edge Function.
+- Remote MCP tools: `capture_event`, `search_memory`, `list_recent`, `review_candidates`, `archive_memory`, `get_artifact`.
+- Hybrid memory pipeline with redaction, classifier hardening, auto-promotion/review routing, memory versions, and archive cleanup.
+- Pi MCP client configuration using `x-sofia-key` from 1Password-backed environment setup.
+- Operator tasks: `sofia-cloud:test`, `sofia-cloud:check`, `sofia-cloud:deploy`, `sofia-cloud:functions-list`.
+
+Deferred: chat adapters, importer/exporter, compiled Obsidian artifacts, dashboard, and richer review workflows.
 
 ## Phase 0 — Design lock
 
@@ -112,7 +124,7 @@ Deliverables:
   - `search_memory`
   - `list_recent`
   - `review_candidates`
-  - `get_profile`
+  - `archive_memory`
   - `get_artifact`
 - access key auth.
 - CORS/Claude Desktop compatibility.

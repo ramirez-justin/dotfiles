@@ -5,6 +5,14 @@
       "args": ["-y", "@upstash/context7-mcp"],
       "lifecycle": "lazy",
       "directTools": true
+    },
+    "sofia-cloud": {
+      "url": "https://avgjtkgppeeihntsyjpy.supabase.co/functions/v1/sofia-core",
+      "headers": {
+        "x-sofia-key": "${SOFIA_MCP_ACCESS_KEY}"
+      },
+      "auth": false,
+      "lifecycle": "lazy"
     }
   }
 }

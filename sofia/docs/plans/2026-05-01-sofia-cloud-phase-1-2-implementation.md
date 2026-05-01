@@ -8,6 +8,8 @@
 
 **Tech Stack:** Supabase Postgres + pgvector, Supabase Edge Functions (Deno/TypeScript), MCP SDK, Hono, Zod, OpenRouter-compatible LLM/embedding APIs, SQL migrations, Deno tests.
 
+**Execution status (2026-05-01):** Phase 1–3 core path is implemented, deployed, and verified from Pi via remote MCP. The live lifecycle smoke test captured an event, auto-promoted a memory, found it via search, archived it with `archive_memory`, and confirmed post-archive search exclusion. Operator cleanup is complete: cloud operations are available as `sofia-cloud:*` mise tasks and transitional local-vault tasks are grouped under `sofia-local:*`.
+
 ---
 
 ## Preconditions / Accounts
@@ -38,7 +40,7 @@ This plan implements only Phase 1 + Phase 2:
 - candidate extraction/classification
 - hybrid promotion/review routing
 - durable memories + versions
-- remote MCP tools for capture/search/review/profile/artifact retrieval
+- remote MCP tools for capture/search/review/archive/artifact retrieval
 
 This plan does **not** implement:
 
@@ -58,17 +60,17 @@ Those belong to later plans after the cloud core is validated.
 |---|---|
 | `sofia/cloud/README.md` | Operator notes: local/dev/deploy commands and secret setup |
 | `sofia/cloud/supabase/migrations/0001_sofia_cloud_core.sql` | Tables, indexes, RLS, grants, helper RPCs |
-| `sofia/cloud/functions/sofia-core/deno.json` | Deno imports/tasks for the Edge Function |
-| `sofia/cloud/functions/sofia-core/index.ts` | Hono + MCP server entrypoint |
-| `sofia/cloud/functions/sofia-core/types.ts` | Shared TypeScript types/enums |
-| `sofia/cloud/functions/sofia-core/redact.ts` | Secret redaction before event insert |
-| `sofia/cloud/functions/sofia-core/classifier.ts` | LLM classifier call + strict JSON parsing |
-| `sofia/cloud/functions/sofia-core/router.ts` | Hybrid auto-promotion/review routing policy |
-| `sofia/cloud/functions/sofia-core/db.ts` | Supabase DB helper functions |
-| `sofia/cloud/functions/sofia-core/format.ts` | MCP response formatting |
-| `sofia/cloud/functions/sofia-core/redact_test.ts` | Deno unit tests for redaction |
-| `sofia/cloud/functions/sofia-core/router_test.ts` | Deno unit tests for routing thresholds |
-| `sofia/cloud/functions/sofia-core/classifier_test.ts` | Deno unit tests for classifier JSON parsing |
+| `sofia/cloud/supabase/functions/sofia-core/deno.json` | Deno imports/tasks for the Edge Function |
+| `sofia/cloud/supabase/functions/sofia-core/index.ts` | Hono + MCP server entrypoint |
+| `sofia/cloud/supabase/functions/sofia-core/types.ts` | Shared TypeScript types/enums |
+| `sofia/cloud/supabase/functions/sofia-core/redact.ts` | Secret redaction before event insert |
+| `sofia/cloud/supabase/functions/sofia-core/classifier.ts` | LLM classifier call + strict JSON parsing |
+| `sofia/cloud/supabase/functions/sofia-core/router.ts` | Hybrid auto-promotion/review routing policy |
+| `sofia/cloud/supabase/functions/sofia-core/db.ts` | Supabase DB helper functions |
+| `sofia/cloud/supabase/functions/sofia-core/format.ts` | MCP response formatting |
+| `sofia/cloud/supabase/functions/sofia-core/redact_test.ts` | Deno unit tests for redaction |
+| `sofia/cloud/supabase/functions/sofia-core/router_test.ts` | Deno unit tests for routing thresholds |
+| `sofia/cloud/supabase/functions/sofia-core/classifier_test.ts` | Deno unit tests for classifier JSON parsing |
 
 ### Modified files
 
@@ -85,13 +87,13 @@ Those belong to later plans after the cloud core is validated.
 - Create: `sofia/cloud/README.md`
 - Create directories:
   - `sofia/cloud/supabase/migrations/`
-  - `sofia/cloud/functions/sofia-core/`
+  - `sofia/cloud/supabase/functions/sofia-core/`
 
 - [ ] **Step 1: Create directories**
 
 ```bash
 mkdir -p sofia/cloud/supabase/migrations
-mkdir -p sofia/cloud/functions/sofia-core
+mkdir -p sofia/cloud/supabase/functions/sofia-core
 ```
 
 - [ ] **Step 2: Write `sofia/cloud/README.md`**
@@ -104,7 +106,7 @@ Cloud-capable SOFIA core built on Supabase Postgres, pgvector, and a remote MCP 
 ## Runtime pieces
 
 - `supabase/migrations/` — canonical SQL schema
-- `functions/sofia-core/` — MCP + API Edge Function
+- `supabase/functions/sofia-core/` — MCP + API Edge Function
 
 ## Required Supabase secrets
 
@@ -169,8 +171,8 @@ Expected output includes:
 
 ```text
 sofia/cloud
-sofia/cloud/functions
-sofia/cloud/functions/sofia-core
+sofia/cloud/supabase/functions
+sofia/cloud/supabase/functions/sofia-core
 sofia/cloud/supabase
 sofia/cloud/supabase/migrations
 ```
@@ -499,8 +501,8 @@ git commit -m "sofia-cloud: add core memory schema migration"
 
 **Files:**
 
-- Create: `sofia/cloud/functions/sofia-core/deno.json`
-- Create: `sofia/cloud/functions/sofia-core/types.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/deno.json`
+- Create: `sofia/cloud/supabase/functions/sofia-core/types.ts`
 
 - [ ] **Step 1: Write `deno.json`**
 
@@ -587,7 +589,7 @@ export type CaptureEventInput = {
 - [ ] **Step 3: Run Deno check**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno check types.ts
 ```
 
@@ -596,7 +598,7 @@ Expected: `Check file:///.../types.ts` and exit 0.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/deno.json sofia/cloud/functions/sofia-core/types.ts
+git add sofia/cloud/supabase/functions/sofia-core/deno.json sofia/cloud/supabase/functions/sofia-core/types.ts
 git commit -m "sofia-cloud: add edge function deps and core types"
 ```
 
@@ -606,8 +608,8 @@ git commit -m "sofia-cloud: add edge function deps and core types"
 
 **Files:**
 
-- Create: `sofia/cloud/functions/sofia-core/redact.ts`
-- Create: `sofia/cloud/functions/sofia-core/redact_test.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/redact.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/redact_test.ts`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -646,7 +648,7 @@ Deno.test("redactSecrets leaves normal text unchanged", () => {
 - [ ] **Step 2: Run tests and verify failure**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno test redact_test.ts
 ```
 
@@ -722,7 +724,7 @@ Expected: 4 tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/redact.ts sofia/cloud/functions/sofia-core/redact_test.ts
+git add sofia/cloud/supabase/functions/sofia-core/redact.ts sofia/cloud/supabase/functions/sofia-core/redact_test.ts
 git commit -m "sofia-cloud: add secret redaction for event ingestion"
 ```
 
@@ -732,8 +734,8 @@ git commit -m "sofia-cloud: add secret redaction for event ingestion"
 
 **Files:**
 
-- Create: `sofia/cloud/functions/sofia-core/router.ts`
-- Create: `sofia/cloud/functions/sofia-core/router_test.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/router.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/router_test.ts`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -795,7 +797,7 @@ Deno.test("routeCandidate archives low-worthiness candidates", () => {
 - [ ] **Step 2: Run tests and verify failure**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno test router_test.ts
 ```
 
@@ -901,7 +903,7 @@ Expected: 5 tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/router.ts sofia/cloud/functions/sofia-core/router_test.ts
+git add sofia/cloud/supabase/functions/sofia-core/router.ts sofia/cloud/supabase/functions/sofia-core/router_test.ts
 git commit -m "sofia-cloud: add hybrid memory candidate routing policy"
 ```
 
@@ -911,8 +913,8 @@ git commit -m "sofia-cloud: add hybrid memory candidate routing policy"
 
 **Files:**
 
-- Create: `sofia/cloud/functions/sofia-core/classifier.ts`
-- Create: `sofia/cloud/functions/sofia-core/classifier_test.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/classifier.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/classifier_test.ts`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -989,7 +991,7 @@ Deno.test("parseClassifierResponse clamps no numeric fields and rejects out-of-r
 - [ ] **Step 2: Run tests and verify failure**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno test classifier_test.ts
 ```
 
@@ -1124,7 +1126,7 @@ Expected: 3 tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/classifier.ts sofia/cloud/functions/sofia-core/classifier_test.ts
+git add sofia/cloud/supabase/functions/sofia-core/classifier.ts sofia/cloud/supabase/functions/sofia-core/classifier_test.ts
 git commit -m "sofia-cloud: add memory-worthiness classifier wrapper"
 ```
 
@@ -1134,7 +1136,7 @@ git commit -m "sofia-cloud: add memory-worthiness classifier wrapper"
 
 **Files:**
 
-- Create: `sofia/cloud/functions/sofia-core/db.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/db.ts`
 
 - [ ] **Step 1: Write `db.ts`**
 
@@ -1256,7 +1258,7 @@ export async function promoteCandidate(
 - [ ] **Step 2: Type-check**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno check db.ts
 ```
 
@@ -1265,7 +1267,7 @@ Expected: exit 0.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/db.ts
+git add sofia/cloud/supabase/functions/sofia-core/db.ts
 git commit -m "sofia-cloud: add database helper functions for events and memories"
 ```
 
@@ -1275,8 +1277,8 @@ git commit -m "sofia-cloud: add database helper functions for events and memorie
 
 **Files:**
 
-- Create: `sofia/cloud/functions/sofia-core/format.ts`
-- Create: `sofia/cloud/functions/sofia-core/index.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/format.ts`
+- Create: `sofia/cloud/supabase/functions/sofia-core/index.ts`
 
 - [ ] **Step 1: Write `format.ts`**
 
@@ -1519,7 +1521,7 @@ Deno.serve(app.fetch);
 - [ ] **Step 3: Type-check**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno check index.ts
 ```
 
@@ -1536,7 +1538,7 @@ Expected: redaction/router/classifier tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/format.ts sofia/cloud/functions/sofia-core/index.ts
+git add sofia/cloud/supabase/functions/sofia-core/format.ts sofia/cloud/supabase/functions/sofia-core/index.ts
 git commit -m "sofia-cloud: add remote MCP server and synchronous capture pipeline"
 ```
 
@@ -1546,8 +1548,8 @@ git commit -m "sofia-cloud: add remote MCP server and synchronous capture pipeli
 
 **Files:**
 
-- Modify: `sofia/cloud/functions/sofia-core/index.ts`
-- Modify: `sofia/cloud/functions/sofia-core/db.ts`
+- Modify: `sofia/cloud/supabase/functions/sofia-core/index.ts`
+- Modify: `sofia/cloud/supabase/functions/sofia-core/db.ts`
 
 - [ ] **Step 1: Add `promoteExistingCandidate` to `db.ts`**
 
@@ -1659,7 +1661,7 @@ return textResponse(formatJson(data));
 - [ ] **Step 4: Type-check**
 
 ```bash
-cd sofia/cloud/functions/sofia-core
+cd sofia/cloud/supabase/functions/sofia-core
 deno check index.ts
 ```
 
@@ -1676,7 +1678,7 @@ Expected: all tests pass.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add sofia/cloud/functions/sofia-core/db.ts sofia/cloud/functions/sofia-core/index.ts
+git add sofia/cloud/supabase/functions/sofia-core/db.ts sofia/cloud/supabase/functions/sofia-core/index.ts
 git commit -m "sofia-cloud: promote approved review candidates"
 ```
 
@@ -1867,6 +1869,49 @@ git commit -m "sofia-cloud: add phase 1-2 implementation plan"
 ```
 
 ---
+
+## Task 14: Redo and clean up mise tasks for SOFIA cloud operations
+
+**Files:**
+
+- Modify: `mise.toml`
+- Modify: `sofia/cloud/README.md`
+
+- [x] **Step 1: Review existing mise task layout**
+
+Inspect current dotfiles task conventions and decide where SOFIA cloud tasks belong.
+
+- [x] **Step 2: Remove stale MCP injection task and group local SOFIA tasks**
+
+Remove the old `inject-claude-mcp` task and rename local-vault runtime tasks under `sofia-local:*` to make the cloud transition explicit.
+
+- [x] **Step 3: Add durable SOFIA cloud tasks**
+
+Add reusable `mise` tasks for common SOFIA cloud operations, such as:
+
+```bash
+mise run sofia-cloud:test
+mise run sofia-cloud:check
+mise run sofia-cloud:deploy
+mise run sofia-cloud:functions-list
+```
+
+Tasks should use 1Password references/environment variables for project refs and secrets; do not hard-code secret values.
+
+- [x] **Step 4: Document the tasks**
+
+Update operator docs so deployment uses the new `mise` task instead of a one-off command.
+
+- [x] **Step 5: Verify**
+
+Run the new test/check tasks locally and, if appropriate, deploy with the new deploy task.
+
+- [x] **Step 6: Commit**
+
+```bash
+git add mise.toml sofia/cloud/README.md sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md
+git commit -m "sofia-cloud: add mise tasks for cloud operations"
+```
 
 ## Self-review checklist
 

@@ -12,7 +12,7 @@ import {
 	promoteCandidate,
 	promoteExistingCandidate,
 } from "./db.ts";
-import { formatJson, textResponse } from "./format.ts";
+import { formatJson, sanitizeRowsForMcp, textResponse } from "./format.ts";
 import { shouldPatchMcpAcceptHeader } from "./http.ts";
 import { redactSecrets } from "./redact.ts";
 import { routeCandidate } from "./router.ts";
@@ -170,7 +170,7 @@ server.registerTool(
 				include_archived: false,
 			});
 			if (error) return textResponse(`search failed: ${error.message}`, true);
-			return textResponse(formatJson(data ?? []));
+			return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
 		} catch (error) {
 			return textResponse(
 				`search_memory failed: ${(error as Error).message}`,
@@ -203,7 +203,7 @@ server.registerTool(
 		const { data, error } = await query;
 		if (error)
 			return textResponse(`list_recent failed: ${error.message}`, true);
-		return textResponse(formatJson(data ?? []));
+		return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
 	},
 );
 
@@ -228,7 +228,7 @@ server.registerTool(
 				.limit(limit);
 			if (error)
 				return textResponse(`review list failed: ${error.message}`, true);
-			return textResponse(formatJson(data ?? []));
+			return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
 		}
 
 		if (!candidate_id)

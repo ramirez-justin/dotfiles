@@ -41,7 +41,9 @@
     "context-mode@context-mode": true,
     "workflow@productivity-plugins": true,
     "bash-ls@productivity-plugins": true,
+    "docker-ls@productivity-plugins": true,
     "markdown-oxide@productivity-plugins": true,
+    "vim-ls@productivity-plugins": true,
     "yaml-ls@productivity-plugins": true,
     "pyright-lsp@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
@@ -63,5 +65,6 @@
     }
   },
   "effortLevel": "medium",
-  "autoCompactEnabled": false
+  "autoCompactEnabled": false,
+  "theme": "dark-daltonized"
 }

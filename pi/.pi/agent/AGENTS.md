@@ -2,6 +2,10 @@
 
 Personal preferences that apply across all projects.
 
+## Project Instructions
+
+- At the start of work in a repository, check for and read applicable `CLAUDE.md` and `CLAUDE.local.md` files in the repo root and relevant subdirectories before making changes. Treat `CLAUDE.local.md` as local/private context and do not quote secrets from it.
+
 ## Safety / Restrictions
 
 - Treat destructive operations as opt-in. Ask before running `rm -rf`, deleting branches, force-pushing, resetting/rebasing shared branches, overwriting large files, or changing production/cloud resources.

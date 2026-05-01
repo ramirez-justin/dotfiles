@@ -48,6 +48,14 @@ Fall back to grep/find/read when LSP returns no results, for non-code searches, 
 - Use Context7 selectively when documentation freshness matters; do not call it for simple local-code questions where repository files already answer the question.
 - If Context7 cannot resolve a library, ask for a more specific package/library name or fall back to local docs and repository files.
 
+## MCP-backed Workspace Tools
+
+This Pi setup uses `pi-mcp-adapter` for MCP. Do not assume Pi lacks MCP support; inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the adapter's `mcp` proxy/direct tools when relevant servers are configured.
+
+- Prefer official remote MCP servers over ad hoc scripts for supported workspace tools such as Linear and Notion.
+- Keep preview-before-mutation approval rules even when using MCP tools.
+- For large mechanical repair jobs, prefer deterministic fetch/transform/write workflows over manually reconstructing large payloads in chat.
+
 ## Linear Preferences
 
 We are migrating from Jira to Linear. For issue tracking going forward:
@@ -55,8 +63,12 @@ We are migrating from Jira to Linear. For issue tracking going forward:
 - Prefer Linear over Jira for searching, creating, updating, and commenting on issues.
 - Use the Linear skill/API when the user asks about tickets, issues, assigned work, or project tracking.
 - Do not create or update Jira tickets unless the user explicitly asks for Jira.
-- Remember that this Pi setup uses `pi-mcp-adapter` for MCP. Do not assume Pi lacks MCP support; inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the adapter's `mcp` proxy/direct tools when Linear or other MCP servers are configured.
-- Prefer Linear MCP via `pi-mcp-adapter` for Linear interactions when available. Keep preview-before-mutation approval rules even when using MCP tools.
+- Prefer Linear MCP via `pi-mcp-adapter` for Linear interactions when available.
+
+## Notion Preferences
+
+- Prefer Notion MCP via `pi-mcp-adapter` for Notion search, read, create, update, append, and comment operations when available.
+- Verify page, database, data source, and view identifiers with read-only MCP calls before mutating Notion.
 
 ## PR Review Preferences
 

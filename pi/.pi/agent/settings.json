@@ -41,7 +41,8 @@
     "npm:@zenobius/pi-rose-pine",
     "npm:pi-mcp-adapter",
     "npm:pi-powerline-footer",
-    "npm:context-mode"
+    "npm:context-mode",
+    "npm:pi-lens"
   ],
   "env": {
     "POWERLINE_NERD_FONTS": 1

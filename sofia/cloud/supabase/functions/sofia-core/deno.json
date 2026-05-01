@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "@hono/mcp": "jsr:@hono/mcp@0.1.0",
+    "@modelcontextprotocol/sdk/": "npm:@modelcontextprotocol/sdk@^1.17.0/",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.45.0",
+    "hono": "jsr:@hono/hono@^4.6.0",
+    "zod": "npm:zod@^3.23.8"
+  },
+  "tasks": {
+    "test": "deno test --allow-env --allow-net=api.openrouter.ai",
+    "check": "deno check index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom", "dom.iterable"]
+  }
+}

@@ -124,3 +124,75 @@ export async function promoteCandidate(
 		throw new Error(`insert memory version failed: ${versionError.message}`);
 	return memoryId;
 }
+
+export async function promoteExistingCandidate(
+	supabase: SupabaseClient,
+	candidateId: string,
+	embedding: number[] | null,
+): Promise<string> {
+	const { data: candidate, error: candidateError } = await supabase
+		.from("memory_candidates")
+		.select("*")
+		.eq("id", candidateId)
+		.single();
+
+	if (candidateError)
+		throw new Error(`load candidate failed: ${candidateError.message}`);
+
+	const candidateType = candidate.candidate_type as string;
+	if (candidateType === "todo" || candidateType === "open_loop") {
+		throw new Error(
+			`${candidateType} candidates are not promoted to durable memories`,
+		);
+	}
+
+	const title =
+		(candidate.metadata?.title as string | undefined) ?? candidateType;
+	const { data: memory, error: memoryError } = await supabase
+		.from("memories")
+		.insert({
+			context: candidate.context,
+			memory_type: candidateType,
+			title,
+			body: candidate.candidate_text,
+			embedding,
+			confidence: candidate.confidence,
+			status: "active",
+			created_from_candidate_id: candidateId,
+			current_version: 1,
+			metadata: candidate.metadata ?? {},
+		})
+		.select("id")
+		.single();
+
+	if (memoryError)
+		throw new Error(
+			`promote existing candidate failed: ${memoryError.message}`,
+		);
+
+	const memoryId = memory.id as string;
+	const { error: versionError } = await supabase
+		.from("memory_versions")
+		.insert({
+			memory_id: memoryId,
+			version: 1,
+			title,
+			body: candidate.candidate_text,
+			change_reason: "human-approved promotion from review queue",
+			created_by: "review_candidates",
+		});
+
+	if (versionError)
+		throw new Error(
+			`insert approved memory version failed: ${versionError.message}`,
+		);
+
+	const { error: updateError } = await supabase
+		.from("memory_candidates")
+		.update({ status: "approved" })
+		.eq("id", candidateId);
+
+	if (updateError)
+		throw new Error(`mark candidate approved failed: ${updateError.message}`);
+	return memoryId;
+}

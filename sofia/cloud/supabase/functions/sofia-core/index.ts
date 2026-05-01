@@ -10,6 +10,7 @@ import {
 	insertCandidate,
 	insertEvent,
 	promoteCandidate,
+	promoteExistingCandidate,
 } from "./db.ts";
 import { formatJson, textResponse } from "./format.ts";
 import { redactSecrets } from "./redact.ts";
@@ -234,12 +235,33 @@ server.registerTool(
 				"candidate_id is required for approve/reject/archive",
 				true,
 			);
-		const status =
-			action === "approve"
-				? "approved"
-				: action === "reject"
-					? "rejected"
-					: "archived";
+
+		if (action === "approve") {
+			const { data: candidate, error: loadError } = await supabase
+				.from("memory_candidates")
+				.select("candidate_text")
+				.eq("id", candidate_id)
+				.single();
+			if (loadError)
+				return textResponse(
+					`load candidate failed: ${loadError.message}`,
+					true,
+				);
+			const embedding = await embedText(
+				candidate.candidate_text as string,
+				OPENROUTER_API_KEY,
+			);
+			const memoryId = await promoteExistingCandidate(
+				supabase,
+				candidate_id,
+				embedding,
+			);
+			return textResponse(
+				formatJson({ candidate_id, memoryId, status: "approved" }),
+			);
+		}
+
+		const status = action === "reject" ? "rejected" : "archived";
 		const { data, error } = await supabase
 			.from("memory_candidates")
 			.update({ status })
@@ -286,9 +308,9 @@ const corsHeaders = {
 };
 
 const app = new Hono();
-app.options("*", (c) => c.text("ok", 200, corsHeaders));
+app.options("*", (c: any) => c.text("ok", 200, corsHeaders));
 
-app.all("*", async (c) => {
+app.all("*", async (c: any) => {
 	const provided =
 		c.req.header("x-sofia-key") || new URL(c.req.url).searchParams.get("key");
 	if (!provided || provided !== MCP_ACCESS_KEY) {

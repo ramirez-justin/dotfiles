@@ -186,7 +186,7 @@ create table if not exists classifier_outcomes (
 
 create or replace function sofia_content_fingerprint(p_content text)
 returns text as $$
-  select encode(digest(lower(trim(regexp_replace(p_content, '\s+', ' ', 'g'))), 'sha256'), 'hex');
+  select encode(extensions.digest(lower(trim(regexp_replace(p_content, '\s+', ' ', 'g'))), 'sha256'), 'hex');
 $$ language sql immutable;
 
 create or replace function match_memories(

@@ -109,4 +109,5 @@ We are migrating from Jira to Linear. For issue tracking going forward:
 ## PR Review Preferences
 
 When asked to review a pull request, verify the diff and relevant files before
-giving conclusions. Prefer concrete findings with file/line references over generic review commentary.
+giving conclusions. Prefer concrete findings with file/line references over
+generic review commentary.

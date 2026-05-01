@@ -93,4 +93,5 @@ Available tools:
 - `search_memory`
 - `list_recent`
 - `review_candidates`
+- `archive_memory`
 - `get_artifact`

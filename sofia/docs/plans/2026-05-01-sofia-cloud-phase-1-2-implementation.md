@@ -1868,6 +1868,45 @@ git commit -m "sofia-cloud: add phase 1-2 implementation plan"
 
 ---
 
+## Task 14: Redo mise tasks for SOFIA cloud operations
+
+**Files:**
+
+- Modify: `mise.toml`
+- Optionally modify: `sofia/cloud/README.md`
+
+- [ ] **Step 1: Review existing mise task layout**
+
+Inspect current dotfiles task conventions and decide where SOFIA cloud tasks belong.
+
+- [ ] **Step 2: Add durable SOFIA cloud tasks**
+
+Add reusable `mise` tasks for common SOFIA cloud operations, such as:
+
+```bash
+mise run sofia-cloud:test
+mise run sofia-cloud:check
+mise run sofia-cloud:deploy
+mise run sofia-cloud:functions-list
+```
+
+Tasks should use 1Password references/environment variables for project refs and secrets; do not hard-code secret values.
+
+- [ ] **Step 3: Document the tasks**
+
+Update operator docs so deployment uses the new `mise` task instead of a one-off command.
+
+- [ ] **Step 4: Verify**
+
+Run the new test/check tasks locally and, if appropriate, deploy with the new deploy task.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add mise.toml sofia/cloud/README.md sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md
+git commit -m "sofia-cloud: add mise tasks for cloud operations"
+```
+
 ## Self-review checklist
 
 - **Spec coverage:** Implements Cloud Core tables, Memory Pipeline redaction/classification/routing, and initial MCP capture/search/review tools.

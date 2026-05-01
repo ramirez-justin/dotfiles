@@ -6,13 +6,19 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { classifyEvent, embedText } from "./classifier.ts";
 import {
+	archiveMemory,
 	createServiceClient,
 	insertCandidate,
 	insertEvent,
 	promoteCandidate,
 	promoteExistingCandidate,
 } from "./db.ts";
-import { formatJson, sanitizeRowsForMcp, textResponse } from "./format.ts";
+import {
+	formatJson,
+	sanitizeRowForMcp,
+	sanitizeRowsForMcp,
+	textResponse,
+} from "./format.ts";
 import { shouldPatchMcpAcceptHeader } from "./http.ts";
 import { redactSecrets } from "./redact.ts";
 import { routeCandidate } from "./router.ts";
@@ -41,6 +47,11 @@ type ReviewCandidatesInput = {
 	action: "list" | "approve" | "reject" | "archive";
 	candidate_id?: string;
 	limit: number;
+};
+
+type ArchiveMemoryInput = {
+	memory_id: string;
+	reason?: string;
 };
 
 type GetArtifactInput = {
@@ -272,6 +283,30 @@ server.registerTool(
 		if (error)
 			return textResponse(`review update failed: ${error.message}`, true);
 		return textResponse(formatJson(data));
+	},
+);
+
+server.registerTool(
+	"archive_memory",
+	{
+		title: "Archive SOFIA Memory",
+		description:
+			"Archive a promoted SOFIA memory without deleting it. Use this to clean up test memories or retire stale durable memories while preserving history.",
+		inputSchema: {
+			memory_id: z.string().uuid(),
+			reason: z.string().optional(),
+		},
+	},
+	async ({ memory_id, reason }: ArchiveMemoryInput) => {
+		try {
+			const memory = await archiveMemory(supabase, memory_id, reason);
+			return textResponse(formatJson(sanitizeRowForMcp(memory)));
+		} catch (error) {
+			return textResponse(
+				`archive_memory failed: ${(error as Error).message}`,
+				true,
+			);
+		}
 	},
 );
 

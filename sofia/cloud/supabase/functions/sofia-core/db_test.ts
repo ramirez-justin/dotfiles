@@ -1,16 +1,18 @@
 import assert from "node:assert/strict";
-import { promoteExistingCandidate } from "./db.ts";
+import { archiveMemory, promoteExistingCandidate } from "./db.ts";
 
 type TableCall = { table: string; operation: string; payload?: unknown };
 
-function fakeSupabase(candidate: Record<string, unknown>) {
+function fakeSupabase(record: Record<string, unknown>) {
 	const calls: TableCall[] = [];
 	const client = {
 		calls,
 		from(table: string) {
+			let operation: string | null = null;
 			const query = {
 				insert(payload: unknown) {
-					calls.push({ table, operation: "insert", payload });
+					operation = "insert";
+					calls.push({ table, operation, payload });
 					return query;
 				},
 				select(_columns?: string) {
@@ -20,14 +22,17 @@ function fakeSupabase(candidate: Record<string, unknown>) {
 					return query;
 				},
 				update(payload: unknown) {
-					calls.push({ table, operation: "update", payload });
+					operation = "update";
+					calls.push({ table, operation, payload });
 					return query;
 				},
 				async single() {
 					if (table === "memory_candidates")
-						return { data: candidate, error: null };
-					if (table === "memories")
+						return { data: record, error: null };
+					if (table === "memories" && operation === "insert")
 						return { data: { id: "memory-1" }, error: null };
+					if (table === "memories")
+						return { data: { id: "memory-1", ...record }, error: null };
 					return { data: null, error: null };
 				},
 				then(resolve: (value: { error: null }) => void) {
@@ -90,6 +95,35 @@ Deno.test("promoteExistingCandidate creates memory, version, and marks candidate
 			table: "memory_candidates",
 			operation: "update",
 			payload: { status: "approved" },
+		},
+	]);
+});
+
+Deno.test("archiveMemory marks an active memory archived with audit metadata", async () => {
+	const client = fakeSupabase({
+		id: "memory-1",
+		metadata: { disposable: true },
+	});
+
+	const result = await archiveMemory(
+		client as never,
+		"memory-1",
+		"cleanup after E2E test",
+	);
+
+	assert.equal(result.id, "memory-1");
+	assert.deepEqual(client.calls, [
+		{
+			table: "memories",
+			operation: "update",
+			payload: {
+				status: "archived",
+				metadata: {
+					disposable: true,
+					archived_by: "archive_memory",
+					archive_reason: "cleanup after E2E test",
+				},
+			},
 		},
 	]);
 });

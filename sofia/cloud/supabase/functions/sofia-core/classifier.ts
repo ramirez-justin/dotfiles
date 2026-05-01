@@ -39,12 +39,66 @@ const ClassifierResponseSchema = z.object({
 
 export function parseClassifierResponse(raw: string): CandidateInput[] {
 	try {
-		const json = JSON.parse(raw);
+		const json = normalizeClassifierResponse(JSON.parse(raw));
 		const parsed = ClassifierResponseSchema.parse(json);
 		return parsed.candidates;
 	} catch (error) {
 		throw new Error(`invalid classifier response: ${String(error)}`);
 	}
+}
+
+function normalizeClassifierResponse(json: unknown): unknown {
+	if (!json || typeof json !== "object") return json;
+	const response = json as { candidates?: unknown };
+	if (!Array.isArray(response.candidates)) return json;
+
+	return {
+		...response,
+		candidates: response.candidates.map((candidate) => {
+			if (!candidate || typeof candidate !== "object") return candidate;
+			const record = candidate as Record<string, unknown>;
+			return {
+				...record,
+				worthiness_score: normalizeScore(record.worthiness_score),
+				confidence: normalizeScore(record.confidence),
+				recommended_action: normalizeRecommendedAction(
+					record.recommended_action,
+				),
+				entities: normalizeEntities(record.entities),
+			};
+		}),
+	};
+}
+
+function normalizeScore(value: unknown): unknown {
+	if (typeof value !== "number" || Number.isNaN(value)) return value;
+	if (value > 10 && value <= 100) return value / 100;
+	if (value > 1 && value <= 10) return value / 10;
+	return Math.max(0, Math.min(1, value));
+}
+
+function normalizeRecommendedAction(value: unknown): unknown {
+	if (typeof value !== "string") return value;
+	const normalized = value.toLowerCase().replaceAll("-", "_");
+	if (normalized.includes("auto") && normalized.includes("promote")) {
+		return "auto_promote";
+	}
+	if (normalized.includes("review")) return "review";
+	if (normalized.includes("archive")) return "archive";
+	if (normalized.includes("reject")) return "reject";
+	return value;
+}
+
+function normalizeEntities(value: unknown): unknown {
+	if (!Array.isArray(value)) return value;
+	return value.flatMap((entity) => {
+		if (!entity || typeof entity !== "object") return [];
+		const record = entity as Record<string, unknown>;
+		const type = record.type;
+		const name = record.name;
+		if (typeof type !== "string" || typeof name !== "string") return [];
+		return [{ ...record, type, name }];
+	});
 }
 
 export async function classifyEvent(

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { sanitizeRowsForMcp } from "./format.ts";
+import { sanitizeRowForMcp, sanitizeRowsForMcp } from "./format.ts";
 
 Deno.test("sanitizeRowsForMcp removes embeddings from response rows", () => {
 	const rows = [
@@ -21,6 +21,19 @@ Deno.test("sanitizeRowsForMcp removes embeddings from response rows", () => {
 		},
 	]);
 	assert.equal("embedding" in sanitized[0], false);
+});
+
+Deno.test("sanitizeRowForMcp removes embeddings from a single response row", () => {
+	const row = {
+		id: "memory-1",
+		status: "archived",
+		embedding: [0.1, 0.2, 0.3],
+	};
+
+	assert.deepEqual(sanitizeRowForMcp(row), {
+		id: "memory-1",
+		status: "archived",
+	});
 });
 
 Deno.test("sanitizeRowsForMcp leaves scalar RPC search results intact", () => {

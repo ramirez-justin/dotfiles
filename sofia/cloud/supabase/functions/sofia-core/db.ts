@@ -125,6 +125,36 @@ export async function promoteCandidate(
 	return memoryId;
 }
 
+export async function archiveMemory(
+	supabase: SupabaseClient,
+	memoryId: string,
+	reason?: string,
+): Promise<Record<string, unknown>> {
+	const { data: memory, error: loadError } = await supabase
+		.from("memories")
+		.select("id, metadata")
+		.eq("id", memoryId)
+		.single();
+
+	if (loadError) throw new Error(`load memory failed: ${loadError.message}`);
+
+	const metadata = {
+		...((memory.metadata as Record<string, unknown> | null) ?? {}),
+		archived_by: "archive_memory",
+		...(reason ? { archive_reason: reason } : {}),
+	};
+
+	const { data, error } = await supabase
+		.from("memories")
+		.update({ status: "archived", metadata })
+		.eq("id", memoryId)
+		.select("*")
+		.single();
+
+	if (error) throw new Error(`archive memory failed: ${error.message}`);
+	return data as Record<string, unknown>;
+}
+
 export async function promoteExistingCandidate(
 	supabase: SupabaseClient,
 	candidateId: string,

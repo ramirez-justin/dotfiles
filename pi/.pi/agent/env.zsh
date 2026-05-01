@@ -1,8 +1,5 @@
 # Environment shared with pi sessions.
 # Put personal, machine-local secrets/overrides in ~/.pi/agent/env.local.zsh.
-# Example:
-#   export NOTION_API_KEY='...'
-
 # Keep both spellings for tools/plugins that check either variable.
 export ENABLE_LSP_TOOL="1"
 export ENABLE_LSP_TOOLS="1"

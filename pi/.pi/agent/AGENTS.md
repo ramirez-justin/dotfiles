@@ -48,6 +48,25 @@ Fall back to grep/find/read when LSP returns no results, for non-code searches, 
 - Use Context7 selectively when documentation freshness matters; do not call it for simple local-code questions where repository files already answer the question.
 - If Context7 cannot resolve a library, ask for a more specific package/library name or fall back to local docs and repository files.
 
+## Reasoned Pushback and Alternatives
+
+- Do not blindly accept the first proposed approach. When appropriate, provide pushback, alternatives, and trade-offs based on available evidence.
+- For third-party tools, integrations, SDKs, and workflow systems, review local docs/source and current upstream documentation before recommending adoption.
+- Prefer lightweight, reversible integration steps before installing new global tools or adding runtime complexity.
+- If documentation and implementation disagree, trust verified implementation behavior and call out the discrepancy.
+
+## MCP-backed Workspace Tools
+
+- This Pi setup uses `pi-mcp-adapter`; do not assume Pi lacks MCP support. Inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the adapter's `mcp` proxy/direct tools when relevant servers are configured.
+- Prefer official remote MCP servers over ad hoc scripts for supported workspace tools such as Notion.
+- Keep preview-before-mutation approval rules even when using MCP tools.
+- For large mechanical repair jobs, prefer deterministic fetch/transform/write workflows over manually reconstructing large payloads in chat.
+
+## Notion Preferences
+
+- Prefer Notion MCP via `pi-mcp-adapter` for Notion search, read, create, update, append, and comment operations when available.
+- Verify page, database, data source, and view identifiers with read-only MCP calls before mutating Notion.
+
 ## PR Review Preferences
 
 When asked to review a pull request, verify the diff and relevant files before giving conclusions. Prefer concrete findings with file/line references over generic review commentary.
@@ -78,7 +97,7 @@ moments yourself with the `sofia-capture` workflow. Don't wait to be asked.
 - Use `/skill:sofia-journal` only as the low-level append primitive when an exact/simple journal write is needed.
 - Default `--type note`. Use `--type decision` for explicit choices, `--type todo` only when the user names a follow-up.
 - Pass `--context personal` or `--context work` when the active context is unambiguous and differs from the auto-detected default.
-- Body should be terse — a paragraph or a few bullets, not a transcript replay. Lead with the *what*, then a brief *why*. `/skill:sofia-promote` curates from these later, so quality > volume.
+- Body should be terse — a paragraph or a few bullets, not a transcript replay. Lead with the _what_, then a brief _why_. `/skill:sofia-promote` curates from these later, so quality > volume.
 
 **Cadence:** at most one journal entry per discrete moment. Don't journal the
 same decision twice in a session. If a moment feels borderline, skip it —

@@ -96,6 +96,10 @@ run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty 
 description = "Pull latest dotfiles and re-link"
 run = "git -C {{config_root}} pull --rebase && mise run link"
 
+[tasks.pi-update]
+description = "Update Pi packages/extensions"
+run = "pi update --extensions"
+
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"
 run = "brew bundle dump --force --file={{config_root}}/Brewfile"
@@ -135,7 +139,6 @@ OBSIDIAN_API_KEY_OP_REF="${OBSIDIAN_API_KEY_OP_REF:-op://dev_vault/obsidian_loca
 OBSIDIAN_API_CERT_ITEM="${OBSIDIAN_API_CERT_ITEM:-obsidian_local_rest_api_cert}"
 OBSIDIAN_API_CERT_VAULT="${OBSIDIAN_API_CERT_VAULT:-dev_vault}"
 OBSIDIAN_API_KEY=$(read_secret_ref "$OBSIDIAN_API_KEY_OP_REF")
-NOTION_API_KEY=$(read_optional_secret NOTION_API_KEY_OP_REF)
 OPENAI_API_KEY=$(read_optional_secret OPENAI_API_KEY_OP_REF)
 ANTHROPIC_API_KEY=$(read_optional_secret ANTHROPIC_API_KEY_OP_REF)
 GEMINI_API_KEY=$(read_optional_secret GEMINI_API_KEY_OP_REF)
@@ -145,14 +148,13 @@ op document get "$OBSIDIAN_API_CERT_ITEM" --vault "$OBSIDIAN_API_CERT_VAULT" --o
 chmod 600 "$HOME/.config/sofia/cert.pem"
 
 mkdir -p "$HOME/.pi/agent"
-export OBSIDIAN_API_KEY NOTION_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY GEMINI_API_KEY
+export OBSIDIAN_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY GEMINI_API_KEY
 python3 <<'PY' > "$HOME/.pi/agent/env.local.zsh"
 import os
 import shlex
 
 values = {
     "OBSIDIAN_API_KEY": os.environ.get("OBSIDIAN_API_KEY", ""),
-    "NOTION_API_KEY": os.environ.get("NOTION_API_KEY", ""),
     "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
     "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),
     "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", ""),

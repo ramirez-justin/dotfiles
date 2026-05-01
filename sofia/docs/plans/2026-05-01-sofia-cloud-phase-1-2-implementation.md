@@ -8,6 +8,8 @@
 
 **Tech Stack:** Supabase Postgres + pgvector, Supabase Edge Functions (Deno/TypeScript), MCP SDK, Hono, Zod, OpenRouter-compatible LLM/embedding APIs, SQL migrations, Deno tests.
 
+**Execution status (2026-05-01):** Phase 1–3 core path is implemented, deployed, and verified from Pi via remote MCP. The live lifecycle smoke test captured an event, auto-promoted a memory, found it via search, archived it with `archive_memory`, and confirmed post-archive search exclusion. Operator cleanup is complete: cloud operations are available as `sofia-cloud:*` mise tasks and transitional local-vault tasks are grouped under `sofia-local:*`.
+
 ---
 
 ## Preconditions / Accounts
@@ -38,7 +40,7 @@ This plan implements only Phase 1 + Phase 2:
 - candidate extraction/classification
 - hybrid promotion/review routing
 - durable memories + versions
-- remote MCP tools for capture/search/review/profile/artifact retrieval
+- remote MCP tools for capture/search/review/archive/artifact retrieval
 
 This plan does **not** implement:
 
@@ -1875,15 +1877,15 @@ git commit -m "sofia-cloud: add phase 1-2 implementation plan"
 - Modify: `mise.toml`
 - Modify: `sofia/cloud/README.md`
 
-- [ ] **Step 1: Review existing mise task layout**
+- [x] **Step 1: Review existing mise task layout**
 
 Inspect current dotfiles task conventions and decide where SOFIA cloud tasks belong.
 
-- [ ] **Step 2: Remove stale MCP injection task and group local SOFIA tasks**
+- [x] **Step 2: Remove stale MCP injection task and group local SOFIA tasks**
 
 Remove the old `inject-claude-mcp` task and rename local-vault runtime tasks under `sofia-local:*` to make the cloud transition explicit.
 
-- [ ] **Step 3: Add durable SOFIA cloud tasks**
+- [x] **Step 3: Add durable SOFIA cloud tasks**
 
 Add reusable `mise` tasks for common SOFIA cloud operations, such as:
 
@@ -1896,15 +1898,15 @@ mise run sofia-cloud:functions-list
 
 Tasks should use 1Password references/environment variables for project refs and secrets; do not hard-code secret values.
 
-- [ ] **Step 4: Document the tasks**
+- [x] **Step 4: Document the tasks**
 
 Update operator docs so deployment uses the new `mise` task instead of a one-off command.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 Run the new test/check tasks locally and, if appropriate, deploy with the new deploy task.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add mise.toml sofia/cloud/README.md sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md

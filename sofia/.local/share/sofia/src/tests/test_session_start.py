@@ -8,7 +8,7 @@ import pytest
 from sofia.hooks import session_start
 
 
-def test_build_payload_includes_soul_user_and_memory(tmp_vault: Path):
+def test_build_payload_includes_soul_user_shared_and_context_memory(tmp_vault: Path):
     payload = session_start.build_payload(
         vault=tmp_vault,
         context="personal",
@@ -17,6 +17,8 @@ def test_build_payload_includes_soul_user_and_memory(tmp_vault: Path):
     )
     assert "SOUL" in payload
     assert "USER" in payload
+    assert "Shared Memory" in payload
+    assert "Always load this shared memory" in payload
     assert "Personal Memory" in payload or "personal" in payload.lower()
     assert "context: personal" in payload.lower() or "personal" in payload.lower()
 

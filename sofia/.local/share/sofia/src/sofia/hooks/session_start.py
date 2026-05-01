@@ -1,7 +1,8 @@
 """SessionStart hook implementation.
 
-Reads SOUL.md, USER.md, and memory/{context}.md, applies a size budget,
-and emits a JSON payload that Claude Code injects as additional context.
+Reads SOUL.md, USER.md, memory/shared.md, and memory/{context}.md,
+applies a size budget, and emits a JSON payload that Claude Code injects as
+additional context.
 
 Failure modes are non-fatal: a missing file or unreadable vault yields a
 minimal payload instead of an error.
@@ -59,6 +60,10 @@ def build_payload(
 ) -> str:
     soul = _read(vault / "_agent" / "SOUL.md")
     user = _read(vault / "_agent" / "USER.md")
+    shared_memory = _read(vault / "_agent" / "memory" / "shared.md")
+    shared_memory_trim = (
+        _truncate_memory(shared_memory, memory_max_entries) if shared_memory else ""
+    )
     memory_path = vault / "_agent" / "memory" / f"{context}.md"
     memory = _read(memory_path)
     memory_trim = _truncate_memory(memory, memory_max_entries) if memory else ""
@@ -69,9 +74,13 @@ def build_payload(
         sections.append(f"## SOUL (identity + rules)\n\n{_strip_frontmatter(soul).strip()}")
     if user.strip():
         sections.append(f"## USER (profile)\n\n{_strip_frontmatter(user).strip()}")
+    if shared_memory_trim.strip():
+        sections.append(
+            f"## SHARED MEMORY (always loaded)\n\n{shared_memory_trim.strip()}"
+        )
     if memory_trim.strip():
         sections.append(
-            f"## MEMORY (recent durable insights, newest first)\n\n{memory_trim.strip()}"
+            f"## CONTEXT MEMORY ({context})\n\n{memory_trim.strip()}"
         )
     footer = (
         f"\n---\n"

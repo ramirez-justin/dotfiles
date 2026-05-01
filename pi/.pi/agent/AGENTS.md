@@ -47,11 +47,11 @@ Fall back to grep/find/read when LSP returns no results, for non-code searches, 
 
 When asked to review a pull request, verify the diff and relevant files before giving conclusions. Prefer concrete findings with file/line references over generic review commentary.
 
-## SOFIA — Proactive Journaling
+## SOFIA — Proactive Capture
 
 When the SOFIA second-brain context block is present in the system prompt
 (look for "SOFIA — your second brain context"), capture memory-worthy
-moments yourself with the `sofia-journal` skill. Don't wait to be asked.
+moments yourself with the `sofia-capture` workflow. Don't wait to be asked.
 
 **What to journal** (the bar: still useful in 3+ weeks):
 
@@ -69,7 +69,8 @@ moments yourself with the `sofia-journal` skill. Don't wait to be asked.
 
 **How to call it:**
 
-- Load/use `/skill:sofia-journal` when needed.
+- Load/use `/skill:sofia-capture` for user-facing or inferred capture, including "all done" / wrap-up flows.
+- Use `/skill:sofia-journal` only as the low-level append primitive when an exact/simple journal write is needed.
 - Default `--type note`. Use `--type decision` for explicit choices, `--type todo` only when the user names a follow-up.
 - Pass `--context personal` or `--context work` when the active context is unambiguous and differs from the auto-detected default.
 - Body should be terse — a paragraph or a few bullets, not a transcript replay. Lead with the *what*, then a brief *why*. `/skill:sofia-promote` curates from these later, so quality > volume.

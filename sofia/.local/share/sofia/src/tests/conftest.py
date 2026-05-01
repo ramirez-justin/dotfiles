@@ -44,6 +44,18 @@ def tmp_vault(tmp_path: Path) -> Path:
         Test user, work facet.
         """))
 
+    (vault / "_agent" / "memory" / "shared.md").write_text(textwrap.dedent("""\
+        ---
+        type: memory
+        context: shared
+        agent-managed: true
+        ---
+        # Shared Memory
+
+        ## Boot Policy
+        Always load this shared memory before context-specific memory.
+        """))
+
     (vault / "_agent" / "memory" / "personal.md").write_text(textwrap.dedent("""\
         ---
         type: memory

@@ -28,7 +28,7 @@ Raw events
 
 ## Implementation plans
 
-- [Phase 1–2 Implementation](2026-05-01-sofia-cloud-phase-1-2-implementation.md)
+- [Phase 1–2 Implementation](archive/2026-05-01-sofia-cloud-phase-1-2-implementation.md)
 
 ## Current status (2026-05-01)
 

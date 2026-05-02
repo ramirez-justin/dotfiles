@@ -5,7 +5,9 @@ import type {
 	CaptureEventInput,
 	EventSensitivity,
 	MemoryType,
+	ReconciliationDecision,
 	RouteDecision,
+	SimilarMemory,
 	SofiaContext,
 } from "./types.ts";
 
@@ -153,6 +155,162 @@ export async function archiveMemory(
 
 	if (error) throw new Error(`archive memory failed: ${error.message}`);
 	return data as Record<string, unknown>;
+}
+
+export async function findSimilarMemories(
+	supabase: SupabaseClient,
+	embedding: number[],
+	context: SofiaContext,
+	limit = 5,
+	threshold = 0.72,
+): Promise<SimilarMemory[]> {
+	const contexts = context === "shared" ? ["shared"] : [context, "shared"];
+	const results: SimilarMemory[] = [];
+
+	for (const searchContext of contexts) {
+		const { data, error } = await supabase.rpc("match_memories", {
+			query_embedding: embedding,
+			match_threshold: threshold,
+			match_count: limit,
+			filter_context: searchContext,
+			include_archived: false,
+		});
+		if (error) {
+			throw new Error(`find similar memories failed: ${error.message}`);
+		}
+		results.push(...((data ?? []) as SimilarMemory[]));
+	}
+
+	const byId = new Map<string, SimilarMemory>();
+	for (const memory of results) {
+		const existing = byId.get(memory.id);
+		if (!existing || memory.similarity > existing.similarity) {
+			byId.set(memory.id, memory);
+		}
+	}
+	return [...byId.values()]
+		.sort((a, b) => b.similarity - a.similarity)
+		.slice(0, limit);
+}
+
+export async function insertReconciliation(
+	supabase: SupabaseClient,
+	candidateId: string,
+	context: SofiaContext,
+	decision: ReconciliationDecision,
+): Promise<string> {
+	const { data, error } = await supabase
+		.from("memory_reconciliations")
+		.insert({
+			candidate_id: candidateId,
+			context,
+			action: decision.action,
+			status: decision.status,
+			target_memory_id: decision.target_memory_id ?? null,
+			related_memory_ids: decision.related_memory_ids,
+			proposed_title: decision.proposed_title ?? null,
+			proposed_body: decision.proposed_body ?? null,
+			confidence: decision.confidence,
+			rationale: decision.rationale,
+			policy_reason: decision.policy_reason,
+			metadata: decision.metadata,
+		})
+		.select("id")
+		.single();
+
+	if (error) throw new Error(`insert reconciliation failed: ${error.message}`);
+	return data.id as string;
+}
+
+export async function markCandidateArchived(
+	supabase: SupabaseClient,
+	candidateId: string,
+	reason: string,
+): Promise<void> {
+	const { error } = await supabase
+		.from("memory_candidates")
+		.update({ status: "archived", metadata: { archive_reason: reason } })
+		.eq("id", candidateId);
+	if (error) throw new Error(`archive candidate failed: ${error.message}`);
+}
+
+export async function applyMemoryUpdateFromReconciliation(
+	supabase: SupabaseClient,
+	input: {
+		candidateId: string;
+		reconciliationId: string;
+		targetMemoryId: string;
+		title: string;
+		body: string;
+		confidence: number;
+		changeReason: string;
+		status: "auto_applied" | "approved";
+	},
+): Promise<string> {
+	const { data: memory, error: loadError } = await supabase
+		.from("memories")
+		.select("id, current_version, metadata")
+		.eq("id", input.targetMemoryId)
+		.single();
+	if (loadError) {
+		throw new Error(`load target memory failed: ${loadError.message}`);
+	}
+
+	const nextVersion = ((memory.current_version as number | null) ?? 1) + 1;
+	const metadata = {
+		...((memory.metadata as Record<string, unknown> | null) ?? {}),
+		updated_by: "memory_reconciliation",
+		reconciliation_id: input.reconciliationId,
+	};
+
+	const { error: updateError } = await supabase
+		.from("memories")
+		.update({
+			title: input.title,
+			body: input.body,
+			confidence: input.confidence,
+			current_version: nextVersion,
+			metadata,
+		})
+		.eq("id", input.targetMemoryId);
+	if (updateError)
+		throw new Error(`update memory failed: ${updateError.message}`);
+
+	const { error: versionError } = await supabase
+		.from("memory_versions")
+		.insert({
+			memory_id: input.targetMemoryId,
+			version: nextVersion,
+			title: input.title,
+			body: input.body,
+			change_reason: input.changeReason,
+			created_by: "memory_reconciliation",
+		});
+	if (versionError) {
+		throw new Error(`insert memory version failed: ${versionError.message}`);
+	}
+
+	const { error: candidateError } = await supabase
+		.from("memory_candidates")
+		.update({ status: "approved" })
+		.eq("id", input.candidateId);
+	if (candidateError) {
+		throw new Error(
+			`mark candidate approved failed: ${candidateError.message}`,
+		);
+	}
+
+	const { error: reconciliationError } = await supabase
+		.from("memory_reconciliations")
+		.update({ status: input.status })
+		.eq("id", input.reconciliationId);
+	if (reconciliationError) {
+		throw new Error(
+			`mark reconciliation applied failed: ${reconciliationError.message}`,
+		);
+	}
+
+	return input.targetMemoryId;
 }
 
 export async function promoteExistingCandidate(

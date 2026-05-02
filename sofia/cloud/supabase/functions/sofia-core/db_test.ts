@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { archiveMemory, promoteExistingCandidate } from "./db.ts";
+import {
+	applyMemoryUpdateFromReconciliation,
+	archiveMemory,
+	insertReconciliation,
+	markCandidateArchived,
+	promoteExistingCandidate,
+} from "./db.ts";
 
 type TableCall = { table: string; operation: string; payload?: unknown };
 
@@ -29,11 +35,16 @@ function fakeSupabase(record: Record<string, unknown>) {
 				async single() {
 					if (table === "memory_candidates")
 						return { data: record, error: null };
-					if (table === "memories" && operation === "insert")
+					if (table === "memory_reconciliations" && operation === "insert") {
+						return { data: { id: "reconciliation-1" }, error: null };
+					}
+					if (table === "memories" && operation === "insert") {
 						return { data: { id: "memory-1" }, error: null };
-					if (table === "memories")
+					}
+					if (table === "memories") {
 						return { data: { id: "memory-1", ...record }, error: null };
-					return { data: null, error: null };
+					}
+					return { data: record, error: null };
 				},
 				then(resolve: (value: { error: null }) => void) {
 					resolve({ error: null });
@@ -143,4 +154,134 @@ Deno.test("promoteExistingCandidate does not promote todo candidates", async () 
 		/todo candidates are not promoted to durable memories/,
 	);
 	assert.deepEqual(client.calls, []);
+});
+
+Deno.test("insertReconciliation stores decision audit row", async () => {
+	const client = fakeSupabase({ id: "reconciliation-1" });
+
+	const id = await insertReconciliation(
+		client as never,
+		"candidate-1",
+		"personal",
+		{
+			action: "archive_duplicate",
+			status: "auto_applied",
+			target_memory_id: "memory-1",
+			related_memory_ids: ["memory-1"],
+			proposed_title: "Merge preference",
+			proposed_body:
+				"Justin prefers direct local merge after verification when solo.",
+			confidence: 0.96,
+			rationale: "Same fact.",
+			policy_reason:
+				"duplicate or same-fact candidate does not need a new memory",
+			metadata: { relationship: "same_fact" },
+		},
+	);
+
+	assert.equal(id, "reconciliation-1");
+	assert.deepEqual(client.calls[0], {
+		table: "memory_reconciliations",
+		operation: "insert",
+		payload: {
+			candidate_id: "candidate-1",
+			context: "personal",
+			action: "archive_duplicate",
+			status: "auto_applied",
+			target_memory_id: "memory-1",
+			related_memory_ids: ["memory-1"],
+			proposed_title: "Merge preference",
+			proposed_body:
+				"Justin prefers direct local merge after verification when solo.",
+			confidence: 0.96,
+			rationale: "Same fact.",
+			policy_reason:
+				"duplicate or same-fact candidate does not need a new memory",
+			metadata: { relationship: "same_fact" },
+		},
+	});
+});
+
+Deno.test("markCandidateArchived archives candidate with reconciliation reason", async () => {
+	const client = fakeSupabase({ id: "candidate-1" });
+
+	await markCandidateArchived(
+		client as never,
+		"candidate-1",
+		"duplicate of active memory memory-1",
+	);
+
+	assert.deepEqual(client.calls, [
+		{
+			table: "memory_candidates",
+			operation: "update",
+			payload: {
+				status: "archived",
+				metadata: { archive_reason: "duplicate of active memory memory-1" },
+			},
+		},
+	]);
+});
+
+Deno.test("applyMemoryUpdateFromReconciliation versions an existing memory", async () => {
+	const client = fakeSupabase({
+		id: "memory-1",
+		title: "Old title",
+		body: "Old body",
+		confidence: 0.8,
+		current_version: 1,
+		metadata: { existing: true },
+	});
+
+	await applyMemoryUpdateFromReconciliation(client as never, {
+		candidateId: "candidate-1",
+		reconciliationId: "reconciliation-1",
+		targetMemoryId: "memory-1",
+		title: "New title",
+		body: "New body",
+		confidence: 0.94,
+		changeReason: "reconciliation auto-update: safe high-confidence update",
+		status: "auto_applied",
+	});
+
+	assert.deepEqual(client.calls, [
+		{
+			table: "memories",
+			operation: "update",
+			payload: {
+				title: "New title",
+				body: "New body",
+				confidence: 0.94,
+				current_version: 2,
+				metadata: {
+					existing: true,
+					updated_by: "memory_reconciliation",
+					reconciliation_id: "reconciliation-1",
+				},
+			},
+		},
+		{
+			table: "memory_versions",
+			operation: "insert",
+			payload: {
+				memory_id: "memory-1",
+				version: 2,
+				title: "New title",
+				body: "New body",
+				change_reason:
+					"reconciliation auto-update: safe high-confidence update",
+				created_by: "memory_reconciliation",
+			},
+		},
+		{
+			table: "memory_candidates",
+			operation: "update",
+			payload: { status: "approved" },
+		},
+		{
+			table: "memory_reconciliations",
+			operation: "update",
+			payload: { status: "auto_applied" },
+		},
+	]);
 });

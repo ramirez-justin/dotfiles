@@ -83,6 +83,18 @@ mise run sofia-cloud:functions-list
 
 Legacy local-vault runtime tasks are grouped under `sofia-local:*` during the transition to cloud canonical storage.
 
+## Memory reconciliation
+
+SOFIA can reconcile new memory candidates against active memories before promotion when enabled with:
+
+```bash
+SOFIA_RECONCILIATION_ENABLED=true
+```
+
+When disabled, capture uses the legacy route-and-promote behavior. When enabled, SOFIA archives exact duplicates, promotes genuinely new low-risk memories, versions safe high-confidence updates, and sends conflicts, merges, sensitive updates, and uncertain changes to the existing candidate review queue.
+
+Reconciliation decisions are stored in `memory_reconciliations` and should be inspected through `review_candidates` when a candidate is pending review.
+
 ## Pi MCP client setup
 
 Pi uses `pi-mcp-adapter` and reads `~/.pi/agent/mcp.json` from this dotfiles repo. The SOFIA cloud server is configured with a custom header rather than putting the access key in the URL:

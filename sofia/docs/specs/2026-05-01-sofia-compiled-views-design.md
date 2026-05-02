@@ -6,15 +6,22 @@
 
 ## Summary
 
-Compiled views turn SOFIA's structured memory store into readable, agent-ready artifacts. The database remains canonical. Markdown files, Obsidian topic pages, boot context, weekly reviews, and profile exports become generated artifacts that can be regenerated from source memory.
+Compiled views turn SOFIA's structured memory store into readable artifacts. The
+database remains canonical. Markdown files, Obsidian topic pages, weekly reviews,
+and profile exports become generated artifacts that can be regenerated from source
+memory.
 
-This borrows OB1's wiki compiler direction while preserving SOFIA's existing `SOUL.md`, `USER.md`, context memory, and topic-file workflows.
+This borrows OB1's wiki compiler direction while preserving SOFIA's existing
+`SOUL.md`, `USER.md`, context memory, and topic-file workflows as transitional
+formats. Long-term, agents should use SOFIA Cloud MCP and compiled boot artifacts
+as their runtime interface; Obsidian is primarily the human-friendly window into
+the brain, not the brain itself.
 
 ## Goals
 
 - Generate stable agent boot context from durable memory.
-- Keep Obsidian useful as a readable browsing/editing surface.
-- Avoid making generated markdown the only source of truth.
+- Keep Obsidian useful as a readable browsing and review surface for humans.
+- Avoid making generated markdown an agent runtime dependency or source of truth.
 - Make memory provenance visible in compiled artifacts.
 - Support personal/work/shared context separation.
 - Enable future wiki/person/project/topic pages.
@@ -24,6 +31,7 @@ This borrows OB1's wiki compiler direction while preserving SOFIA's existing `SO
 - Full bidirectional sync in the first iteration.
 - Replacing human-authored Obsidian notes.
 - Making generated files indistinguishable from human-authored files.
+- Making local Obsidian search/indexing the primary agent memory runtime.
 - Compiling every raw event into markdown.
 
 ## Architecture
@@ -35,9 +43,13 @@ compiler jobs
   ↓
 compiled_artifacts table
   ↓
-export targets
-  ├─ SOFIA vault _agent/ files
-  ├─ MCP get_profile/get_artifact
+agent/runtime targets
+  ├─ MCP get_boot_context/get_artifact
+  └─ chat/session boot payloads
+  ↓
+human/export targets
+  ├─ SOFIA vault _agent/generated/ files
+  ├─ Obsidian topic/person/project pages
   ├─ chat review summaries
   └─ future dashboard/wiki
 ```
@@ -46,13 +58,16 @@ export targets
 
 ### Boot artifacts
 
-Used by agents at session start.
+Used by agents at session start. These should be served from SOFIA Cloud via MCP
+or generated from `compiled_artifacts`, not discovered through local Obsidian
+search.
 
 - `SOUL.md`
 - `USER.md`
 - `memory/shared.md`
 - `memory/personal.md`
 - `memory/work.md`
+- future compact JSON form for non-markdown clients
 
 These should stay compact and high-signal.
 
@@ -177,7 +192,10 @@ Each claim should include source memory IDs or backlinks.
 
 ### Obsidian vault
 
-The compiler writes generated artifacts to the SOFIA vault. Human-owned spaces remain read-by-default.
+The compiler writes generated artifacts to the SOFIA vault for human browsing,
+review, and portability. Human-owned spaces remain read-by-default. Agents should
+not treat Obsidian as canonical or depend on local vault search for durable memory
+once cloud boot context is wired.
 
 Preferred target:
 
@@ -189,7 +207,10 @@ SOFIA/_agent/memory/topics/
 
 ### MCP
 
-`get_profile` and `get_artifact` read from `compiled_artifacts` directly.
+`get_boot_context` and `get_artifact` read from `compiled_artifacts` directly.
+Agents should prefer these tools over local Obsidian reads for boot/runtime
+context. Local markdown can remain a fallback during migration but should not be
+the long-term interface.
 
 ### Chat
 
@@ -215,6 +236,7 @@ Phase 1:
 - generated files are overwritten by compiler
 - human edits to generated regions are not preserved
 - human-owned notes are not modified
+- human changes to canonical memory go through SOFIA Cloud capture/review/update flows
 
 Future:
 
@@ -233,11 +255,16 @@ Future:
 
 ## Open questions
 
-- Should existing `_agent/memory/topics/*.md` become generated, semi-generated, or human-curated?
+- Should existing `_agent/memory/topics/*.md` become generated, semi-generated, or human-curated during migration?
 - Should compiled artifacts be committed to dotfiles/vault sync, or regenerated per environment?
 - How should Obsidian backlinks point to database-backed memories?
+- What is the minimum boot artifact set needed to replace local SOFIA session-start context?
 - Do we want a dashboard before or after generated Obsidian views?
 
 ## Recommendation
 
-Treat Postgres as canonical and Obsidian as a compiled/readable interface. Keep generated artifacts visibly generated, preserve provenance, and defer bidirectional sync until the one-way compiler is stable.
+Treat Postgres as canonical, MCP/compiled artifacts as the agent runtime interface,
+and Obsidian as a compiled/readable human interface. Keep generated artifacts
+visibly generated, preserve provenance, and defer bidirectional sync until the
+one-way compiler is stable. Local Obsidian search/indexing can stay as a migration
+fallback, but it should not be the long-term memory path for agents.

@@ -7,10 +7,14 @@ import { z } from "zod";
 import { compileBootContext } from "./boot_context.ts";
 import { classifyEvent, embedText } from "./classifier.ts";
 import {
+	applyMemoryUpdateFromReconciliation,
 	archiveMemory,
 	createServiceClient,
+	findSimilarMemories,
 	insertCandidate,
 	insertEvent,
+	insertReconciliation,
+	markCandidateArchived,
 	promoteCandidate,
 	promoteExistingCandidate,
 } from "./db.ts";
@@ -25,12 +29,19 @@ import {
 	parseBootContextParams,
 	shouldPatchMcpAcceptHeader,
 } from "./http.ts";
+import {
+	applyReconciliationPolicy,
+	fallbackReconciliationDecision,
+	judgeReconciliation,
+} from "./reconcile.ts";
 import { redactSecrets } from "./redact.ts";
 import { routeCandidate } from "./router.ts";
 import type { CaptureEventInput, SofiaContext } from "./types.ts";
 
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY")!;
 const MCP_ACCESS_KEY = Deno.env.get("MCP_ACCESS_KEY")!;
+const RECONCILIATION_ENABLED =
+	Deno.env.get("SOFIA_RECONCILIATION_ENABLED") === "true";
 const supabase = createServiceClient();
 
 const server = new McpServer({ name: "sofia-cloud", version: "0.1.0" });
@@ -126,29 +137,98 @@ server.registerTool(
 					route,
 				);
 				let memoryId: string | null = null;
-				if (
-					route.shouldPromote &&
+				let reconciliation: Record<string, unknown> | null = null;
+				const canBecomeMemory =
 					candidate.candidate_type !== "todo" &&
-					candidate.candidate_type !== "open_loop"
+					candidate.candidate_type !== "open_loop";
+
+				if (
+					canBecomeMemory &&
+					(route.shouldPromote || route.status === "pending_review")
 				) {
 					const memoryEmbedding = await embedText(
 						candidate.candidate_text,
 						OPENROUTER_API_KEY,
 					);
-					memoryId = await promoteCandidate(
-						supabase,
-						candidateId,
-						capture.context,
-						candidate,
-						memoryEmbedding,
-					);
+
+					if (RECONCILIATION_ENABLED) {
+						let decision;
+						try {
+							const similarMemories = await findSimilarMemories(
+								supabase,
+								memoryEmbedding,
+								capture.context,
+							);
+							const judgment = await judgeReconciliation(
+								candidate,
+								similarMemories,
+								OPENROUTER_API_KEY,
+							);
+							decision = applyReconciliationPolicy(candidate, judgment);
+						} catch (error) {
+							decision = fallbackReconciliationDecision(
+								candidate,
+								(error as Error).message,
+							);
+						}
+
+						const reconciliationId = await insertReconciliation(
+							supabase,
+							candidateId,
+							capture.context,
+							decision,
+						);
+						reconciliation = { id: reconciliationId, ...decision };
+
+						if (decision.action === "promote_new" && route.shouldPromote) {
+							memoryId = await promoteCandidate(
+								supabase,
+								candidateId,
+								capture.context,
+								candidate,
+								memoryEmbedding,
+							);
+						} else if (decision.action === "archive_duplicate") {
+							await markCandidateArchived(
+								supabase,
+								candidateId,
+								`duplicate/same-fact reconciliation with ${
+									decision.target_memory_id ?? "active memory"
+								}`,
+							);
+						} else if (
+							decision.action === "update_existing" &&
+							decision.target_memory_id
+						) {
+							memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
+								candidateId,
+								reconciliationId,
+								targetMemoryId: decision.target_memory_id,
+								title: decision.proposed_title ?? candidate.title,
+								body: decision.proposed_body ?? candidate.candidate_text,
+								confidence: Math.max(candidate.confidence, decision.confidence),
+								changeReason: `reconciliation auto-update: ${decision.policy_reason}`,
+								status: "auto_applied",
+							});
+						}
+					} else if (route.shouldPromote) {
+						memoryId = await promoteCandidate(
+							supabase,
+							candidateId,
+							capture.context,
+							candidate,
+							memoryEmbedding,
+						);
+					}
 				}
+
 				results.push({
 					candidateId,
 					memoryId,
 					type: candidate.candidate_type,
 					title: candidate.title,
 					route,
+					reconciliation,
 				});
 			}
 

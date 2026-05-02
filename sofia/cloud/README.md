@@ -2,6 +2,8 @@
 
 Cloud-capable SOFIA core built on Supabase Postgres, pgvector, and a remote MCP Edge Function.
 
+SOFIA Cloud/Postgres is the canonical runtime memory source. Pi startup boot context must be fetched from SOFIA Cloud; local Obsidian/Markdown files are generated or human-facing views only and must not be used as a startup fallback. If cloud boot context cannot be fetched, surface the failure instead of silently falling back to local `_agent` files.
+
 ## Runtime pieces
 
 - `supabase/migrations/` — canonical SQL schema

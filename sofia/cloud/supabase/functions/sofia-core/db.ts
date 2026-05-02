@@ -313,6 +313,33 @@ export async function applyMemoryUpdateFromReconciliation(
 	return input.targetMemoryId;
 }
 
+export async function getPendingReconciliationForCandidate(
+	supabase: SupabaseClient,
+	candidateId: string,
+): Promise<Record<string, unknown> | null> {
+	const { data, error } = await supabase
+		.from("memory_reconciliations")
+		.select("*")
+		.eq("candidate_id", candidateId)
+		.eq("status", "pending_review")
+		.maybeSingle();
+
+	if (error) throw new Error(`load reconciliation failed: ${error.message}`);
+	return (data as Record<string, unknown> | null) ?? null;
+}
+
+export async function markReconciliationStatus(
+	supabase: SupabaseClient,
+	reconciliationId: string,
+	status: "approved" | "rejected" | "archived",
+): Promise<void> {
+	const { error } = await supabase
+		.from("memory_reconciliations")
+		.update({ status })
+		.eq("id", reconciliationId);
+	if (error) throw new Error(`update reconciliation failed: ${error.message}`);
+}
+
 export async function promoteExistingCandidate(
 	supabase: SupabaseClient,
 	candidateId: string,

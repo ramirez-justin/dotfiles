@@ -11,10 +11,12 @@ import {
 	archiveMemory,
 	createServiceClient,
 	findSimilarMemories,
+	getPendingReconciliationForCandidate,
 	insertCandidate,
 	insertEvent,
 	insertReconciliation,
 	markCandidateArchived,
+	markReconciliationStatus,
 	promoteCandidate,
 	promoteExistingCandidate,
 } from "./db.ts";
@@ -327,9 +329,40 @@ server.registerTool(
 				.eq("status", "pending_review")
 				.order("created_at", { ascending: false })
 				.limit(limit);
-			if (error)
+			if (error) {
 				return textResponse(`review list failed: ${error.message}`, true);
-			return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
+			}
+
+			const candidates = data ?? [];
+			const candidateIds = candidates.map((row) => row.id);
+			let reconciliations: Record<string, unknown>[] = [];
+			if (candidateIds.length > 0) {
+				const { data: reconciliationRows, error: reconciliationError } =
+					await supabase
+						.from("memory_reconciliations")
+						.select("*")
+						.in("candidate_id", candidateIds);
+				if (reconciliationError) {
+					return textResponse(
+						`review reconciliation list failed: ${reconciliationError.message}`,
+						true,
+					);
+				}
+				reconciliations = reconciliationRows ?? [];
+			}
+			const reconciliationByCandidate = new Map(
+				reconciliations.map((row) => [row.candidate_id, row]),
+			);
+			return textResponse(
+				formatJson(
+					sanitizeRowsForMcp(
+						candidates.map((row) => ({
+							...row,
+							reconciliation: reconciliationByCandidate.get(row.id) ?? null,
+						})),
+					),
+				),
+			);
 		}
 
 		if (!candidate_id)
@@ -344,11 +377,47 @@ server.registerTool(
 				.select("candidate_text")
 				.eq("id", candidate_id)
 				.single();
-			if (loadError)
+			if (loadError) {
 				return textResponse(
 					`load candidate failed: ${loadError.message}`,
 					true,
 				);
+			}
+
+			const reconciliation = await getPendingReconciliationForCandidate(
+				supabase,
+				candidate_id,
+			);
+			if (
+				reconciliation?.action === "review_update" &&
+				reconciliation.target_memory_id
+			) {
+				const memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
+					candidateId: candidate_id,
+					reconciliationId: reconciliation.id as string,
+					targetMemoryId: reconciliation.target_memory_id as string,
+					title:
+						(reconciliation.proposed_title as string | null) ??
+						"Updated memory",
+					body:
+						(reconciliation.proposed_body as string | null) ??
+						(candidate.candidate_text as string),
+					confidence: reconciliation.confidence as number,
+					changeReason: `review-approved reconciliation update: ${
+						reconciliation.policy_reason ?? "human approved"
+					}`,
+					status: "approved",
+				});
+				return textResponse(
+					formatJson({
+						candidate_id,
+						memoryId,
+						status: "approved",
+						reconciliation_id: reconciliation.id,
+					}),
+				);
+			}
+
 			const embedding = await embedText(
 				candidate.candidate_text as string,
 				OPENROUTER_API_KEY,
@@ -370,8 +439,20 @@ server.registerTool(
 			.eq("id", candidate_id)
 			.select("*")
 			.single();
-		if (error)
+		if (error) {
 			return textResponse(`review update failed: ${error.message}`, true);
+		}
+		const reconciliation = await getPendingReconciliationForCandidate(
+			supabase,
+			candidate_id,
+		);
+		if (reconciliation?.id) {
+			await markReconciliationStatus(
+				supabase,
+				reconciliation.id as string,
+				status,
+			);
+		}
 		return textResponse(formatJson(data));
 	},
 );

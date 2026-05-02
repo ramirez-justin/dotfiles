@@ -63,3 +63,16 @@ export type CaptureEventInput = {
 	type_hint?: string;
 	metadata?: Record<string, unknown>;
 };
+
+export type BootContextRequest = {
+	context: SofiaContext;
+	force_refresh?: boolean;
+};
+
+export type BootContextResponse = {
+	context: SofiaContext;
+	content: string;
+	generated_at: string;
+	artifact_id: string | null;
+	source: "compiled_artifacts" | "compiled_from_memories";
+};

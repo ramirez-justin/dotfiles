@@ -154,6 +154,19 @@ Deno.test("parseClassifierResponse repairs classifier synonym candidate types", 
 					metadata: {},
 				},
 				{
+					candidate_type: "workflow_preference",
+					candidate_text:
+						"Justin prefers direct local merge after verification when solo.",
+					title: "Justin merge workflow preference",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Workflow preference synonym.",
+					entities: [],
+					metadata: {},
+				},
+				{
 					candidate_type: "purchase",
 					candidate_text:
 						"Justin likely purchased a UNS 5N nano aquarium package.",
@@ -186,8 +199,9 @@ Deno.test("parseClassifierResponse repairs classifier synonym candidate types", 
 	assert.equal(parsed[1].candidate_type, "operating_rule");
 	assert.equal(parsed[2].candidate_type, "project_context");
 	assert.equal(parsed[3].candidate_type, "preference");
-	assert.equal(parsed[4].candidate_type, "fact");
+	assert.equal(parsed[4].candidate_type, "preference");
 	assert.equal(parsed[5].candidate_type, "fact");
+	assert.equal(parsed[6].candidate_type, "fact");
 });
 
 Deno.test("parseClassifierResponse normalizes verbose promote recommendation", () => {

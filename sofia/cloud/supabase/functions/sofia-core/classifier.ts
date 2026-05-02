@@ -90,7 +90,11 @@ function normalizeCandidateType(value: unknown): unknown {
 		"open_loop",
 	]);
 	if (candidateTypes.has(normalized)) return normalized;
-	if (["personal_preference", "user_preference"].includes(normalized)) {
+	if (
+		["personal_preference", "user_preference", "workflow_preference"].includes(
+			normalized,
+		)
+	) {
 		return "preference";
 	}
 	if (

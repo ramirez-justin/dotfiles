@@ -117,6 +117,18 @@ export function fallbackReconciliationDecision(
 	};
 }
 
+export function alignReconciliationStatusWithRoute(
+	decision: ReconciliationDecision,
+	shouldPromote: boolean,
+): ReconciliationDecision {
+	if (decision.action !== "promote_new" || shouldPromote) return decision;
+	return {
+		...decision,
+		status: "pending_review",
+		policy_reason: `${decision.policy_reason}; candidate route requires manual promotion review`,
+	};
+}
+
 export async function judgeReconciliation(
 	candidate: CandidateInput,
 	memories: SimilarMemory[],

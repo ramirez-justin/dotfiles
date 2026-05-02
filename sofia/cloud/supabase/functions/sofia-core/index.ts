@@ -32,6 +32,7 @@ import {
 	shouldPatchMcpAcceptHeader,
 } from "./http.ts";
 import {
+	alignReconciliationStatusWithRoute,
 	applyReconciliationPolicy,
 	fallbackReconciliationDecision,
 	judgeReconciliation,
@@ -173,6 +174,11 @@ server.registerTool(
 								(error as Error).message,
 							);
 						}
+
+						decision = alignReconciliationStatusWithRoute(
+							decision,
+							route.shouldPromote,
+						);
 
 						const reconciliationId = await insertReconciliation(
 							supabase,

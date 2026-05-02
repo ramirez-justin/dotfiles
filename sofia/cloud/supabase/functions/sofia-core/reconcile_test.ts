@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+	alignReconciliationStatusWithRoute,
 	applyReconciliationPolicy,
 	buildReconcilerPrompt,
 	fallbackReconciliationDecision,
@@ -134,4 +135,18 @@ Deno.test("fallbackReconciliationDecision routes expected auto-promotion to revi
 	assert.equal(result.status, "pending_review");
 	assert.match(result.policy_reason, /reconciliation failed/);
 	assert.equal(result.metadata.reconciliation_error, "model timeout");
+});
+
+Deno.test("alignReconciliationStatusWithRoute keeps promote_new pending when candidate needs review", () => {
+	const decision = applyReconciliationPolicy(
+		candidate({ recommended_action: "review" }),
+		judgment({ relationship: "new_memory", related_memory_ids: [] }),
+	);
+	assert.equal(decision.action, "promote_new");
+	assert.equal(decision.status, "auto_applied");
+
+	const aligned = alignReconciliationStatusWithRoute(decision, false);
+	assert.equal(aligned.action, "promote_new");
+	assert.equal(aligned.status, "pending_review");
+	assert.match(aligned.policy_reason, /manual promotion review/);
 });

@@ -100,3 +100,58 @@ Deno.test("parseClassifierResponse repairs generic event candidate type", () => 
 
 	assert.equal(parsed[0].candidate_type, "fact");
 });
+
+Deno.test("parseClassifierResponse normalizes verbose promote recommendation", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "decision",
+					candidate_text:
+						"SOFIA Cloud should provide boot context directly to Pi.",
+					title: "Use SOFIA Cloud boot context",
+					worthiness_score: 0.91,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "Promote to durable memory.",
+					reasoning: "Explicit architecture decision.",
+					entities: [],
+					metadata: {},
+				},
+			],
+		}),
+	);
+
+	assert.equal(parsed[0].recommended_action, "auto_promote");
+});
+
+Deno.test("parseClassifierResponse normalizes review/archive/reject phrases", () => {
+	const actions = [
+		["Needs review by Justin", "review"],
+		["Archive this low value note", "archive"],
+		["Discard / reject", "reject"],
+	] as const;
+
+	for (const [rawAction, expected] of actions) {
+		const parsed = parseClassifierResponse(
+			JSON.stringify({
+				candidates: [
+					{
+						candidate_type: "fact",
+						candidate_text: `Action should normalize: ${rawAction}`,
+						title: "Normalize action",
+						worthiness_score: 0.75,
+						confidence: 0.8,
+						risk_level: "low",
+						recommended_action: rawAction,
+						reasoning: "Parser hardening test.",
+						entities: [],
+						metadata: {},
+					},
+				],
+			}),
+		);
+
+		assert.equal(parsed[0].recommended_action, expected);
+	}
+});

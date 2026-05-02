@@ -22,7 +22,10 @@ const SOFIA_MARKER = "# SOFIA — your second brain context";
 
 let sessionContext = "";
 
-function buildHookInput(ctx: ExtensionContext, extra: Partial<HookInput> = {}): HookInput {
+function buildHookInput(
+	ctx: ExtensionContext,
+	extra: Partial<HookInput> = {},
+): HookInput {
 	return {
 		cwd: ctx.cwd,
 		session_id: ctx.sessionManager.getSessionId(),
@@ -43,7 +46,8 @@ function runHook(scriptName: string, input: HookInput): string {
 	});
 
 	if (result.error || result.status !== 0) {
-		const detail = result.error?.message || result.stderr || `exit ${result.status}`;
+		const detail =
+			result.error?.message || result.stderr || `exit ${result.status}`;
 		console.error(`[sofia] ${scriptName} failed: ${detail}`);
 		return "";
 	}
@@ -51,30 +55,61 @@ function runHook(scriptName: string, input: HookInput): string {
 	return result.stdout.trim();
 }
 
-function extractAdditionalContext(hookOutput: string): string {
-	if (!hookOutput) return "";
+const CLOUD_BOOT_FAILURE = `# SOFIA — cloud boot context unavailable
+
+SOFIA Cloud boot context failed to load. Do not use local Obsidian memory as a fallback. Ask Justin whether to proceed without SOFIA context or debug SOFIA Cloud.`;
+
+type BootContextResponse = {
+	context: "personal" | "work" | "shared";
+	content: string;
+	generated_at: string;
+	artifact_id: string | null;
+	source: "compiled_artifacts" | "compiled_from_memories";
+};
+
+function detectSofiaContext(cwd: string): "personal" | "work" {
+	return cwd.includes("/telophaseqs/") ? "work" : "personal";
+}
+
+async function fetchCloudBootContext(ctx: ExtensionContext): Promise<string> {
+	const baseUrl = process.env.SOFIA_CLOUD_URL;
+	const accessKey = process.env.SOFIA_MCP_ACCESS_KEY;
+	if (!baseUrl || !accessKey) {
+		throw new Error("missing SOFIA_CLOUD_URL or SOFIA_MCP_ACCESS_KEY");
+	}
+
+	const context = detectSofiaContext(ctx.cwd);
+	const url = new URL(baseUrl);
+	url.pathname = `${url.pathname.replace(/\/$/, "")}/boot-context`;
+	url.searchParams.set("context", context);
+
+	const response = await fetch(url, {
+		headers: { "x-sofia-key": accessKey },
+	});
+	if (!response.ok) {
+		const body = await response.text().catch(() => "");
+		throw new Error(`HTTP ${response.status}: ${body}`);
+	}
+
+	const payload = (await response.json()) as BootContextResponse;
+	if (!payload.content?.includes(SOFIA_MARKER)) {
+		throw new Error("boot-context response missing SOFIA marker");
+	}
+	return payload.content.trim();
+}
+
+async function refreshCloudBootContext(ctx: ExtensionContext) {
 	try {
-		const parsed = JSON.parse(hookOutput) as {
-			hookSpecificOutput?: { additionalContext?: string };
-		};
-		return parsed.hookSpecificOutput?.additionalContext?.trim() ?? "";
+		sessionContext = await fetchCloudBootContext(ctx);
 	} catch (error) {
-		console.error(`[sofia] failed to parse session-start output: ${String(error)}`);
-		return "";
+		console.error(`[sofia] cloud boot context failed: ${String(error)}`);
+		sessionContext = CLOUD_BOOT_FAILURE;
 	}
 }
 
-function refreshSessionContext(event: SessionStartEvent, ctx: ExtensionContext) {
-	const output = runHook(
-		"sofia-session-start.sh",
-		buildHookInput(ctx, { reason: event.reason, trigger: "session_start" }),
-	);
-	sessionContext = extractAdditionalContext(output);
-}
-
 export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (event, ctx) => {
-		refreshSessionContext(event, ctx);
+	pi.on("session_start", async (_event: SessionStartEvent, ctx) => {
+		await refreshCloudBootContext(ctx);
 	});
 
 	pi.on("before_agent_start", async (event: BeforeAgentStartEvent) => {

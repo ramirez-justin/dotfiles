@@ -14,6 +14,7 @@ export OBSIDIAN_API_CERT="${OBSIDIAN_API_CERT:-$HOME/.config/sofia/cert.pem}"
 
 # SOFIA cloud MCP. Keep 1Password as the source of truth; this only exports
 # a runtime env var for MCP clients that support header interpolation.
+export SOFIA_CLOUD_URL="${SOFIA_CLOUD_URL:-https://avgjtkgppeeihntsyjpy.supabase.co/functions/v1/sofia-core}"
 if [[ -z "${SOFIA_MCP_ACCESS_KEY:-}" ]] && command -v op >/dev/null 2>&1; then
   export SOFIA_MCP_ACCESS_KEY="$(op read 'op://dev_vault/SOFIA MCP/access key' 2>/dev/null || true)"
 fi

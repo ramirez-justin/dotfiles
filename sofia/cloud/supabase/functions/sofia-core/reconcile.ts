@@ -6,6 +6,7 @@ import type {
 	ReconciliationJudgment,
 	ReconciliationRelationship,
 	ReconciliationStatus,
+	SimilarMemory,
 } from "./types.ts";
 
 const HIGH_CONFIDENCE_UPDATE = 0.92;
@@ -41,6 +42,123 @@ const ReconcilerSchema = z.object({
 export function parseReconcilerResponse(raw: string): ReconciliationJudgment {
 	const parsed = JSON.parse(raw);
 	return ReconcilerSchema.parse(parsed);
+}
+
+export function buildReconcilerPrompt(
+	candidate: CandidateInput,
+	memories: SimilarMemory[],
+): string {
+	return `You are SOFIA's memory reconciliation engine.
+
+Decide how a new memory candidate relates to existing active memories. Return strict JSON only. Do not include markdown.
+
+Allowed relationship values:
+- new_memory
+- exact_duplicate
+- same_fact
+- refinement
+- updates_existing
+- contradicts_existing
+- merge_with_existing
+- uncertain
+
+Candidate:
+${JSON.stringify(
+	{
+		type: candidate.candidate_type,
+		title: candidate.title,
+		body: candidate.candidate_text,
+		entities: candidate.entities,
+	},
+	null,
+	2,
+)}
+
+Existing active memories:
+${JSON.stringify(
+	memories.map((memory) => ({
+		id: memory.id,
+		context: memory.context,
+		type: memory.memory_type,
+		title: memory.title,
+		body: memory.body,
+		similarity: memory.similarity,
+	})),
+	null,
+	2,
+)}
+
+Return this JSON shape:
+{
+  "relationship": "new_memory",
+  "target_memory_id": "uuid when one primary target exists",
+  "related_memory_ids": ["uuids"],
+  "proposed_title": "title for updates or merges",
+  "proposed_body": "body for updates or merges",
+  "confidence": 0.0,
+  "rationale": "brief explanation"
+}`;
+}
+
+export function fallbackReconciliationDecision(
+	candidate: CandidateInput,
+	errorMessage: string,
+): ReconciliationDecision {
+	return {
+		action: "review_update",
+		status: "pending_review",
+		related_memory_ids: [],
+		proposed_title: candidate.title,
+		proposed_body: candidate.candidate_text,
+		confidence: 0,
+		rationale: "Reconciliation failed before a safe decision could be made.",
+		policy_reason: "reconciliation failed; candidate requires review",
+		metadata: { reconciliation_error: errorMessage },
+	};
+}
+
+export async function judgeReconciliation(
+	candidate: CandidateInput,
+	memories: SimilarMemory[],
+	apiKey: string,
+): Promise<ReconciliationJudgment> {
+	if (memories.length === 0) {
+		return {
+			relationship: "new_memory",
+			related_memory_ids: [],
+			confidence: 1,
+			rationale: "No similar active memories were retrieved.",
+		};
+	}
+
+	const response = await fetch(
+		"https://openrouter.ai/api/v1/chat/completions",
+		{
+			method: "POST",
+			headers: {
+				authorization: `Bearer ${apiKey}`,
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				model: "openai/gpt-4.1-mini",
+				messages: [
+					{ role: "user", content: buildReconcilerPrompt(candidate, memories) },
+				],
+				response_format: { type: "json_object" },
+				temperature: 0,
+			}),
+		},
+	);
+
+	if (!response.ok) {
+		throw new Error(`reconciler request failed: ${response.status}`);
+	}
+
+	const payload = await response.json();
+	const content = payload?.choices?.[0]?.message?.content;
+	if (typeof content !== "string")
+		throw new Error("reconciler returned no content");
+	return parseReconcilerResponse(content);
 }
 
 export function mapRelationshipToAction(

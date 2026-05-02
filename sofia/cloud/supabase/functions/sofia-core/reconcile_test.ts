@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {
 	applyReconciliationPolicy,
+	buildReconcilerPrompt,
+	fallbackReconciliationDecision,
 	mapRelationshipToAction,
 	parseReconcilerResponse,
 } from "./reconcile.ts";
@@ -107,4 +109,29 @@ Deno.test("parseReconcilerResponse parses strict JSON", () => {
 	);
 	assert.equal(parsed.relationship, "same_fact");
 	assert.equal(parsed.confidence, 0.93);
+});
+
+Deno.test("buildReconcilerPrompt includes candidate and memory IDs", () => {
+	const prompt = buildReconcilerPrompt(candidate(), [
+		{
+			id: "11111111-1111-1111-1111-111111111111",
+			context: "personal",
+			memory_type: "preference",
+			title: "Existing merge preference",
+			body: "Justin prefers direct local merge when solo.",
+			similarity: 0.91,
+		},
+	]);
+
+	assert.match(prompt, /Existing merge preference/);
+	assert.match(prompt, /11111111-1111-1111-1111-111111111111/);
+	assert.match(prompt, /strict JSON/);
+});
+
+Deno.test("fallbackReconciliationDecision routes expected auto-promotion to review", () => {
+	const result = fallbackReconciliationDecision(candidate(), "model timeout");
+	assert.equal(result.action, "review_update");
+	assert.equal(result.status, "pending_review");
+	assert.match(result.policy_reason, /reconciliation failed/);
+	assert.equal(result.metadata.reconciliation_error, "model timeout");
 });

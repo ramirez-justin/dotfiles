@@ -4,6 +4,7 @@ import { StreamableHTTPTransport } from "@hono/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Hono } from "hono";
 import { z } from "zod";
+import { compileBootContext } from "./boot_context.ts";
 import { classifyEvent, embedText } from "./classifier.ts";
 import {
 	archiveMemory,
@@ -19,7 +20,11 @@ import {
 	sanitizeRowsForMcp,
 	textResponse,
 } from "./format.ts";
-import { shouldPatchMcpAcceptHeader } from "./http.ts";
+import {
+	isBootContextRequest,
+	parseBootContextParams,
+	shouldPatchMcpAcceptHeader,
+} from "./http.ts";
 import { redactSecrets } from "./redact.ts";
 import { routeCandidate } from "./router.ts";
 import type { CaptureEventInput, SofiaContext } from "./types.ts";
@@ -57,6 +62,11 @@ type ArchiveMemoryInput = {
 type GetArtifactInput = {
 	artifact_name: string;
 	context: "personal" | "work" | "shared";
+};
+
+type GetBootContextInput = {
+	context: "personal" | "work" | "shared";
+	force_refresh?: boolean;
 };
 
 server.registerTool(
@@ -311,6 +321,33 @@ server.registerTool(
 );
 
 server.registerTool(
+	"get_boot_context",
+	{
+		title: "Get SOFIA Boot Context",
+		description:
+			"Fetch SOFIA Cloud boot context for agent system prompt injection. This is the cloud runtime replacement for local Obsidian/SOFIA vault boot files.",
+		inputSchema: {
+			context: z.enum(["personal", "work", "shared"]).default("personal"),
+			force_refresh: z.boolean().optional(),
+		},
+	},
+	async ({ context, force_refresh }: GetBootContextInput) => {
+		try {
+			const bootContext = await compileBootContext(supabase, {
+				context,
+				force_refresh,
+			});
+			return textResponse(formatJson(bootContext));
+		} catch (error) {
+			return textResponse(
+				`get_boot_context failed: ${(error as Error).message}`,
+				true,
+			);
+		}
+	},
+);
+
+server.registerTool(
 	"get_artifact",
 	{
 		title: "Get SOFIA Compiled Artifact",
@@ -355,6 +392,22 @@ app.all("*", async (c: any) => {
 			401,
 			corsHeaders,
 		);
+	}
+
+	if (isBootContextRequest(c.req.method, c.req.url)) {
+		try {
+			const bootContext = await compileBootContext(
+				supabase,
+				parseBootContextParams(c.req.url),
+			);
+			return c.json(bootContext, 200, corsHeaders);
+		} catch (error) {
+			return c.json(
+				{ error: `boot context failed: ${(error as Error).message}` },
+				500,
+				corsHeaders,
+			);
+		}
 	}
 
 	if (

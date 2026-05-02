@@ -29,6 +29,13 @@ Deno.test("isBootContextRequest matches GET /boot-context only", () => {
 		true,
 	);
 	assert.equal(
+		isBootContextRequest(
+			"GET",
+			"https://example.test/functions/v1/sofia-core/boot-context?context=personal",
+		),
+		true,
+	);
+	assert.equal(
 		isBootContextRequest("POST", "https://example.test/boot-context"),
 		false,
 	);

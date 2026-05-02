@@ -14,7 +14,8 @@ export function shouldPatchMcpAcceptHeader(
 
 export function isBootContextRequest(method: string, url: string): boolean {
 	return (
-		method.toUpperCase() === "GET" && new URL(url).pathname === "/boot-context"
+		method.toUpperCase() === "GET" &&
+		new URL(url).pathname.endsWith("/boot-context")
 	);
 }
 

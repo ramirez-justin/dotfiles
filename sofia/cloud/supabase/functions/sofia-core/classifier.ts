@@ -103,13 +103,33 @@ function normalizeScore(value: unknown): unknown {
 
 function normalizeRecommendedAction(value: unknown): unknown {
 	if (typeof value !== "string") return value;
-	const normalized = value.toLowerCase().replaceAll("-", "_");
-	if (normalized.includes("auto") && normalized.includes("promote")) {
+	const normalized = value
+		.toLowerCase()
+		.trim()
+		.replaceAll(/[\s-]+/g, "_")
+		.replaceAll(/[^a-z_]/g, "");
+
+	if (normalized === "auto_promote") return "auto_promote";
+	if (
+		normalized.includes("promote") ||
+		normalized.includes("remember") ||
+		normalized.includes("save")
+	) {
 		return "auto_promote";
 	}
-	if (normalized.includes("review")) return "review";
-	if (normalized.includes("archive")) return "archive";
-	if (normalized.includes("reject")) return "reject";
+	if (
+		normalized.includes("review") ||
+		normalized.includes("ask_user") ||
+		normalized.includes("needs_review")
+	) {
+		return "review";
+	}
+	if (normalized.includes("archive") || normalized.includes("ignore")) {
+		return "archive";
+	}
+	if (normalized.includes("reject") || normalized.includes("discard")) {
+		return "reject";
+	}
 	return value;
 }
 

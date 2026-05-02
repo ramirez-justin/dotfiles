@@ -1,6 +1,6 @@
 # SOFIA Cloud Roadmap
 
-- **Status:** Phase 1–3 core implemented/deployed; later phases deferred
+- **Status:** Phase 1–3 core implemented/deployed/merged locally to `main`; later phases deferred
 - **Date:** 2026-05-01
 - **Purpose:** phased roadmap for SOFIA vNext after reviewing OB1/Open Brain
 
@@ -32,13 +32,22 @@ Raw events
 
 ## Current status (2026-05-01)
 
-Implemented and verified on branch `sofia/cloud-core-phase-1-2`:
+Implemented, deployed, verified, and merged locally to `main`:
 
 - Supabase cloud core schema and deployed `sofia-core` Edge Function.
 - Remote MCP tools: `capture_event`, `search_memory`, `list_recent`, `review_candidates`, `archive_memory`, `get_artifact`.
-- Hybrid memory pipeline with redaction, classifier hardening, auto-promotion/review routing, memory versions, and archive cleanup.
-- Pi MCP client configuration using `x-sofia-key` from 1Password-backed environment setup.
+- Hybrid memory pipeline with redaction, classifier hardening, candidate extraction, auto-promotion/review routing, memory versions, and archive cleanup.
+- Review approval path via `review_candidates action=approve`.
+- JSON health/help response for browser/plain `GET`; explicit SSE clients may still receive pings.
+- MCP response sanitization so embeddings are not returned to clients.
+- Pi MCP client configuration using `x-sofia-key` from a 1Password-backed runtime environment variable.
 - Operator tasks: `sofia-cloud:test`, `sofia-cloud:check`, `sofia-cloud:deploy`, `sofia-cloud:functions-list`.
+- Transitional local-vault tasks renamed under `sofia-local:*`.
+- Live lifecycle smoke test: capture → classify/promote → search → archive → verify archived memory no longer appears in normal search.
+- Post-merge classifier fix: generic classifier candidate types (`event`, `note`, `memory`) normalize to `fact`; unknown types still reject.
+- Pi dotfiles follow-up merged locally: Notion remote MCP config/skill, standalone `pi-update`, compact MCP/reasoned-pushback guidance, tmux CSI-U key format.
+
+Current local `main` includes this work through merge commit `c85f331`. It has not been pushed to the remote yet.
 
 Deferred: chat adapters, importer/exporter, compiled Obsidian artifacts, dashboard, and richer review workflows.
 
@@ -48,11 +57,11 @@ Goal: settle architecture before implementation.
 
 Tasks:
 
-- [ ] Review the four design docs.
-- [ ] Decide Supabase-first vs local Postgres-first.
-- [ ] Decide canonical source: Postgres canonical, Obsidian compiled view.
-- [ ] Approve initial schema boundaries.
-- [ ] Approve memory auto-promotion thresholds.
+- [x] Review the four design docs.
+- [x] Decide Supabase-first vs local Postgres-first: Supabase-first.
+- [x] Decide canonical source: Postgres canonical, Obsidian compiled view.
+- [x] Approve initial schema boundaries.
+- [x] Approve memory auto-promotion thresholds for the first implementation.
 - [ ] Pick first chat adapter: Telegram vs WhatsApp.
 - [ ] Decide whether existing SOFIA memory imports seed candidates or durable memories.
 
@@ -63,6 +72,8 @@ Exit criteria:
 - First milestone chosen.
 
 ## Phase 1 — Supabase/Postgres cloud core
+
+**Status:** Complete and deployed.
 
 Goal: create canonical memory database.
 
@@ -92,6 +103,8 @@ Exit criteria:
 
 ## Phase 2 — Memory-worthiness pipeline
 
+**Status:** Complete for the synchronous cloud-core path; refine based on live usage.
+
 Goal: automatically classify and route memory candidates.
 
 Deliverables:
@@ -114,6 +127,8 @@ Exit criteria:
 
 ## Phase 3 — Remote MCP
 
+**Status:** Complete for Pi/remote MCP core tools; richer clients remain future work.
+
 Goal: make SOFIA available to AI clients.
 
 Deliverables:
@@ -132,9 +147,9 @@ Deliverables:
 
 Exit criteria:
 
-- Claude/Pi can capture to SOFIA Cloud.
-- Search retrieves durable memories.
-- Pending candidates can be listed and acted on.
+- [x] Claude/Pi can capture to SOFIA Cloud.
+- [x] Search retrieves durable memories.
+- [x] Pending candidates can be listed and acted on.
 
 ## Phase 4 — Compiled artifacts and Obsidian export
 
@@ -240,12 +255,20 @@ Rules:
 
 ## Major decisions to revisit
 
-- Supabase vs local Postgres dev-first.
-- Direct OpenAI/OpenRouter/Anthropic model choices.
+- Direct OpenAI/OpenRouter/Anthropic model choices after more classifier/embedding usage.
 - Whether compiled artifacts should be committed/synced.
 - Whether to expose admin MCP tools.
-- Whether to make SOFIA multi-user-ready from schema day one.
+- Whether to make SOFIA multi-user-ready beyond the current personal deployment.
+- Whether the existing SOFIA vault importer should seed events only, or also seed candidate/durable memories.
 
-## Immediate next step
+## Immediate next steps
 
-After design review, write an implementation plan for Phase 1 + Phase 2 only. Do not plan all phases at task granularity yet; later phases should wait for feedback from the cloud core and pipeline.
+1. Push local `main` when ready.
+2. Optionally review pending SOFIA Cloud candidates from the post-merge capture event.
+3. Choose the next product slice:
+   - compiled artifacts / Obsidian export,
+   - review workflows,
+   - chat adapter,
+   - importer/exporter.
+
+Do not plan every remaining phase at task granularity yet; later phases should wait for feedback from the deployed cloud core and real capture/review usage.

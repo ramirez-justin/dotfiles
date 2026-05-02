@@ -1,4 +1,4 @@
-# SOFIA Cloud Phase 1–2 Implementation Plan
+# SOFIA Cloud Phase 1–3 Core Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,9 @@
 
 **Tech Stack:** Supabase Postgres + pgvector, Supabase Edge Functions (Deno/TypeScript), MCP SDK, Hono, Zod, OpenRouter-compatible LLM/embedding APIs, SQL migrations, Deno tests.
 
-**Execution status (2026-05-01):** Phase 1–3 core path is implemented, deployed, and verified from Pi via remote MCP. The live lifecycle smoke test captured an event, auto-promoted a memory, found it via search, archived it with `archive_memory`, and confirmed post-archive search exclusion. Operator cleanup is complete: cloud operations are available as `sofia-cloud:*` mise tasks and transitional local-vault tasks are grouped under `sofia-local:*`.
+**Execution status (2026-05-01):** Complete. Phase 1–3 core path is implemented, deployed, verified from Pi via remote MCP, and merged locally to `main`. The live lifecycle smoke test captured an event, auto-promoted a memory, found it via search, archived it with `archive_memory`, and confirmed post-archive search exclusion. Operator cleanup is complete: cloud operations are available as `sofia-cloud:*` mise tasks and transitional local-vault tasks are grouped under `sofia-local:*`.
+
+**Final verification:** `mise run sofia-cloud:test` passed (`22 passed | 0 failed`), `mise run sofia-cloud:check` passed, `mise run sofia-cloud:functions-list` showed `sofia-core ACTIVE` at deployed version `8`, and `git status --short` was clean before the plan/status updates. Local `main` includes the SOFIA cloud merge, the classifier normalization fix, and the useful Pi updates from `gametime`; it has not been pushed to remote yet.
 
 ---
 
@@ -32,7 +34,7 @@ Local file/schema work can start before accounts exist. Cloud deployment and end
 
 ## Scope boundaries
 
-This plan implements only Phase 1 + Phase 2:
+This plan originally targeted Phase 1 + Phase 2, then expanded during execution to cover the Phase 3 remote MCP core path:
 
 - Cloud core schema
 - event ingestion
@@ -41,6 +43,7 @@ This plan implements only Phase 1 + Phase 2:
 - hybrid promotion/review routing
 - durable memories + versions
 - remote MCP tools for capture/search/review/archive/artifact retrieval
+- Pi MCP adapter configuration using header-based access-key auth
 
 This plan does **not** implement:
 
@@ -71,12 +74,24 @@ Those belong to later plans after the cloud core is validated.
 | `sofia/cloud/supabase/functions/sofia-core/redact_test.ts` | Deno unit tests for redaction |
 | `sofia/cloud/supabase/functions/sofia-core/router_test.ts` | Deno unit tests for routing thresholds |
 | `sofia/cloud/supabase/functions/sofia-core/classifier_test.ts` | Deno unit tests for classifier JSON parsing |
+| `sofia/cloud/supabase/functions/sofia-core/db_test.ts` | Unit coverage for database helper behavior |
+| `sofia/cloud/supabase/functions/sofia-core/format_test.ts` | Unit coverage for MCP response formatting and embedding sanitization |
+| `sofia/cloud/supabase/functions/sofia-core/http.ts` | HTTP request/response helpers for MCP and health endpoints |
+| `sofia/cloud/supabase/functions/sofia-core/http_test.ts` | Unit coverage for HTTP behavior |
 
 ### Modified files
 
 | Path | Change |
 |---|---|
-| `sofia/docs/plans/2026-05-01-sofia-cloud-roadmap.md` | Add link to this implementation plan |
+| `.gitignore` | Ignore generated Supabase temp state |
+| `Brewfile` | Install Supabase CLI |
+| `mise.toml` | Add `sofia-cloud:*`, rename local tasks to `sofia-local:*`, add standalone `pi-update` |
+| `pi/.pi/agent/env.zsh` | Export SOFIA cloud MCP access key from 1Password at runtime |
+| `pi/.pi/agent/mcp.json` | Configure `sofia-cloud` remote MCP server and Notion remote MCP server |
+| `pi/.pi/agent/AGENTS.md` | Add compact MCP/reasoned-pushback guidance |
+| `pi/.pi/agent/skills/notion/SKILL.md` | Switch Notion skill guidance from local script to Notion MCP |
+| `tmux/.config/tmux/tmux.conf` | Add CSI-U extended key format |
+| `sofia/docs/plans/2026-05-01-sofia-cloud-roadmap.md` | Link this implementation plan and record completion status |
 
 ---
 
@@ -89,14 +104,14 @@ Those belong to later plans after the cloud core is validated.
   - `sofia/cloud/supabase/migrations/`
   - `sofia/cloud/supabase/functions/sofia-core/`
 
-- [ ] **Step 1: Create directories**
+- [x] **Step 1: Create directories**
 
 ```bash
 mkdir -p sofia/cloud/supabase/migrations
 mkdir -p sofia/cloud/supabase/functions/sofia-core
 ```
 
-- [ ] **Step 2: Write `sofia/cloud/README.md`**
+- [x] **Step 2: Write `sofia/cloud/README.md`**
 
 ```markdown
 # SOFIA Cloud
@@ -161,7 +176,7 @@ Keep secret values in 1Password. Store only references in notes/docs. Never past
    ```
 ```
 
-- [ ] **Step 3: Verify files**
+- [x] **Step 3: Verify files**
 
 ```bash
 find sofia/cloud -maxdepth 4 -type d | sort
@@ -177,7 +192,7 @@ sofia/cloud/supabase
 sofia/cloud/supabase/migrations
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add sofia/cloud/README.md
@@ -192,7 +207,7 @@ git commit -m "sofia-cloud: scaffold cloud core workspace"
 
 - Create: `sofia/cloud/supabase/migrations/0001_sofia_cloud_core.sql`
 
-- [ ] **Step 1: Write migration**
+- [x] **Step 1: Write migration**
 
 Create `sofia/cloud/supabase/migrations/0001_sofia_cloud_core.sql` with:
 
@@ -480,7 +495,7 @@ grant select, insert, update, delete on table compiled_artifacts to service_role
 grant select, insert, update, delete on table classifier_outcomes to service_role;
 ```
 
-- [ ] **Step 2: Validate SQL file has no destructive statements**
+- [x] **Step 2: Validate SQL file has no destructive statements**
 
 ```bash
 rg -n "drop table|truncate|delete from" sofia/cloud/supabase/migrations/0001_sofia_cloud_core.sql
@@ -488,7 +503,7 @@ rg -n "drop table|truncate|delete from" sofia/cloud/supabase/migrations/0001_sof
 
 Expected: no output.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add sofia/cloud/supabase/migrations/0001_sofia_cloud_core.sql
@@ -504,7 +519,7 @@ git commit -m "sofia-cloud: add core memory schema migration"
 - Create: `sofia/cloud/supabase/functions/sofia-core/deno.json`
 - Create: `sofia/cloud/supabase/functions/sofia-core/types.ts`
 
-- [ ] **Step 1: Write `deno.json`**
+- [x] **Step 1: Write `deno.json`**
 
 ```json
 {
@@ -525,7 +540,7 @@ git commit -m "sofia-cloud: add core memory schema migration"
 }
 ```
 
-- [ ] **Step 2: Write `types.ts`**
+- [x] **Step 2: Write `types.ts`**
 
 ```ts
 export type SofiaContext = "personal" | "work" | "shared";
@@ -586,7 +601,7 @@ export type CaptureEventInput = {
 };
 ```
 
-- [ ] **Step 3: Run Deno check**
+- [x] **Step 3: Run Deno check**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -595,7 +610,7 @@ deno check types.ts
 
 Expected: `Check file:///.../types.ts` and exit 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/deno.json sofia/cloud/supabase/functions/sofia-core/types.ts
@@ -611,7 +626,7 @@ git commit -m "sofia-cloud: add edge function deps and core types"
 - Create: `sofia/cloud/supabase/functions/sofia-core/redact.ts`
 - Create: `sofia/cloud/supabase/functions/sofia-core/redact_test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```ts
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -645,7 +660,7 @@ Deno.test("redactSecrets leaves normal text unchanged", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -654,7 +669,7 @@ deno test redact_test.ts
 
 Expected: failure because `redact.ts` does not exist.
 
-- [ ] **Step 3: Implement `redact.ts`**
+- [x] **Step 3: Implement `redact.ts`**
 
 ```ts
 import type { RedactionResult } from "./types.ts";
@@ -713,7 +728,7 @@ export function redactSecrets(input: string): RedactionResult {
 }
 ```
 
-- [ ] **Step 4: Run tests and verify pass**
+- [x] **Step 4: Run tests and verify pass**
 
 ```bash
 deno test redact_test.ts
@@ -721,7 +736,7 @@ deno test redact_test.ts
 
 Expected: 4 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/redact.ts sofia/cloud/supabase/functions/sofia-core/redact_test.ts
@@ -737,7 +752,7 @@ git commit -m "sofia-cloud: add secret redaction for event ingestion"
 - Create: `sofia/cloud/supabase/functions/sofia-core/router.ts`
 - Create: `sofia/cloud/supabase/functions/sofia-core/router_test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```ts
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -794,7 +809,7 @@ Deno.test("routeCandidate archives low-worthiness candidates", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -803,7 +818,7 @@ deno test router_test.ts
 
 Expected: failure because `router.ts` does not exist.
 
-- [ ] **Step 3: Implement `router.ts`**
+- [x] **Step 3: Implement `router.ts`**
 
 ```ts
 import type { CandidateInput, RecommendedAction, RouteDecision } from "./types.ts";
@@ -892,7 +907,7 @@ function review(reason: string): RouteDecision {
 }
 ```
 
-- [ ] **Step 4: Run tests and verify pass**
+- [x] **Step 4: Run tests and verify pass**
 
 ```bash
 deno test router_test.ts
@@ -900,7 +915,7 @@ deno test router_test.ts
 
 Expected: 5 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/router.ts sofia/cloud/supabase/functions/sofia-core/router_test.ts
@@ -916,7 +931,7 @@ git commit -m "sofia-cloud: add hybrid memory candidate routing policy"
 - Create: `sofia/cloud/supabase/functions/sofia-core/classifier.ts`
 - Create: `sofia/cloud/supabase/functions/sofia-core/classifier_test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```ts
 import { assertEquals, assertRejects } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -988,7 +1003,7 @@ Deno.test("parseClassifierResponse clamps no numeric fields and rejects out-of-r
 });
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -997,7 +1012,7 @@ deno test classifier_test.ts
 
 Expected: failure because `classifier.ts` does not exist.
 
-- [ ] **Step 3: Implement `classifier.ts`**
+- [x] **Step 3: Implement `classifier.ts`**
 
 ```ts
 import { z } from "zod";
@@ -1115,7 +1130,7 @@ export async function embedText(text: string, apiKey: string): Promise<number[]>
 }
 ```
 
-- [ ] **Step 4: Run tests and verify pass**
+- [x] **Step 4: Run tests and verify pass**
 
 ```bash
 deno test classifier_test.ts
@@ -1123,7 +1138,7 @@ deno test classifier_test.ts
 
 Expected: 3 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/classifier.ts sofia/cloud/supabase/functions/sofia-core/classifier_test.ts
@@ -1138,7 +1153,7 @@ git commit -m "sofia-cloud: add memory-worthiness classifier wrapper"
 
 - Create: `sofia/cloud/supabase/functions/sofia-core/db.ts`
 
-- [ ] **Step 1: Write `db.ts`**
+- [x] **Step 1: Write `db.ts`**
 
 ```ts
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -1255,7 +1270,7 @@ export async function promoteCandidate(
 }
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -1264,7 +1279,7 @@ deno check db.ts
 
 Expected: exit 0.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/db.ts
@@ -1280,7 +1295,7 @@ git commit -m "sofia-cloud: add database helper functions for events and memorie
 - Create: `sofia/cloud/supabase/functions/sofia-core/format.ts`
 - Create: `sofia/cloud/supabase/functions/sofia-core/index.ts`
 
-- [ ] **Step 1: Write `format.ts`**
+- [x] **Step 1: Write `format.ts`**
 
 ```ts
 export function textResponse(text: string, isError = false) {
@@ -1295,7 +1310,7 @@ export function formatJson(value: unknown): string {
 }
 ```
 
-- [ ] **Step 2: Write `index.ts`**
+- [x] **Step 2: Write `index.ts`**
 
 ```ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -1518,7 +1533,7 @@ app.all("*", async (c) => {
 Deno.serve(app.fetch);
 ```
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -1527,7 +1542,7 @@ deno check index.ts
 
 Expected: exit 0.
 
-- [ ] **Step 4: Run all Deno tests**
+- [x] **Step 4: Run all Deno tests**
 
 ```bash
 deno test
@@ -1535,7 +1550,7 @@ deno test
 
 Expected: redaction/router/classifier tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/format.ts sofia/cloud/supabase/functions/sofia-core/index.ts
@@ -1551,7 +1566,7 @@ git commit -m "sofia-cloud: add remote MCP server and synchronous capture pipeli
 - Modify: `sofia/cloud/supabase/functions/sofia-core/index.ts`
 - Modify: `sofia/cloud/supabase/functions/sofia-core/db.ts`
 
-- [ ] **Step 1: Add `promoteExistingCandidate` to `db.ts`**
+- [x] **Step 1: Add `promoteExistingCandidate` to `db.ts`**
 
 Append this function to `db.ts`:
 
@@ -1616,7 +1631,7 @@ export async function promoteExistingCandidate(
 }
 ```
 
-- [ ] **Step 2: Modify `index.ts` import**
+- [x] **Step 2: Modify `index.ts` import**
 
 Change:
 
@@ -1630,7 +1645,7 @@ To:
 import { createServiceClient, insertCandidate, insertEvent, promoteCandidate, promoteExistingCandidate } from "./db.ts";
 ```
 
-- [ ] **Step 3: Modify `review_candidates` approve branch**
+- [x] **Step 3: Modify `review_candidates` approve branch**
 
 In the `review_candidates` handler, replace the post-`candidate_id` update block with:
 
@@ -1658,7 +1673,7 @@ if (error) return textResponse(`review update failed: ${error.message}`, true);
 return textResponse(formatJson(data));
 ```
 
-- [ ] **Step 4: Type-check**
+- [x] **Step 4: Type-check**
 
 ```bash
 cd sofia/cloud/supabase/functions/sofia-core
@@ -1667,7 +1682,7 @@ deno check index.ts
 
 Expected: exit 0.
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 ```bash
 deno test
@@ -1675,7 +1690,7 @@ deno test
 
 Expected: all tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sofia/cloud/supabase/functions/sofia-core/db.ts sofia/cloud/supabase/functions/sofia-core/index.ts
@@ -1690,7 +1705,7 @@ git commit -m "sofia-cloud: promote approved review candidates"
 
 - No repository files changed.
 
-- [ ] **Step 1: Create Supabase project**
+- [x] **Step 1: Create Supabase project**
 
 Create a Supabase project named `sofia-cloud` in the nearest region.
 
@@ -1704,7 +1719,7 @@ MCP access key
 OpenRouter API key
 ```
 
-- [ ] **Step 2: Generate MCP access key**
+- [x] **Step 2: Generate MCP access key**
 
 ```bash
 openssl rand -hex 32
@@ -1712,7 +1727,7 @@ openssl rand -hex 32
 
 Expected: 64 hex characters.
 
-- [ ] **Step 3: Link project**
+- [x] **Step 3: Link project**
 
 From `/Users/justinramirez/dev/dotfiles`:
 
@@ -1722,7 +1737,7 @@ supabase link --project-ref <project-ref>
 
 Expected: CLI prompts for DB password and completes linking.
 
-- [ ] **Step 4: Set secrets**
+- [x] **Step 4: Set secrets**
 
 ```bash
 supabase secrets set MCP_ACCESS_KEY=<generated-key>
@@ -1731,7 +1746,7 @@ supabase secrets set OPENROUTER_API_KEY=<openrouter-key>
 
 Expected: both commands report success.
 
-- [ ] **Step 5: No commit**
+- [x] **Step 5: No commit**
 
 No files changed. Do not commit secrets.
 
@@ -1743,7 +1758,7 @@ No files changed. Do not commit secrets.
 
 - No repository files changed unless Supabase CLI creates local metadata. Review before commit.
 
-- [ ] **Step 1: Push database schema**
+- [x] **Step 1: Push database schema**
 
 ```bash
 supabase db push
@@ -1751,7 +1766,7 @@ supabase db push
 
 Expected: migration `0001_sofia_cloud_core.sql` applies successfully.
 
-- [ ] **Step 2: Deploy function**
+- [x] **Step 2: Deploy function**
 
 ```bash
 supabase functions deploy sofia-core --no-verify-jwt --project-ref <project-ref>
@@ -1759,7 +1774,7 @@ supabase functions deploy sofia-core --no-verify-jwt --project-ref <project-ref>
 
 Expected: function deploys successfully and appears in Supabase dashboard.
 
-- [ ] **Step 3: Check deployed function list**
+- [x] **Step 3: Check deployed function list**
 
 ```bash
 supabase functions list --project-ref <project-ref>
@@ -1767,7 +1782,7 @@ supabase functions list --project-ref <project-ref>
 
 Expected: `sofia-core` listed as active.
 
-- [ ] **Step 4: No commit unless Supabase created safe config files**
+- [x] **Step 4: No commit unless Supabase created safe config files**
 
 Run:
 
@@ -1785,17 +1800,17 @@ If Supabase generated local config files, inspect them for secrets before commit
 
 - No repository files changed.
 
-- [ ] **Step 1: Build MCP URL**
+- [x] **Step 1: Build MCP URL**
 
 ```text
 https://<project-ref>.supabase.co/functions/v1/sofia-core?key=<mcp-access-key>
 ```
 
-- [ ] **Step 2: Connect in one AI client**
+- [x] **Step 2: Connect in one AI client**
 
 Use a remote MCP connector and paste the full URL with `?key=`.
 
-- [ ] **Step 3: Capture explicit durable decision**
+- [x] **Step 3: Capture explicit durable decision**
 
 Prompt the AI client:
 
@@ -1809,7 +1824,7 @@ Expected:
 - at least one candidate
 - likely auto-promotion if classifier confidence is high
 
-- [ ] **Step 4: Search memory**
+- [x] **Step 4: Search memory**
 
 Prompt:
 
@@ -1819,7 +1834,7 @@ Use SOFIA search_memory to find what I decided about Supabase.
 
 Expected: returns the promoted memory or, if not auto-promoted, no durable memory yet.
 
-- [ ] **Step 5: Review queue if needed**
+- [x] **Step 5: Review queue if needed**
 
 Prompt:
 
@@ -1843,7 +1858,7 @@ Then rerun search.
 
 - Modify: `sofia/docs/plans/2026-05-01-sofia-cloud-roadmap.md`
 
-- [ ] **Step 1: Add implementation link**
+- [x] **Step 1: Add implementation link**
 
 Under `## Design docs`, add:
 
@@ -1853,7 +1868,7 @@ Under `## Design docs`, add:
 - [Phase 1–2 Implementation](2026-05-01-sofia-cloud-phase-1-2-implementation.md)
 ```
 
-- [ ] **Step 2: Verify link target exists**
+- [x] **Step 2: Verify link target exists**
 
 ```bash
 test -f sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md && echo ok
@@ -1861,7 +1876,7 @@ test -f sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md && e
 
 Expected: `ok`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add sofia/docs/plans/2026-05-01-sofia-cloud-roadmap.md sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md
@@ -1913,21 +1928,59 @@ git add mise.toml sofia/cloud/README.md sofia/docs/plans/2026-05-01-sofia-cloud-
 git commit -m "sofia-cloud: add mise tasks for cloud operations"
 ```
 
+## Task 15: Post-merge hardening and Pi updates
+
+**Files:**
+
+- Modify: `sofia/cloud/supabase/functions/sofia-core/classifier.ts`
+- Modify: `sofia/cloud/supabase/functions/sofia-core/classifier_test.ts`
+- Modify: `pi/.pi/agent/mcp.json`
+- Modify: `pi/.pi/agent/AGENTS.md`
+- Modify: `pi/.pi/agent/skills/notion/SKILL.md`
+- Modify: `pi/.pi/agent/env.zsh`
+- Modify: `mise.toml`
+- Modify: `tmux/.config/tmux/tmux.conf`
+- Delete: `pi/.pi/agent/skills/notion/scripts/notion-api.py`
+
+- [x] **Step 1: Reproduce live classifier gotcha**
+
+After the local merge, SOFIA capture exposed a live classifier failure where the model returned `candidate_type: "event"`, which was schema-adjacent but invalid.
+
+- [x] **Step 2: Add regression test**
+
+Added coverage for generic classifier candidate types so `event`, `note`, and `memory` normalize to `fact` while truly unknown types still reject.
+
+- [x] **Step 3: Fix parser and redeploy**
+
+Updated classifier parsing, verified with `deno test` / `deno check`, and deployed `sofia-core` version `8`.
+
+- [x] **Step 4: Verify capture after fix**
+
+SOFIA capture succeeded after redeploy and created review candidates for the merge/gotcha event.
+
+- [x] **Step 5: Port useful `gametime` Pi updates**
+
+Selectively ported Notion remote MCP setup, standalone `pi-update`, compact MCP/reasoned-pushback guidance, and tmux CSI-U key format. Did not merge stale `gametime` branch wholesale.
+
+- [x] **Step 6: Merge local follow-up branch**
+
+Merged `port/gametime-useful-pi-updates` into `main` as `c85f331`, then deleted the local branch.
+
 ## Self-review checklist
 
-- **Spec coverage:** Implements Cloud Core tables, Memory Pipeline redaction/classification/routing, and initial MCP capture/search/review tools.
+- **Spec coverage:** Implements Cloud Core tables, Memory Pipeline redaction/classification/routing, and initial MCP capture/search/review/archive/artifact tools.
 - **Deferred intentionally:** chat adapters, compiled Obsidian exporter, graph/wiki compiler, importers.
 - **Secret safety:** No secret values in files. Supabase secrets are runtime-only. Redaction runs before event insert.
-- **Tool-count discipline:** MCP exposes five tools, not low-level CRUD.
-- **Rollback:** Every promoted memory gets a `memory_versions` row.
+- **Tool-count discipline:** MCP exposes focused workflow tools, not low-level CRUD.
+- **Rollback/audit:** Every promoted memory gets a `memory_versions` row; `archive_memory` archives instead of deleting.
+- **Response hygiene:** MCP responses omit embeddings.
 
-## Execution options
+## Completion notes
 
-Plan complete and saved to `sofia/docs/plans/2026-05-01-sofia-cloud-phase-1-2-implementation.md`.
+This plan is complete. It produced a deployed SOFIA Cloud core, Pi MCP integration, operator tasks, and a verified live lifecycle.
 
-Two execution options:
+Remaining follow-ups belong in new plans rather than continuing this one:
 
-1. **Subagent-Driven (recommended)** — dispatch a fresh subagent per task, review between tasks, fast iteration.
-2. **Inline Execution** — execute tasks in this session using executing-plans, batch execution with checkpoints.
-
-Which approach?
+1. Push local `main` to remote when ready.
+2. Review pending SOFIA Cloud candidates from the post-merge capture event.
+3. Choose and write the next implementation plan for one product slice: compiled artifacts, review workflows, chat adapter, or importers/exporters.

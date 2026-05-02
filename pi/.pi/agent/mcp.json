@@ -13,6 +13,11 @@
       },
       "auth": false,
       "lifecycle": "lazy"
+    },
+    "notion": {
+      "url": "https://mcp.notion.com/mcp",
+      "auth": "oauth",
+      "lifecycle": "lazy"
     }
   }
 }

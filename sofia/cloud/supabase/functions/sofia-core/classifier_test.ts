@@ -101,6 +101,82 @@ Deno.test("parseClassifierResponse repairs generic event candidate type", () => 
 	assert.equal(parsed[0].candidate_type, "fact");
 });
 
+Deno.test("parseClassifierResponse repairs classifier synonym candidate types", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "system_memory",
+					candidate_text: "SOFIA has shared memory architecture.",
+					title: "SOFIA shared memory architecture",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "System fact.",
+					entities: [],
+					metadata: {},
+				},
+				{
+					candidate_type: "operational_guideline",
+					candidate_text: "Agents should ask before deleting files.",
+					title: "Ask before deleting",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Operating rule.",
+					entities: [],
+					metadata: {},
+				},
+				{
+					candidate_type: "work_memory",
+					candidate_text: "Telophase work is driven from GitHub Issues.",
+					title: "Telophase GitHub Issues workflow",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Work project context.",
+					entities: [],
+					metadata: {},
+				},
+				{
+					candidate_type: "personal_preference",
+					candidate_text: "Justin likes mid-century modern design.",
+					title: "Justin MCM preference",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Preference synonym.",
+					entities: [],
+					metadata: {},
+				},
+				{
+					candidate_type: "purchase",
+					candidate_text:
+						"Justin likely purchased a UNS 5N nano aquarium package.",
+					title: "UNS 5N package",
+					worthiness_score: 0.8,
+					confidence: 0.8,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Purchase fact synonym.",
+					entities: [],
+					metadata: {},
+				},
+			],
+		}),
+	);
+
+	assert.equal(parsed[0].candidate_type, "fact");
+	assert.equal(parsed[1].candidate_type, "operating_rule");
+	assert.equal(parsed[2].candidate_type, "project_context");
+	assert.equal(parsed[3].candidate_type, "preference");
+	assert.equal(parsed[4].candidate_type, "fact");
+});
+
 Deno.test("parseClassifierResponse normalizes verbose promote recommendation", () => {
 	const parsed = parseClassifierResponse(
 		JSON.stringify({
@@ -115,6 +191,30 @@ Deno.test("parseClassifierResponse normalizes verbose promote recommendation", (
 					risk_level: "low",
 					recommended_action: "Promote to durable memory.",
 					reasoning: "Explicit architecture decision.",
+					entities: [],
+					metadata: {},
+				},
+			],
+		}),
+	);
+
+	assert.equal(parsed[0].recommended_action, "auto_promote");
+});
+
+Deno.test("parseClassifierResponse normalizes store recommendation", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "operating_rule",
+					candidate_text:
+						"SOFIA should remember migrated operating rules from Obsidian.",
+					title: "Remember migrated operating rules",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "Store as durable memory.",
+					reasoning: "Explicit durable migration memory.",
 					entities: [],
 					metadata: {},
 				},

@@ -90,7 +90,22 @@ function normalizeCandidateType(value: unknown): unknown {
 		"open_loop",
 	]);
 	if (candidateTypes.has(normalized)) return normalized;
-	if (["event", "note", "memory"].includes(normalized)) return "fact";
+	if (["personal_preference", "user_preference"].includes(normalized)) {
+		return "preference";
+	}
+	if (
+		["event", "note", "memory", "system_memory", "purchase"].includes(
+			normalized,
+		)
+	) {
+		return "fact";
+	}
+	if (["operational_guideline", "guideline", "rule"].includes(normalized)) {
+		return "operating_rule";
+	}
+	if (["work_memory", "project_memory"].includes(normalized)) {
+		return "project_context";
+	}
 	return value;
 }
 
@@ -113,7 +128,8 @@ function normalizeRecommendedAction(value: unknown): unknown {
 	if (
 		normalized.includes("promote") ||
 		normalized.includes("remember") ||
-		normalized.includes("save")
+		normalized.includes("save") ||
+		normalized.includes("store")
 	) {
 		return "auto_promote";
 	}

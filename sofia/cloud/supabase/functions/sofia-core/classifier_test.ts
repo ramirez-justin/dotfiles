@@ -166,6 +166,18 @@ Deno.test("parseClassifierResponse repairs classifier synonym candidate types", 
 					entities: [],
 					metadata: {},
 				},
+				{
+					candidate_type: "durable_memory",
+					candidate_text: "Telophase platform context should be remembered.",
+					title: "Telophase platform context",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "auto_promote",
+					reasoning: "Durable memory synonym.",
+					entities: [],
+					metadata: {},
+				},
 			],
 		}),
 	);
@@ -175,6 +187,7 @@ Deno.test("parseClassifierResponse repairs classifier synonym candidate types", 
 	assert.equal(parsed[2].candidate_type, "project_context");
 	assert.equal(parsed[3].candidate_type, "preference");
 	assert.equal(parsed[4].candidate_type, "fact");
+	assert.equal(parsed[5].candidate_type, "fact");
 });
 
 Deno.test("parseClassifierResponse normalizes verbose promote recommendation", () => {

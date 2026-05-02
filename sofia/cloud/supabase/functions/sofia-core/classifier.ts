@@ -94,9 +94,14 @@ function normalizeCandidateType(value: unknown): unknown {
 		return "preference";
 	}
 	if (
-		["event", "note", "memory", "system_memory", "purchase"].includes(
-			normalized,
-		)
+		[
+			"event",
+			"note",
+			"memory",
+			"system_memory",
+			"durable_memory",
+			"purchase",
+		].includes(normalized)
 	) {
 		return "fact";
 	}

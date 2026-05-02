@@ -74,30 +74,51 @@ When asked to review a pull request, verify the diff and relevant files before g
 ## SOFIA — Proactive Capture
 
 When the SOFIA second-brain context block is present in the system prompt
-(look for "SOFIA — your second brain context"), capture memory-worthy
-moments yourself with the `sofia-capture` workflow. Don't wait to be asked.
+(look for "SOFIA — your second brain context"), stay actively alert for
+memory-worthy moments and capture them with the `sofia-capture` workflow.
+Don't wait to be asked.
 
-**What to journal** (the bar: still useful in 3+ weeks):
+**What to capture** (the bar: still useful in 3+ weeks):
 
-- **Decisions** — "we chose X because Y," especially when Y is non-obvious
-- **Lessons / gotchas** — things-that-burned-us, surprising failures, root causes worth remembering
-- **Durable facts** — stable-for-months info about people, projects, systems, integrations
-- **Stated preferences** — working style, tooling taste, what the user explicitly does or doesn't want
-- **Recurring patterns** — anything the user keeps rediscovering
+- **Decisions** — "we chose X because Y," especially when Y is non-obvious.
+- **Lessons / gotchas** — things-that-burned-us, surprising failures, root causes worth remembering.
+- **Durable facts** — stable-for-months info about people, projects, systems, integrations, roles, responsibilities, recurring commitments, and canonical sources of truth.
+- **Stated preferences** — working style, tooling taste, design taste, communication preferences, approval preferences, and what Justin explicitly does or does not want.
+- **Recurring patterns** — anything Justin keeps rediscovering or repeatedly asks the agent to do.
+- **Workflow/process changes** — new operating rules, review gates, deployment rules, memory/boot behavior, or repository conventions.
+- **Follow-ups/todos** — only when Justin explicitly names an action to remember or track.
 
-**What NOT to journal:**
+**Examples that should trigger capture:**
 
-- Routine file edits, command output, code that explains itself
-- Anything still in flux mid-conversation — wait until the decision settles
-- Sensitive data (secrets, credentials, PII) — see SOUL hard rules
+- "We decided to use X instead of Y because..."
+- "Going forward, always/never do..."
+- "This is the canonical source for..."
+- "That old assumption is no longer true."
+- "Next time, remind me to..."
+- "I prefer..." / "I don't want..."
+- A completed debugging root cause or operational gotcha that would save time later.
+
+**What NOT to capture:**
+
+- Routine file edits, command output, code that explains itself, or ordinary progress updates.
+- Anything still in flux mid-conversation — wait until the decision settles.
+- One-off transient tasks unless Justin asks to remember them.
+- Sensitive data (secrets, credentials, PII) — see SOUL hard rules.
 
 **How to call it:**
 
 - Load/use `/skill:sofia-capture` for user-facing or inferred capture, including "all done" / wrap-up flows.
 - Use `/skill:sofia-journal` only as the low-level append primitive when an exact/simple journal write is needed.
-- Default `--type note`. Use `--type decision` for explicit choices, `--type todo` only when the user names a follow-up.
+- Default `--type note`. Use `--type decision` for explicit choices, `--type todo` only when Justin names a follow-up.
 - Pass `--context personal` or `--context work` when the active context is unambiguous and differs from the auto-detected default.
-- Body should be terse — a paragraph or a few bullets, not a transcript replay. Lead with the _what_, then a brief _why_. `/skill:sofia-promote` curates from these later, so quality > volume.
+- Body should be terse — a paragraph or a few bullets, not a transcript replay. Lead with the _what_, then a brief _why_. SOFIA Cloud handles candidate extraction, routing, reconciliation, promotion, and review-state tracking.
+
+**Review and reconciliation awareness:**
+
+- `capture_event` is not automatic background magic; the agent initiates capture when it identifies a durable moment or Justin asks to remember something.
+- A reconciliation is initiated by SOFIA Cloud during `capture_event` after a candidate memory is extracted, when cloud reconciliation is enabled.
+- Pending memory review is initiated by calling `review_candidates`; check it at natural review points such as wrap-up, after a run of captures, or when Justin asks to review memory.
+- If pending candidates include reconciliation metadata, summarize the proposed action and ask Justin to approve, reject, or archive.
 
 **Cadence:** at most one journal entry per discrete moment. Don't journal the
 same decision twice in a session. If a moment feels borderline, skip it —

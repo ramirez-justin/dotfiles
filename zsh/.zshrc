@@ -27,6 +27,9 @@ source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 # for Claude Code / pi
 export ENABLE_LSP_TOOLS=1
 [[ -f "$HOME/.pi/agent/env.zsh" ]] && source "$HOME/.pi/agent/env.zsh"
+# Pi extensions with native modules are installed with mise's node@20.
+# Run Pi with the same Node ABI to avoid native module mismatch errors.
+pi() { mise exec node@20 -- command pi "$@" }
 if [[ "$CLAUDECODE" != "1" ]]; then
     eval "$(zoxide init --cmd cd zsh)"
 fi
@@ -102,6 +105,7 @@ plugins=(
     brew
     npm
     terraform
+    terragrunt
 )
 
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
@@ -227,7 +231,7 @@ eval "$(fzf --zsh)"
 eval "$(/opt/homebrew/bin/mise activate zsh)"
 
 # EZA Theme
-export EZA_CONFIG_DIR="~/.config/eza"
+export EZA_CONFIG_DIR="$HOME/.config/eza"
 
 # Direnv Hook
 eval "$(direnv hook zsh)"

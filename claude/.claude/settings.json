@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/opt/homebrew/Cellar/node/25.9.0_2/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
+            "command": "mise exec node@20 -- node \"$HOME/.claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
       }

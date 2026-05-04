@@ -105,7 +105,6 @@ plugins=(
     brew
     npm
     terraform
-    terragrunt
 )
 
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src

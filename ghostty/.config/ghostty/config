@@ -67,4 +67,5 @@ keybind = cmd+s>e=equalize_splits
 # other
 copy-on-select = clipboard
 shell-integration-features = no-cursor,sudo,no-title
-keybind = shift+enter=text:\n
+# Let pi/tmux receive real Shift+Enter via extended keyboard protocol.
+# keybind = shift+enter=text:\n

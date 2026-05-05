@@ -1,19 +1,47 @@
 import { z } from "zod";
 import type { CandidateInput, CaptureEventInput } from "./types.ts";
 
+const CANDIDATE_TYPES = [
+	"fact",
+	"preference",
+	"decision",
+	"lesson",
+	"gotcha",
+	"project_context",
+	"person_context",
+	"operating_rule",
+	"todo",
+	"open_loop",
+] as const;
+
+const CANDIDATE_TYPE_SET = new Set<string>(CANDIDATE_TYPES);
+
+const CANDIDATE_TYPE_ALIASES: Record<string, (typeof CANDIDATE_TYPES)[number]> =
+	{
+		personal_preference: "preference",
+		user_preference: "preference",
+		workflow_preference: "preference",
+		event: "fact",
+		note: "fact",
+		memory: "fact",
+		system_memory: "fact",
+		durable_memory: "fact",
+		purchase: "fact",
+		operational_guideline: "operating_rule",
+		guideline: "operating_rule",
+		rule: "operating_rule",
+		work_memory: "project_context",
+		project_memory: "project_context",
+		project_plan: "project_context",
+		project_details: "project_context",
+		project_detail: "project_context",
+		project_decision: "decision",
+		action_item: "todo",
+		follow_up: "todo",
+	};
+
 const CandidateSchema = z.object({
-	candidate_type: z.enum([
-		"fact",
-		"preference",
-		"decision",
-		"lesson",
-		"gotcha",
-		"project_context",
-		"person_context",
-		"operating_rule",
-		"todo",
-		"open_loop",
-	]),
+	candidate_type: z.enum(CANDIDATE_TYPES),
 	candidate_text: z.string().min(1),
 	title: z.string().min(1),
 	worthiness_score: z.number().min(0).max(1),
@@ -76,45 +104,14 @@ function normalizeCandidateType(value: unknown): unknown {
 	const normalized = value
 		.toLowerCase()
 		.trim()
-		.replaceAll(/[\s-]+/g, "_");
-	const candidateTypes = new Set([
-		"fact",
-		"preference",
-		"decision",
-		"lesson",
-		"gotcha",
-		"project_context",
-		"person_context",
-		"operating_rule",
-		"todo",
-		"open_loop",
-	]);
-	if (candidateTypes.has(normalized)) return normalized;
-	if (
-		["personal_preference", "user_preference", "workflow_preference"].includes(
-			normalized,
-		)
-	) {
-		return "preference";
+		.replaceAll(/[\s-]+/g, "_")
+		.replaceAll(/[^a-z_]/g, "");
+	if (CANDIDATE_TYPE_SET.has(normalized)) return normalized;
+	if (CANDIDATE_TYPE_ALIASES[normalized]) {
+		return CANDIDATE_TYPE_ALIASES[normalized];
 	}
-	if (
-		[
-			"event",
-			"note",
-			"memory",
-			"system_memory",
-			"durable_memory",
-			"purchase",
-		].includes(normalized)
-	) {
-		return "fact";
-	}
-	if (["operational_guideline", "guideline", "rule"].includes(normalized)) {
-		return "operating_rule";
-	}
-	if (["work_memory", "project_memory"].includes(normalized)) {
-		return "project_context";
-	}
+	if (normalized.startsWith("project_")) return "project_context";
+	if (normalized.startsWith("person_")) return "person_context";
 	return value;
 }
 
@@ -159,8 +156,9 @@ function normalizeRecommendedAction(value: unknown): unknown {
 }
 
 function normalizeEntities(value: unknown): unknown {
-	if (!Array.isArray(value)) return value;
-	return value.flatMap((entity) => {
+	if (value == null) return [];
+	const entities = Array.isArray(value) ? value : [value];
+	return entities.flatMap((entity) => {
 		if (!entity || typeof entity !== "object") return [];
 		const record = entity as Record<string, unknown>;
 		const type = record.type;

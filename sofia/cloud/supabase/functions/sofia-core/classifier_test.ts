@@ -204,6 +204,67 @@ Deno.test("parseClassifierResponse repairs classifier synonym candidate types", 
 	assert.equal(parsed[6].candidate_type, "fact");
 });
 
+Deno.test("parseClassifierResponse repairs project candidate type aliases", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "project_plan",
+					candidate_text: "TelophaseQS trading platform v1 is tracked in #298.",
+					title: "TelophaseQS v1 plan",
+					worthiness_score: 0.8,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "review",
+					reasoning: "Project context.",
+					entities: [],
+					metadata: {},
+				},
+				{
+					candidate_type: "project_details",
+					candidate_text: "The executor is account-scoped on GKE.",
+					title: "Executor details",
+					worthiness_score: 0.8,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "review",
+					reasoning: "Project context.",
+					entities: [],
+					metadata: {},
+				},
+			],
+		}),
+	);
+
+	assert.equal(parsed[0].candidate_type, "project_context");
+	assert.equal(parsed[1].candidate_type, "project_context");
+});
+
+Deno.test("parseClassifierResponse normalizes single entity objects", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "project_context",
+					candidate_text: "TelophaseQS trading platform v1 is tracked in #298.",
+					title: "TelophaseQS v1 plan",
+					worthiness_score: 0.8,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "review",
+					reasoning: "Project context.",
+					entities: { type: "project", name: "TelophaseQS" },
+					metadata: {},
+				},
+			],
+		}),
+	);
+
+	assert.deepEqual(parsed[0].entities, [
+		{ type: "project", name: "TelophaseQS" },
+	]);
+});
+
 Deno.test("parseClassifierResponse normalizes verbose promote recommendation", () => {
 	const parsed = parseClassifierResponse(
 		JSON.stringify({

@@ -41,7 +41,12 @@
     "npm:@zenobius/pi-rose-pine",
     "npm:pi-mcp-adapter",
     "npm:pi-powerline-footer",
-    "npm:context-mode",
+    {
+      "source": "npm:context-mode",
+      "skills": [
+        "!skills/UPSTREAM-CREDITS.md"
+      ]
+    },
     "npm:pi-lens"
   ],
   "env": {

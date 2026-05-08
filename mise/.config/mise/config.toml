@@ -2,7 +2,7 @@
 node = "20.20.2"
 python = "3.12"
 "go:github.com/lox/notion-cli" = "latest"
-"npm:@mariozechner/pi-coding-agent" = "latest"
+"npm:@earendil-works/pi-coding-agent" = "latest"
 "npm:bash-language-server" = "latest"
 "npm:dockerfile-language-server-nodejs" = "latest"
 "npm:neovim" = "latest"

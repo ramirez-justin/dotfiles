@@ -113,11 +113,17 @@ We are migrating from Jira to Linear. For issue tracking going forward:
 - Verify page, database, data source, and view identifiers with read-only MCP
   calls before mutating Notion.
 
-## Git Attribution
+## Git Attribution and Commit Messages
 
 When creating commits or pull requests with Pi assistance, include clear Pi
 attribution unless the user explicitly asks otherwise.
 
+- Write commit messages using Conventional Commits:
+  `type(scope): summary`.
+- Use focused types such as `feat`, `fix`, `docs`, `test`, `refactor`,
+  `chore`, and `ci`.
+- Keep summaries imperative, concise, and lower-case unless naming a proper
+  noun.
 - Commits: include `Co-Authored-By: Pi <noreply@pi.dev>` as a trailer.
 - Pull requests: include `🤖 Generated with [Pi](https://pi.dev)` in the PR
   description.

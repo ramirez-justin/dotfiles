@@ -2,6 +2,8 @@
   "env": {
     "JIRA_HOST": "gametime.atlassian.net",
     "JIRA_EMAIL": "justin.ramirez@gametime.co",
+    "JIRA_URL": "https://gametime.atlassian.net",
+    "JIRA_USERNAME": "justin.ramirez@gametime.co",
     "JIRA_API_TOKEN": "",
     "FIVETRAN_API_KEY": "",
     "FIVETRAN_API_SECRET": "",
@@ -26,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/opt/homebrew/Cellar/node/25.9.0_2/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
+            "command": "\"/Users/justin/.local/share/mise/installs/node/20.20.2/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
       }

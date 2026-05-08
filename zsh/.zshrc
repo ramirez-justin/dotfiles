@@ -141,6 +141,7 @@ alias gstart='git checkout main && git pull && git checkout -b'
 alias ls="eza --color=always --long --git --no-filesize --icons=always --no-time --no-user --no-permissions"
 alias la="eza --color=always --long --git --icons=always --no-time --all"
 alias fk="thefuck"
+alias calsetup="~/.config/tmux/scripts/cal-setup.sh"
 
 # TF vars
 # SNOWFLAKE_USER is set in ~/.zshrc.local

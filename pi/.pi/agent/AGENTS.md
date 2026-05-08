@@ -113,6 +113,15 @@ We are migrating from Jira to Linear. For issue tracking going forward:
 - Verify page, database, data source, and view identifiers with read-only MCP
   calls before mutating Notion.
 
+## Git Attribution
+
+When creating commits or pull requests with Pi assistance, include clear Pi
+attribution unless the user explicitly asks otherwise.
+
+- Commits: include `Co-Authored-By: Pi <noreply@pi.dev>` as a trailer.
+- Pull requests: include `🤖 Generated with [Pi](https://pi.dev)` in the PR
+  description.
+
 ## PR Review Preferences
 
 When asked to review a pull request, verify the diff and relevant files before

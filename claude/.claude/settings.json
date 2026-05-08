@@ -10,7 +10,10 @@
     "FIVETRAN_GROUP_ID": "",
     "ENABLE_LSP_TOOL": "1"
   },
-  "includeCoAuthoredBy": false,
+  "attribution": {
+    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
+    "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
+  },
   "model": "opus",
   "hooks": {
     "Stop": [

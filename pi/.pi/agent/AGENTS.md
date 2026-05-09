@@ -105,6 +105,15 @@ When asked to review a pull request, verify the diff and relevant files before
 giving conclusions. Prefer concrete findings with file/line references over generic
 review commentary.
 
+## Commit Message Preferences
+
+- Use Conventional Commits for commit messages: `type(scope): summary` when a
+  scope is useful, or `type: summary` when it is not.
+- Prefer standard types such as `feat`, `fix`, `docs`, `style`, `refactor`,
+  `perf`, `test`, `build`, `ci`, and `chore`.
+- Keep the subject imperative, concise, and lowercase after the type unless a
+  proper noun requires capitalization.
+
 ## SOFIA — Proactive Capture
 
 When the SOFIA second-brain context block is present in the system prompt

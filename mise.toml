@@ -48,7 +48,7 @@ check "pi available" command -v pi
 check "pi starts offline" pi --offline --list-models
 check "git submodules initialized" git submodule status --recursive
 check "zsh config linked" sh -c '[ -L "$HOME/.zshrc" ]'
-check "mise config linked" sh -c '[ -L "$HOME/.config/mise/config.toml" ]'
+check "mise config linked" sh -c '[ -L "$HOME/.config/mise/config.toml" ] || [ -L "$HOME/.config/mise" ]'
 
 if [ -f "$HOME/.pi/agent/env.local.zsh" ]; then
     check "pi env.local permissions" sh -c '[ "$(stat -f %Lp "$HOME/.pi/agent/env.local.zsh")" = "600" ]'

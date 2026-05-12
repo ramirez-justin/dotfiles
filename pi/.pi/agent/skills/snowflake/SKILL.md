@@ -17,12 +17,13 @@ configuration needs debugging.
 Prefer the configured SnowSQL connection:
 
 ```sh
-snowsql -c okta_conn \
+snowsql -c ssh \
   -q "select current_user(), current_role(), current_warehouse();"
 ```
 
 The connection is defined in `~/.snowsql/config`. It already includes Justin's
-Snowflake username, authenticator, private key path, and output formatting.
+Snowflake username, SSH/key-pair authentication, the private key path under
+`~/.ssh`, and output formatting.
 Do not print or copy private-key material, passphrases, passwords, 1Password
 values, or decrypted secrets.
 
@@ -38,7 +39,7 @@ to paste the passphrase into chat.
 
 ## Query workflow
 
-For read-only troubleshooting, run focused queries with `snowsql -c okta_conn
+For read-only troubleshooting, run focused queries with `snowsql -c ssh
 -q "..."`. Prefer small result sets and add `limit` where appropriate.
 
 Read-only operations are OK without extra approval:
@@ -72,10 +73,10 @@ This includes:
 ## Useful checks
 
 ```sh
-snowsql -c okta_conn -q "select current_user(), current_role();"
-snowsql -c okta_conn -q "select current_database(), current_schema();"
-snowsql -c okta_conn -q "select current_warehouse();"
-snowsql -c okta_conn -q "show roles;"
-snowsql -c okta_conn -q "show warehouses;"
-snowsql -c okta_conn -q "show databases;"
+snowsql -c ssh -q "select current_user(), current_role();"
+snowsql -c ssh -q "select current_database(), current_schema();"
+snowsql -c ssh -q "select current_warehouse();"
+snowsql -c ssh -q "show roles;"
+snowsql -c ssh -q "show warehouses;"
+snowsql -c ssh -q "show databases;"
 ```

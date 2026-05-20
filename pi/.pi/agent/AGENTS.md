@@ -127,6 +127,9 @@ attribution unless the user explicitly asks otherwise.
 - Commits: include `Co-Authored-By: Pi <noreply@pi.dev>` as a trailer.
 - Pull requests: include `🤖 Generated with [Pi](https://pi.dev)` in the PR
   description.
+- When creating or editing pull request descriptions or comments containing
+  Markdown, use `--body-file` or stdin. Do not pass multiline Markdown through
+  shell/JSON quoting. Verify formatting after creation or edit.
 
 ## PR Review Preferences
 

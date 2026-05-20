@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.74.0",
+  "lastChangelogVersion": "0.75.3",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
@@ -14,7 +14,7 @@
   "npmCommand": [
     "mise",
     "exec",
-    "node@20",
+    "node@22.19.0",
     "--",
     "npm"
   ],

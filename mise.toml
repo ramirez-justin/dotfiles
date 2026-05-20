@@ -42,10 +42,9 @@ check "brew bundle" brew bundle check --file={{config_root}}/Brewfile
 check "stow available" command -v stow
 check "mise available" command -v mise
 check "mise tools installed" mise current
-check "node version is 20.20.2" sh -c '[ "$(node -v)" = "v20.20.2" ]'
-check "node ABI is 115" sh -c '[ "$(node -p process.versions.modules)" = "115" ]'
+check "node available via mise" mise exec -- node -v
 check "pi available" command -v pi
-check "pi starts offline" pi --offline --list-models
+check "pi starts offline" mise exec -- pi --offline --list-models
 check "git submodules initialized" git submodule status --recursive
 check "zsh config linked" sh -c '[ -L "$HOME/.zshrc" ]'
 check "mise config linked" sh -c '[ -L "$HOME/.config/mise/config.toml" ] || [ -L "$HOME/.config/mise" ]'
@@ -102,7 +101,7 @@ run = "git -C {{config_root}} pull --rebase && mise run link && mise run pi-upda
 
 [tasks.pi-update]
 description = "Update Pi packages/extensions"
-run = "pi update --extensions"
+run = "mise exec -- pi update --extensions"
 
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"

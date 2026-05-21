@@ -14,7 +14,8 @@ Personal preferences that apply across all projects.
 - At the start of work in a repository, check for and read applicable `CLAUDE.md`
   and `CLAUDE.local.md` files in the repo root and relevant subdirectories before
   making changes. Treat `CLAUDE.local.md` as local/private context and do not
-  quote secrets from it.
+  quote secrets from it. Any AGENTS.md and AGENT.local.md should be treated as
+  synonymous with CLAUDE.md and CLAUDE.local.md.
 
 ## Safety / Restrictions
 
@@ -46,7 +47,9 @@ than mandatory for every message. Prefer explicit workflow prompts for heavier p
 - `/finish` for verification before completion
 - `/code-review` for structured local review
 
-When a skill is used, briefly say which skill you are using and why.
+When a skill is used, briefly say which skill you are using and why. If we are
+deviating from an existing skill then suggest updates. If we are doing something
+that seems like a good candidate for a skill then suggest that we create one.
 
 ## Tool Preferences
 
@@ -61,6 +64,8 @@ Prioritize LSP tools as the first choice for code intelligence tasks when availa
 
 Fall back to grep/find/read when LSP returns no results, for non-code searches,
 or for file types without LSP support.
+
+CLI tools should be prioritized whenever possible, but not required.
 
 ## Documentation Awareness
 

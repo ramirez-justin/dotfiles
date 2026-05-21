@@ -14,20 +14,27 @@ configuration needs debugging.
 
 ## Preferred connection
 
-Prefer the configured SnowSQL connection:
+Prefer the configured Snowflake CLI default connection:
 
 ```sh
-snowsql -c ssh \
+snow connection test -c default
+snow sql -c default \
   -q "select current_user(), current_role(), current_warehouse();"
 ```
 
-The connection is defined in `~/.snowsql/config`. It already includes Justin's
-Snowflake username, SSH/key-pair authentication, the private key path under
-`~/.ssh`, and output formatting.
-Do not print or copy private-key material, passphrases, passwords, 1Password
-values, or decrypted secrets.
+The connection is defined in `~/.snowflake/connections.toml`. It uses Justin's
+Snowflake username and local key-pair authentication with the private key path
+under `~/.ssh`. Do not print or copy private-key material, passphrases,
+passwords, 1Password values, or decrypted secrets.
 
-If the named connection is unavailable, the known direct production pattern is:
+For interactive SSO, use the configured Okta/browser connection. It uses the
+same verified role and warehouse as the default JWT connection:
+
+```sh
+snow connection test -c gametime_okta
+```
+
+If Snowflake CLI is unavailable, the known direct SnowSQL fallback is:
 
 ```sh
 snowsql -a gametime-prod -u JUSTIN_RAMIREZ \

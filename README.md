@@ -30,6 +30,7 @@ dotfiles/
 ├── mise/            # → ~/.config/mise/
 ├── claude/          # → ~/.claude/settings.json, CLAUDE.md, statusline.sh
 ├── pi/              # → ~/.pi/agent/settings.json, AGENTS.md, env.zsh, prompts/
+├── snowflake/       # → ~/.snowflake/connections.toml.example
 ├── eza/             # → ~/.config/eza/ (submodule: eza-themes)
 └── marimo/          # → ~/.config/marimo/
 ```
@@ -61,6 +62,9 @@ mise run inject-secrets
 mise run link
 
 # 7. Open a new shell, then create ~/.zshrc.local with machine-specific secrets
+# 8. Copy snowflake/.snowflake/connections.toml.example to
+#    ~/.snowflake/connections.toml and verify with:
+#    snow connection test -c default
 ```
 
 > On subsequent runs `mise run bootstrap` does steps 4–6 in one command (requires 1Password already authenticated).
@@ -142,7 +146,8 @@ mkdir -p ~/Repositories/dotfiles/mytool/.config/mytool
 cp -r ~/.config/mytool ~/Repositories/dotfiles/mytool/.config/mytool
 
 # 3. Add topic to the stow commands in mise.toml (link, unlink tasks)
-#    Current topics include: zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo
+#    Current topics include:
+#    zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo snowflake
 
 # 4. Stow it
 stow --dir=~/Repositories/dotfiles --target=$HOME --restow mytool

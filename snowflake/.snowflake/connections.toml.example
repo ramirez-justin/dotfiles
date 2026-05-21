@@ -1,0 +1,28 @@
+# Copy to ~/.snowflake/connections.toml and adjust local values.
+# Keep the real file out of git; it contains machine-local auth details.
+
+[default]
+account = "gkb98284"
+user = "JUSTIN_RAMIREZ"
+authenticator = "snowflake_jwt"
+private_key_file = "/Users/justin/.ssh/snowflake_production.p8"
+warehouse = "ANALYST_XS_WH"
+role = "ANALYST_FULL"
+database = "GAMETIME"
+
+[gametime_jwt]
+account = "gkb98284"
+user = "JUSTIN_RAMIREZ"
+authenticator = "snowflake_jwt"
+private_key_file = "/Users/justin/.ssh/snowflake_production.p8"
+warehouse = "ANALYST_XS_WH"
+role = "ANALYST_FULL"
+database = "GAMETIME"
+
+[gametime_okta]
+account = "gkb98284"
+user = "JUSTIN_RAMIREZ"
+authenticator = "externalbrowser"
+warehouse = "ANALYST_XS_WH"
+role = "ANALYST_FULL"
+database = "GAMETIME"

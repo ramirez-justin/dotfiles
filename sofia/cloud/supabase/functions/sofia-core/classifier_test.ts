@@ -26,29 +26,28 @@ Deno.test("parseClassifierResponse parses valid candidate JSON", () => {
 	assert.equal(parsed[0].worthiness_score, 0.91);
 });
 
-Deno.test("parseClassifierResponse rejects unknown candidate types", () => {
-	assert.throws(
-		() =>
-			parseClassifierResponse(
-				JSON.stringify({
-					candidates: [
-						{
-							candidate_type: "vibe",
-							candidate_text: "bad",
-							title: "Bad",
-							worthiness_score: 0.9,
-							confidence: 0.9,
-							risk_level: "low",
-							recommended_action: "auto_promote",
-							reasoning: "bad",
-							entities: [],
-							metadata: {},
-						},
-					],
-				}),
-			),
-		/invalid classifier response/,
+Deno.test("parseClassifierResponse routes unknown candidate types to reviewable facts", () => {
+	const parsed = parseClassifierResponse(
+		JSON.stringify({
+			candidates: [
+				{
+					candidate_type: "roadmap_theme",
+					candidate_text: "SOFIA should add scheduled review workflows.",
+					title: "SOFIA scheduled review roadmap theme",
+					worthiness_score: 0.9,
+					confidence: 0.9,
+					risk_level: "low",
+					recommended_action: "Consider for durable memory.",
+					reasoning: "Roadmap theme from a planning conversation.",
+					entities: [],
+					metadata: {},
+				},
+			],
+		}),
 	);
+
+	assert.equal(parsed[0].candidate_type, "fact");
+	assert.equal(parsed[0].recommended_action, "review");
 });
 
 Deno.test("parseClassifierResponse repairs common model formatting mistakes", () => {

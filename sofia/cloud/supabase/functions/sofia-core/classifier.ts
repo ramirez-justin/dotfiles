@@ -112,7 +112,7 @@ function normalizeCandidateType(value: unknown): unknown {
 	}
 	if (normalized.startsWith("project_")) return "project_context";
 	if (normalized.startsWith("person_")) return "person_context";
-	return value;
+	return "fact";
 }
 
 function normalizeScore(value: unknown): unknown {
@@ -152,7 +152,7 @@ function normalizeRecommendedAction(value: unknown): unknown {
 	if (normalized.includes("reject") || normalized.includes("discard")) {
 		return "reject";
 	}
-	return value;
+	return "review";
 }
 
 function normalizeEntities(value: unknown): unknown {

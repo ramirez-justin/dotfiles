@@ -1,6 +1,6 @@
 [tools]
 "aqua:go-task/task" = "latest"
-node = "20.20.2"
+node = "24"
 python = "3.12"
 "npm:@4ier/notion-cli" = "latest"
 "npm:@earendil-works/pi-coding-agent" = "latest"

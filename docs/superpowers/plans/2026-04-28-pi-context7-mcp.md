@@ -22,6 +22,7 @@
 ### Task 1: Verify adapter and Context7 package metadata
 
 **Files:**
+
 - Read only: npm registry metadata
 
 - [ ] **Step 1: Verify `pi-mcp-adapter` package metadata**
@@ -30,7 +31,7 @@ Run:
 
 ```bash
 cd ~/Repositories/dotfiles
-mise exec node@20 -- npm view pi-mcp-adapter name version description repository.url pi --json
+npm view pi-mcp-adapter name version description repository.url pi --json
 ```
 
 Expected: output includes `"name": "pi-mcp-adapter"`, a version, repository URL `git+https://github.com/nicobailon/pi-mcp-adapter.git`, and a `pi.extensions` entry containing `./index.ts`.
@@ -41,7 +42,7 @@ Run:
 
 ```bash
 cd ~/Repositories/dotfiles
-mise exec node@20 -- npm view @upstash/context7-mcp name version description bin --json
+npm view @upstash/context7-mcp name version description bin --json
 ```
 
 Expected: output includes `"name": "@upstash/context7-mcp"`, a version, and package metadata showing it can run as an npm executable.
@@ -55,6 +56,7 @@ This task is read-only. Do not commit.
 ### Task 2: Add `pi-mcp-adapter` to global pi packages
 
 **Files:**
+
 - Modify: `pi/.pi/agent/settings.json`
 
 - [ ] **Step 1: Update `settings.json`**
@@ -127,6 +129,7 @@ Expected: commit succeeds.
 ### Task 3: Add global Context7 MCP config
 
 **Files:**
+
 - Create: `pi/.pi/agent/mcp.json`
 
 - [ ] **Step 1: Create `mcp.json`**
@@ -185,6 +188,7 @@ Expected: commit succeeds.
 ### Task 4: Add Context7 usage guidance to global pi instructions
 
 **Files:**
+
 - Modify: `pi/.pi/agent/AGENTS.md`
 
 - [ ] **Step 1: Add documentation-awareness guidance**
@@ -227,6 +231,7 @@ Expected: commit succeeds.
 ### Task 5: Link dotfiles and verify global files
 
 **Files:**
+
 - Verify live files: `~/.pi/agent/settings.json`, `~/.pi/agent/mcp.json`, `~/.pi/agent/AGENTS.md`
 
 - [ ] **Step 1: Restow dotfiles**
@@ -263,6 +268,7 @@ rg -n "Documentation Awareness|Context7" ~/.pi/agent/AGENTS.md
 ```
 
 Expected:
+
 - packages include `npm:pi-mcp-adapter`
 - Context7 config shows `command: npx`, `args: ["-y", "@upstash/context7-mcp"]`, `lifecycle: lazy`, and `directTools: true`
 - `AGENTS.md` contains the new Context7 guidance
@@ -276,6 +282,7 @@ This task changes live symlinks only. Do not commit.
 ### Task 6: Verify pi loads the adapter and Context7 works
 
 **Files:**
+
 - No repo file changes expected
 
 - [ ] **Step 1: Let pi install/load packages in a non-interactive smoke test**
@@ -327,6 +334,7 @@ Expected: no uncommitted changes from the verification commands.
 ### Task 7: Final review
 
 **Files:**
+
 - Review: `pi/.pi/agent/settings.json`, `pi/.pi/agent/mcp.json`, `pi/.pi/agent/AGENTS.md`
 
 - [ ] **Step 1: Show final commit history for this change**
@@ -339,6 +347,7 @@ git log --oneline -5
 ```
 
 Expected: recent commits include:
+
 - `docs: design pi context7 mcp integration`
 - `feat(pi): add mcp adapter package`
 - `feat(pi): configure context7 mcp server`
@@ -358,6 +367,7 @@ Expected: clean working tree.
 - [ ] **Step 3: Report completion**
 
 Summarize:
+
 - adapter package added: `npm:pi-mcp-adapter`
 - Context7 server configured: `npx -y @upstash/context7-mcp`
 - global guidance added to `AGENTS.md`

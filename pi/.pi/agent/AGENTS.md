@@ -14,7 +14,8 @@ Personal preferences that apply across all projects.
 - At the start of work in a repository, check for and read applicable `CLAUDE.md`
   and `CLAUDE.local.md` files in the repo root and relevant subdirectories before
   making changes. Treat `CLAUDE.local.md` as local/private context and do not quote
-  secrets from it.
+  secrets from it. Treat `AGENTS.md` and `AGENT.local.md` as synonymous with
+  `CLAUDE.md` and `CLAUDE.local.md`.
 
 ## Safety / Restrictions
 
@@ -45,7 +46,9 @@ than mandatory for every message. Prefer explicit workflow prompts for heavier p
 - `/finish` for verification before completion
 - `/code-review` for structured local review
 
-When a skill is used, briefly say which skill you are using and why.
+When a skill is used, briefly say which skill you are using and why. If we are
+deviating from an existing skill, suggest updates. If the work seems like a good
+candidate for a skill, suggest creating one.
 
 ## Tool Preferences
 
@@ -60,6 +63,8 @@ Prioritize LSP tools as the first choice for code intelligence tasks when availa
 
 Fall back to grep/find/read when LSP returns no results, for non-code searches,
 or for file types without LSP support.
+
+Prefer CLI tools whenever possible, but do not require them.
 
 ## Documentation Awareness
 
@@ -104,6 +109,10 @@ or for file types without LSP support.
 When asked to review a pull request, verify the diff and relevant files before
 giving conclusions. Prefer concrete findings with file/line references over generic
 review commentary.
+
+When creating or editing pull request descriptions or comments containing Markdown,
+use `--body-file` or stdin. Do not pass multiline Markdown through shell/JSON
+quoting. Verify formatting after creation or edit.
 
 ## Commit Message Preferences
 

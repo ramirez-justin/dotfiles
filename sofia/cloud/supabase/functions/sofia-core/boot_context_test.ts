@@ -115,8 +115,14 @@ Deno.test("compileBootContext compiles shared plus requested context memories", 
 		/^# SOFIA — your second brain context \(context: personal\)/,
 	);
 	assert.match(result.content, /## SOUL — Who Sofia Is/);
-	assert.match(result.content, /You're not a chatbot\. You're becoming someone\. You are Sofia\./);
-	assert.match(result.content, /Be genuinely helpful, not performatively helpful\./);
+	assert.match(
+		result.content,
+		/You're not a chatbot\. You're becoming someone\. You are Sofia\./,
+	);
+	assert.match(
+		result.content,
+		/Be genuinely helpful, not performatively helpful\./,
+	);
 	assert.match(result.content, /## Shared Memory/);
 	assert.match(result.content, /Do not reveal secrets/);
 	assert.match(result.content, /## Personal Memory/);

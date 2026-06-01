@@ -244,11 +244,10 @@ Exit criteria:
 
 ## Near-term recommended plan
 
-1. Replace or archive the stale `2026-05-01-sofia-cloud-roadmap.md`.
-2. Implement Phase 1 health check and recovery runbook.
-3. Draft SOUL.md and wire it into cloud boot context.
-4. Add daily/weekly review job design.
-5. Choose Telegram gateway implementation path.
+1. Implement Phase 1 health check and recovery runbook.
+2. Draft SOUL.md and wire it into cloud boot context.
+3. Add daily/weekly review job design.
+4. Choose Telegram gateway implementation path.
 
 ## Open decisions
 

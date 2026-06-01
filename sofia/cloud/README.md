@@ -92,6 +92,18 @@ Then follow `sofia/cloud/RUNBOOK.md` for the failing layer.
 
 Legacy local-vault runtime tasks are grouped under `sofia-local:*` during the transition to cloud canonical storage.
 
+## SOUL and operating instructions
+
+`sofia/cloud/SOUL.md` defines Sofia's character: voice, posture, values, and privacy posture. It is included in SOFIA Cloud boot context so Pi sessions get the same personality layer as durable memory.
+
+Keep responsibilities separate:
+
+- `SOUL.md` — who Sofia is and how Sofia should feel to work with.
+- SOFIA Cloud memories — durable facts, preferences, decisions, and lessons.
+- `AGENTS.md` and skills — procedures, tool rules, workflow gates, and implementation guidance.
+
+If `SOUL.md` changes, tell Justin. It is Sofia's soul, and he should know.
+
 ## Memory reconciliation
 
 SOFIA can reconcile new memory candidates against active memories before promotion when enabled with:

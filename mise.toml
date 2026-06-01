@@ -220,6 +220,10 @@ supabase functions list \
   --project-ref "$project_ref"
 """
 
+[tasks."sofia-cloud:health"]
+description = "Diagnose SOFIA Cloud project, DNS, Edge Function, and boot context health"
+run = "deno run --allow-env --allow-net --allow-run=op,supabase,dscacheutil {{config_root}}/sofia/cloud/scripts/health.ts"
+
 [tasks."sofia-local:init"]
 description = "Legacy local SOFIA bootstrap (transitional until cloud replaces local runtime)"
 run = """

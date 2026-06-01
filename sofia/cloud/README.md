@@ -77,9 +77,18 @@ mise run sofia-cloud:test
 mise run sofia-cloud:check
 mise run sofia-cloud:deploy
 mise run sofia-cloud:functions-list
+mise run sofia-cloud:health
 ```
 
-`sofia-cloud:deploy` and `sofia-cloud:functions-list` read the Supabase project ref from `SUPABASE_SOFIA_PROJECT_REF` when set, otherwise from the 1Password ref `op://dev_vault/Supabase SOFIA/project id`.
+`sofia-cloud:deploy`, `sofia-cloud:functions-list`, and `sofia-cloud:health` read the Supabase project ref from `SUPABASE_SOFIA_PROJECT_REF` when set, otherwise from the 1Password ref `op://dev_vault/Supabase SOFIA/project id`.
+
+If Pi cannot fetch SOFIA boot context, run:
+
+```bash
+mise run sofia-cloud:health
+```
+
+Then follow `sofia/cloud/RUNBOOK.md` for the failing layer.
 
 Legacy local-vault runtime tasks are grouped under `sofia-local:*` during the transition to cloud canonical storage.
 

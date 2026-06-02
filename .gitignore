@@ -9,4 +9,14 @@ tmux/.config/tmux/scripts/.client-secret.json
 sofia/cloud/supabase/.temp/
 supabase/.temp/
 
+# Hermes profile secrets are generated locally by mise run hermes:sofia:inject-secrets.
+hermes/.hermes/profiles/*/.env
+hermes/.hermes/profiles/*/auth.json
+hermes/.hermes/profiles/*/state.db
+hermes/.hermes/profiles/*/logs/
+hermes/.hermes/profiles/*/sessions/
+hermes/.hermes/profiles/*/memories/
+hermes/.hermes/profiles/*/cron/
+hermes/.hermes/profiles/*/checkpoints/
+
 .worktrees/

@@ -1,0 +1,65 @@
+name: rose-pine
+description: Rose Pine inspired Hermes skin, matching Justin's Pi theme.
+colors:
+  banner_border: "#ebbcba"
+  banner_title: "#f6c177"
+  banner_accent: "#c4a7e7"
+  banner_dim: "#6e6a86"
+  banner_text: "#e0def4"
+  ui_accent: "#c4a7e7"
+  ui_label: "#f6c177"
+  ui_ok: "#9ccfd8"
+  ui_error: "#eb6f92"
+  ui_warn: "#f6c177"
+  prompt: "#ebbcba"
+  input_rule: "#31748f"
+  response_border: "#ebbcba"
+  status_bar_bg: "#191724"
+  status_bar_text: "#e0def4"
+  status_bar_strong: "#f6c177"
+  status_bar_dim: "#6e6a86"
+  status_bar_good: "#9ccfd8"
+  status_bar_warn: "#f6c177"
+  status_bar_bad: "#eb6f92"
+  status_bar_critical: "#eb6f92"
+  session_label: "#c4a7e7"
+  session_border: "#6e6a86"
+  voice_status_bg: "#191724"
+  selection_bg: "#403d52"
+  completion_menu_bg: "#191724"
+  completion_menu_current_bg: "#403d52"
+  completion_menu_meta_bg: "#191724"
+  completion_menu_meta_current_bg: "#403d52"
+spinner:
+  waiting_faces:
+    - "(🌹)"
+    - "(✦)"
+    - "(◌)"
+  thinking_faces:
+    - "(⋆)"
+    - "(✶)"
+    - "(✧)"
+  thinking_verbs:
+    - "thinking"
+    - "searching"
+    - "weaving"
+    - "checking"
+  wings:
+    - ["❬", "❭"]
+    - ["✧", "✧"]
+branding:
+  agent_name: "Sofia / Hermes"
+  welcome: "Sofia on Hermes — SOFIA spike profile. Pi remains fallback."
+  goodbye: "Goodbye — stay thorny. 🌹"
+  response_label: " 🌹 Sofia "
+  prompt_symbol: "❯"
+  help_header: "🌹 Sofia Commands"
+tool_prefix: "│"
+tool_emojis:
+  terminal: "⌘"
+  read_file: "󰈙"
+  search_files: "🔎"
+  web_search: "🌐"
+  memory: "🧠"
+  todo: "☑"
+  delegate_task: "⇄"

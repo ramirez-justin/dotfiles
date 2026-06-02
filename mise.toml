@@ -153,6 +153,37 @@ link_doc "{{config_root}}/sofia/cloud/SOUL.md" "$HOME/.hermes/SOUL.md"
 link_doc "{{config_root}}/pi/.pi/agent/AGENTS.md" "$HOME/.hermes/AGENTS.md"
 """
 
+[tasks."hermes:sofia:link"]
+description = "Link the isolated Hermes SOFIA spike profile without folding secret directories"
+run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/link-profile.sh"
+
+[tasks."hermes:sofia:run"]
+description = "Start Hermes with the isolated SOFIA spike profile"
+run = "hermes --profile sofia-spike"
+
+[tasks."hermes:sofia:inject-secrets"]
+description = "Write local-only Hermes SOFIA profile secrets from environment/1Password"
+run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/inject-secrets.sh"
+
+[tasks."hermes:sofia:boot-context"]
+description = "Fetch SOFIA Cloud boot context using the isolated Hermes profile .env"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/sofia-boot-context"
+
+[tasks."hermes:sofia:guard"]
+description = "Fail if Hermes profile secrets/state are tracked or staged"
+run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/check-sensitive-state.sh"
+
+[tasks."hermes:sofia:doctor"]
+description = "Validate the Hermes SOFIA spike profile config and MCP server wiring"
+run = """
+set -e
+bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/check-sensitive-state.sh
+hermes --profile sofia-spike config check
+hermes --profile sofia-spike mcp list
+hermes --profile sofia-spike mcp test sofia-cloud
+hermes --profile sofia-spike mcp test context7
+"""
+
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"
 run = "brew bundle dump --force --file={{config_root}}/Brewfile"

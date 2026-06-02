@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+profile_dir="${HERMES_HOME:-$HOME/.hermes/profiles/sofia-spike}"
+if [[ -f "$profile_dir/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$profile_dir/.env"
+  set +a
+fi
+
+: "${SOFIA_CLOUD_URL:=https://avgjtkgppeeihntsyjpy.supabase.co/functions/v1/sofia-core}"
+SOFIA_CONTEXT="${1:-${SOFIA_CONTEXT:-personal}}"
+
+if [[ -z "${SOFIA_MCP_ACCESS_KEY:-}" ]]; then
+  echo "SOFIA_MCP_ACCESS_KEY is not set. Run: mise run hermes:sofia:inject-secrets" >&2
+  exit 2
+fi
+
+curl -fsS \
+  -H "x-sofia-key: $SOFIA_MCP_ACCESS_KEY" \
+  "$SOFIA_CLOUD_URL/boot-context?context=$SOFIA_CONTEXT"

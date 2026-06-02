@@ -1,48 +1,65 @@
 # SOFIA Hermes-Inspired Roadmap
 
-Status: draft
-Date: 2026-05-28
+Status: draft Date: 2026-05-28
 
 ## Purpose
 
-Reframe SOFIA as the durable memory, review, and coordination layer for Pi, borrowing the best product ideas from Hermes Agent without replacing Pi or overbuilding a new agent framework.
+Reframe SOFIA as the durable memory, review, and coordination layer for Pi,
+borrowing the best product ideas from Hermes Agent without replacing Pi or
+overbuilding a new agent framework.
 
 Target shape:
 
-- **Pi** is the interactive agent shell: terminal, tools, coding workflows, MCP, skills.
-- **SOFIA Cloud** is the memory/control plane: boot context, durable memories, plans, review queues, compiled artifacts, health state.
-- **Hermes-inspired layer** is the operating loop: always-available access, scheduled review, proactive capture, skill learning, and reliability checks.
+- **Pi** is the interactive agent shell: terminal, tools, coding workflows, MCP,
+  skills.
+- **SOFIA Cloud** is the memory/control plane: boot context, durable memories,
+  plans, review queues, compiled artifacts, health state.
+- **Hermes-inspired layer** is the operating loop: always-available access,
+  scheduled review, proactive capture, skill learning, and reliability checks.
 
 ## Guiding principles
 
-1. Keep Postgres/SOFIA Cloud canonical; Obsidian/Markdown is a generated human view.
-2. Keep Pi lightweight. Add workflows through skills, MCP tools, and scheduled jobs rather than a monolithic runtime.
-3. Prefer explicit review gates for durable memory and skills; auto-promote only when confidence is high.
-4. Preserve Justin’s agency: preview before mutation, quiet hours, opt-in proactive behavior.
-5. Make failures legible. If cloud boot fails, explain what failed and how to recover.
-6. Use SOUL.md for character, not as a substitute for operating rules or durable memory.
+1. Keep Postgres/SOFIA Cloud canonical; Obsidian/Markdown is a generated human
+   view.
+2. Keep Pi lightweight. Add workflows through skills, MCP tools, and scheduled
+   jobs rather than a monolithic runtime.
+3. Prefer explicit review gates for durable memory and skills; auto-promote only
+   when confidence is high.
+4. Preserve Justin’s agency: preview before mutation, quiet hours, opt-in
+   proactive behavior.
+5. Make failures legible. If cloud boot fails, explain what failed and how to
+   recover.
+6. Use SOUL.md for character, not as a substitute for operating rules or durable
+   memory.
 
 ## Current baseline
 
 Already working:
 
 - SOFIA Cloud Supabase/Postgres core.
-- Remote MCP tools for capture, search, recent listing, candidate review, archive, boot context, and artifacts.
+- Remote MCP tools for capture, search, recent listing, candidate review,
+  archive, boot context, and artifacts.
 - Cloud-first Pi boot context.
-- Durable memory capture with candidate extraction, reconciliation, auto-promotion, and review routing.
+- Durable memory capture with candidate extraction, reconciliation,
+  auto-promotion, and review routing.
 - Pi skills for SOFIA workflows.
 - Dotfiles-managed deployment/check tasks.
 
 Known gaps:
 
 - Existing roadmap is stale.
-- Supabase project inactivity can break boot context until the project is restored.
+- Supabase project inactivity can break boot context until the project is
+  restored.
 - No first-class scheduled review/briefing loop.
 - No chat gateway for capture/search/review outside coding sessions.
-- Classifier output can still produce unexpected enum values for roadmap/feature-like captures, causing capture failure instead of graceful review routing.
+- Classifier output can still produce unexpected enum values for
+  roadmap/feature-like captures, causing capture failure instead of graceful
+  review routing.
 - Skill creation/improvement is not yet a formal SOFIA loop.
-- Human-readable compiled views are incomplete or not treated as a core product surface.
-- SOFIA/Pi personality is mostly implicit in instructions rather than expressed through a dedicated SOUL.md.
+- Human-readable compiled views are incomplete or not treated as a core product
+  surface.
+- SOFIA/Pi personality is mostly implicit in instructions rather than expressed
+  through a dedicated SOUL.md.
 
 ## Phase 1 — Reliability and operability
 
@@ -61,8 +78,10 @@ Deliverables:
   - transient Cloudflare `521` during restore.
   - missing or invalid `SOFIA_MCP_ACCESS_KEY`.
 - Add an optional keepalive/check job to reduce surprise inactivity.
-- Improve boot failure messaging in Pi instructions/hooks: never fall back to local Obsidian; surface cloud failure and suggested command.
-- Harden classifier normalization so unknown candidate types/actions degrade to `fact`/`review` or a clear validation error path without losing the raw event.
+- Improve boot failure messaging in Pi instructions/hooks: never fall back to
+  local Obsidian; surface cloud failure and suggested command.
+- Harden classifier normalization so unknown candidate types/actions degrade to
+  `fact`/`review` or a clear validation error path without losing the raw event.
 
 Exit criteria:
 
@@ -72,7 +91,8 @@ Exit criteria:
 
 ## Phase 2 — SOUL.md and agent character
 
-Goal: give SOFIA/Pi a consistent character while keeping behavior governed by explicit rules.
+Goal: give SOFIA/Pi a consistent character while keeping behavior governed by
+explicit rules.
 
 Deliverables:
 
@@ -82,7 +102,8 @@ Deliverables:
   - **USER.md / durable memory**: Justin’s preferences and facts.
   - **AGENTS.md / skills**: operating rules and procedures.
 - Add SOUL content to boot context in a compact way.
-- Add a review workflow for character changes so personality does not drift accidentally.
+- Add a review workflow for character changes so personality does not drift
+  accidentally.
 
 Initial character direction:
 
@@ -102,12 +123,17 @@ Exit criteria:
 
 Goal: make SOFIA useful without requiring manual prompting.
 
+Status: partially complete. SOFIA now sends a deterministic Telegram evening
+digest via Supabase cron. Weekly digest, stale memory reports, and richer review
+briefings remain open.
+
 Deliverables:
 
-- Daily review job:
+- Completed daily Telegram evening digest:
   - pending memory candidates.
   - recent captures.
-  - failed captures/reconciliations.
+  - redaction count.
+  - scheduled function health line.
 - Weekly digest:
   - active projects/plans.
   - stale plans.
@@ -129,26 +155,38 @@ Exit criteria:
 
 Goal: let Justin capture, search, and review SOFIA from outside coding sessions.
 
-Recommended first adapter: Telegram.
+Decision: build a dedicated SOFIA Telegram gateway instead of adopting Hermes as
+the runtime core. Hermes remains useful prior art for polling/webhook modes,
+allowlists, service management, and approval UX, but SOFIA Cloud/Postgres must
+remain canonical for memory, review, state, and audit logs.
 
 Deliverables:
 
-- Minimal Telegram bot or gateway integration.
+- Security-first Telegram gateway daemon:
+  - local long polling first.
+  - VPS/webhook deployment path later.
+  - explicit Telegram allowlist and fail-closed authorization.
+  - replay protection through stored Telegram update ids.
+  - stateful conversation sessions in SOFIA Cloud/Postgres.
 - Commands/intents:
   - capture note/decision/todo.
   - search memory.
   - list pending review candidates.
-  - approve/reject/archive candidate.
+  - approve/reject/archive/edit candidate.
   - ask for daily/weekly digest.
 - Identity/authorization guardrails.
+- Audit log for inbound messages, interpreted intents, actions, and results.
 - Message formatting for review cards.
 - Quiet-hours/throttling.
 
 Exit criteria:
 
 - Justin can text SOFIA a memory from phone.
-- Justin can approve/reject candidates from phone.
-- SOFIA can send scheduled digest messages without being noisy.
+- Justin can search SOFIA from phone.
+- Justin can approve/reject/archive/edit candidates from phone.
+- Unauthorized Telegram users cannot interact with SOFIA.
+- Gateway restart does not lose review state.
+- No secrets appear in logs, events, memories, or Telegram replies.
 
 ## Phase 5 — Skill learning loop
 
@@ -163,7 +201,8 @@ Deliverables:
   - non-obvious debugging path.
   - manual recovery runbook.
 - Add `skill_candidate` capture type or metadata convention.
-- Add review flow: promote workflow lesson to skill update, new skill, or memory only.
+- Add review flow: promote workflow lesson to skill update, new skill, or memory
+  only.
 - Add skill improvement workflow:
   - identify stale/brittle skill instructions.
   - propose patch.
@@ -173,7 +212,8 @@ Exit criteria:
 
 - SOFIA can identify skill-worthy workflows without spamming.
 - Skill changes remain explicit and reviewable.
-- Recovery procedures like SOFIA Cloud restore can become durable skills/runbooks.
+- Recovery procedures like SOFIA Cloud restore can become durable
+  skills/runbooks.
 
 ## Phase 6 — Compiled human view
 
@@ -252,7 +292,8 @@ Exit criteria:
 ## Open decisions
 
 - Should SOUL.md be human-authored, generated from memory, or hybrid?
-- Should scheduled jobs live in Supabase, local launchd, GitHub Actions, or an external cron/gateway?
+- Should scheduled jobs live in Supabase, local launchd, GitHub Actions, or an
+  external cron/gateway?
 - Should Telegram be a thin SOFIA client or a broader Pi agent interface?
 - How aggressive should proactive skill creation be?
 - Should old local SOFIA runtime be removed after importer/exporter work lands?

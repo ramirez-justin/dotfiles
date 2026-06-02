@@ -2,21 +2,31 @@
 
 - **Status:** draft
 - **Date:** 2026-06-02
-- **Decision:** Build a dedicated SOFIA gateway, informed by Hermes patterns, instead of adopting Hermes as the runtime core.
+- **Decision:** Build a dedicated SOFIA gateway, informed by Hermes patterns,
+  instead of adopting Hermes as the runtime core.
 
 ## Summary
 
-SOFIA should become reachable from Telegram as a first-class, stateful conversational client. The gateway will run locally on Justin's machine first and later move to a VPS. SOFIA Cloud/Postgres remains the canonical memory, review, and conversation state system.
+SOFIA should become reachable from Telegram as a first-class, stateful
+conversational client. The gateway will run locally on Justin's machine first
+and later move to a VPS. SOFIA Cloud/Postgres remains the canonical memory,
+review, and conversation state system.
 
-The gateway must prioritize security over convenience. It should fail closed, accept messages only from explicitly authorized Telegram identities, keep secrets out of logs and memory, use deterministic handlers for mutations, and write an audit trail for inbound messages and resulting actions.
+The gateway must prioritize security over convenience. It should fail closed,
+accept messages only from explicitly authorized Telegram identities, keep
+secrets out of logs and memory, use deterministic handlers for mutations, and
+write an audit trail for inbound messages and resulting actions.
 
 ## Goals
 
 - Let Justin talk to SOFIA from Telegram with natural back-and-forth text.
-- Support capture, search, candidate review, approve/reject/archive/edit flows, and digest requests.
-- Keep SOFIA Cloud canonical for memory, review state, session state, and audit logs.
+- Support capture, search, candidate review, approve/reject/archive/edit flows,
+  and digest requests.
+- Keep SOFIA Cloud canonical for memory, review state, session state, and audit
+  logs.
 - Run locally via long polling now; support VPS/webhook deployment later.
-- Use OpenRouter/LLMs for intent classification and response drafting only behind deterministic safety gates.
+- Use OpenRouter/LLMs for intent classification and response drafting only
+  behind deterministic safety gates.
 - Make every mutation explainable and auditable.
 
 ## Non-goals
@@ -29,11 +39,18 @@ The gateway must prioritize security over convenience. It should fail closed, ac
 
 ## Why not Hermes as the core
 
-Hermes Agent is useful prior art. It already has Telegram gateway support, local service install, polling/webhook modes, allowlists, pairing, sessions, MCP support, and command approvals.
+Hermes Agent is useful prior art. It already has Telegram gateway support, local
+service install, polling/webhook modes, allowlists, pairing, sessions, MCP
+support, and command approvals.
 
-However, Hermes has its own always-on memory system (`MEMORY.md`/`USER.md`) and its external memory providers run alongside that built-in memory rather than replacing it. That creates split-brain risk for SOFIA, whose architecture requires SOFIA Cloud/Postgres to be canonical.
+However, Hermes has its own always-on memory system (`MEMORY.md`/`USER.md`) and
+its external memory providers run alongside that built-in memory rather than
+replacing it. That creates split-brain risk for SOFIA, whose architecture
+requires SOFIA Cloud/Postgres to be canonical.
 
-The design should borrow Hermes patterns but not put Hermes between Justin and SOFIA unless a future spike proves it can operate strictly as a gateway shell without owning memory or state.
+The design should borrow Hermes patterns but not put Hermes between Justin and
+SOFIA unless a future spike proves it can operate strictly as a gateway shell
+without owning memory or state.
 
 ## Architecture
 
@@ -72,24 +89,29 @@ Responsibilities:
 - Deduplicate updates by Telegram `update_id`.
 - Persist inbound message/audit record to SOFIA Cloud.
 - Load and update conversation session state.
-- Classify intent using deterministic commands and, where safe, model-assisted routing.
+- Classify intent using deterministic commands and, where safe, model-assisted
+  routing.
 - Execute allowed SOFIA actions through explicit handlers.
 - Send Telegram replies.
 
-The daemon should not have broad local tool or shell access. Its first implementation only needs Telegram, SOFIA Cloud, OpenRouter, and logging.
+The daemon should not have broad local tool or shell access. Its first
+implementation only needs Telegram, SOFIA Cloud, OpenRouter, and logging.
 
 ### SOFIA Cloud additions
 
 Add tables/APIs for Telegram-specific state:
 
 - `telegram_updates`
-  - stores Telegram update id, chat id, user id, message id, received timestamp, processing status, and redacted text.
+  - stores Telegram update id, chat id, user id, message id, received timestamp,
+    processing status, and redacted text.
   - unique constraint on `update_id` for replay protection.
 - `telegram_sessions`
   - one row per authorized chat/user.
-  - stores current state, last review candidate ids, pending action, and timestamps.
+  - stores current state, last review candidate ids, pending action, and
+    timestamps.
 - `telegram_actions`
-  - audit log of interpreted intents, deterministic handler chosen, confirmation status, SOFIA candidate/memory ids affected, and result.
+  - audit log of interpreted intents, deterministic handler chosen, confirmation
+    status, SOFIA candidate/memory ids affected, and result.
 
 Existing SOFIA tables remain canonical for:
 
@@ -106,7 +128,8 @@ Models may help with:
 - response drafting.
 - converting freeform edits into proposed candidate text.
 
-Models must not directly perform mutations. Mutation handlers are deterministic and operate only on explicit action types:
+Models must not directly perform mutations. Mutation handlers are deterministic
+and operate only on explicit action types:
 
 - capture
 - search
@@ -177,10 +200,13 @@ The gateway should recognize explicit commands first:
 
 Natural language can map to intents, but with safety rules:
 
-- Memory capture can proceed if the phrase clearly asks SOFIA to remember/capture/note something.
+- Memory capture can proceed if the phrase clearly asks SOFIA to
+  remember/capture/note something.
 - Ambiguous freeform text should ask a confirmation question before capture.
-- Review mutations require either explicit command syntax or a confirmation prompt.
-- Destructive or external actions are refused or require an explicit reviewed confirmation.
+- Review mutations require either explicit command syntax or a confirmation
+  prompt.
+- Destructive or external actions are refused or require an explicit reviewed
+  confirmation.
 
 ## Security requirements
 
@@ -190,7 +216,8 @@ Security is the top priority.
 
 - Default deny.
 - Only configured Telegram chat/user ids are accepted.
-- Unauthorized updates are recorded minimally, rate-limited, and ignored or receive a generic denial.
+- Unauthorized updates are recorded minimally, rate-limited, and ignored or
+  receive a generic denial.
 - Group chat support is disabled until explicitly designed.
 
 ### Replay and duplicate protection
@@ -203,7 +230,8 @@ Security is the top priority.
 
 - Telegram bot token stays in 1Password/local env or VPS secret store.
 - SOFIA access keys stay in 1Password/local env or VPS secret store.
-- Secrets are never written to SOFIA memories, events, Telegram audit text, logs, or errors.
+- Secrets are never written to SOFIA memories, events, Telegram audit text,
+  logs, or errors.
 - Redaction runs before persistence of message text.
 
 ### Mutation safety
@@ -211,7 +239,8 @@ Security is the top priority.
 - No model-direct mutations.
 - Candidate review actions use deterministic SOFIA Cloud handlers.
 - Ambiguous actions require confirmation.
-- Risky or external actions are out of scope for the gateway until separately designed.
+- Risky or external actions are out of scope for the gateway until separately
+  designed.
 
 ### Auditing
 
@@ -240,13 +269,15 @@ For each inbound message, log:
 3. Gateway redacts text and records Telegram update.
 4. Gateway calls SOFIA `capture_event` with source `telegram`.
 5. SOFIA Cloud performs existing redaction/classification/reconciliation.
-6. Gateway replies with event id, auto-promoted memories, and pending candidates.
+6. Gateway replies with event id, auto-promoted memories, and pending
+   candidates.
 
 ### Review list
 
 1. Justin sends `review`.
 2. Gateway loads pending review candidates from SOFIA Cloud.
-3. Gateway stores displayed candidate ids in `telegram_sessions.last_candidate_ids`.
+3. Gateway stores displayed candidate ids in
+   `telegram_sessions.last_candidate_ids`.
 4. Gateway sends numbered review list.
 
 ### Approve/reject/archive
@@ -267,10 +298,14 @@ For each inbound message, log:
 
 ## Error handling
 
-- If SOFIA Cloud is unavailable, reply that SOFIA Cloud is unreachable and no mutation occurred.
-- If Telegram send fails, keep action audit and retry according to Telegram-safe backoff.
-- If a candidate number no longer maps to an active candidate, ask Justin to run `review` again.
-- If a model call fails, fall back to deterministic command handling and ask a clarifying question.
+- If SOFIA Cloud is unavailable, reply that SOFIA Cloud is unreachable and no
+  mutation occurred.
+- If Telegram send fails, keep action audit and retry according to Telegram-safe
+  backoff.
+- If a candidate number no longer maps to an active candidate, ask Justin to run
+  `review` again.
+- If a model call fails, fall back to deterministic command handling and ask a
+  clarifying question.
 - If state is inconsistent, reset to `idle` and explain what happened.
 
 ## Testing strategy
@@ -300,16 +335,20 @@ For each inbound message, log:
 
 ## Open decisions
 
-- Whether the gateway uses SOFIA Cloud MCP directly or a small typed HTTP API for Telegram operations.
-- Whether natural-language intent classification is model-backed from the first implementation or added after deterministic command flows pass tests.
-- Whether scheduled digests remain in Supabase cron or eventually move into the gateway runtime.
+- Whether the gateway uses SOFIA Cloud MCP directly or a small typed HTTP API
+  for Telegram operations.
+- Whether natural-language intent classification is model-backed from the first
+  implementation or added after deterministic command flows pass tests.
+- Whether scheduled digests remain in Supabase cron or eventually move into the
+  gateway runtime.
 
 ## Acceptance criteria
 
 - Justin can send Telegram messages that SOFIA processes securely.
 - Unauthorized Telegram users cannot interact with SOFIA.
 - Justin can capture memories, decisions, and todos from Telegram.
-- Justin can list, approve, reject, archive, and edit pending candidates from Telegram.
+- Justin can list, approve, reject, archive, and edit pending candidates from
+  Telegram.
 - Every mutation is audited in SOFIA Cloud.
 - Gateway restart does not lose review state.
 - No secrets appear in logs, events, memories, or Telegram replies.

@@ -1,6 +1,8 @@
 # SOFIA Cloud Runbook
 
-SOFIA Cloud/Postgres is the canonical runtime memory source. If Pi cannot load SOFIA boot context, do not fall back to local Obsidian files. Run the health check and fix the failing layer.
+SOFIA Cloud/Postgres is the canonical runtime memory source. If Pi cannot load
+SOFIA boot context, do not fall back to local Obsidian files. Run the health
+check and fix the failing layer.
 
 ```bash
 mise run sofia-cloud:health
@@ -10,10 +12,12 @@ mise run sofia-cloud:health
 
 `sofia-cloud:health` checks, in order:
 
-1. Supabase project ref resolution from `SUPABASE_SOFIA_PROJECT_REF` or 1Password.
+1. Supabase project ref resolution from `SUPABASE_SOFIA_PROJECT_REF` or
+   1Password.
 2. Supabase project status from `supabase projects list --output json`.
 3. DNS resolution for `<project-ref>.supabase.co`.
-4. Edge Function reachability without a key; expected result is HTTP `401` or `403`.
+4. Edge Function reachability without a key; expected result is HTTP `401` or
+   `403`.
 5. `SOFIA_MCP_ACCESS_KEY` presence.
 6. Authenticated personal boot context at `/boot-context?context=personal`.
 
@@ -130,7 +134,8 @@ Recovery:
    ```
 
 2. If still missing, unlock 1Password CLI and source again.
-3. If invalid, update the 1Password item `op://dev_vault/SOFIA MCP/access key` or the Supabase Edge Function secret so they match.
+3. If invalid, update the 1Password item `op://dev_vault/SOFIA MCP/access key`
+   or the Supabase Edge Function secret so they match.
 4. Retry health.
 
 ### Telegram digest does not arrive
@@ -149,7 +154,8 @@ Recovery:
    mise run sofia-cloud:deploy
    ```
 
-2. Confirm the bot token and chat id by sending `/start` to the bot and checking:
+2. Confirm the bot token and chat id by sending `/start` to the bot and
+   checking:
 
    ```bash
    TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/password')"
@@ -162,7 +168,8 @@ Recovery:
    mise run sofia-cloud:send-daily-digest
    ```
 
-4. If the manual send works but the scheduled send does not, inspect the Supabase cron job and Vault secrets:
+4. If the manual send works but the scheduled send does not, inspect the
+   Supabase cron job and Vault secrets:
 
    ```sql
    select * from cron.job where jobname = 'sofia-evening-telegram-digest';
@@ -184,4 +191,5 @@ Verify boot context from Pi/MCP:
 mise run sofia-cloud:health
 ```
 
-Then start or reload Pi. If MCP metadata is stale, reconnect or reload the `sofia-cloud` server.
+Then start or reload Pi. If MCP metadata is stale, reconnect or reload the
+`sofia-cloud` server.

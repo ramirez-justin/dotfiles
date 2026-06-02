@@ -65,10 +65,13 @@ Deno.test("sendTelegramMessage posts sendMessage payload", async () => {
 	const calls: Array<{ url: string; init: RequestInit }> = [];
 	const fetchStub = async (url: string | URL | Request, init?: RequestInit) => {
 		calls.push({ url: String(url), init: init ?? {} });
-		return new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), {
-			status: 200,
-			headers: { "content-type": "application/json" },
-		});
+		return new Response(
+			JSON.stringify({ ok: true, result: { message_id: 1 } }),
+			{
+				status: 200,
+				headers: { "content-type": "application/json" },
+			},
+		);
 	};
 
 	const result = await sendTelegramMessage({
@@ -79,7 +82,10 @@ Deno.test("sendTelegramMessage posts sendMessage payload", async () => {
 	});
 
 	assert.equal(result.ok, true);
-	assert.equal(calls[0].url, "https://api.telegram.org/bot123:secret/sendMessage");
+	assert.equal(
+		calls[0].url,
+		"https://api.telegram.org/bot123:secret/sendMessage",
+	);
 	assert.equal(calls[0].init.method, "POST");
 	assert.deepEqual(JSON.parse(calls[0].init.body as string), {
 		chat_id: "456",

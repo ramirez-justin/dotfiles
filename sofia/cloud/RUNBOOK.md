@@ -152,7 +152,7 @@ Recovery:
 2. Confirm the bot token and chat id by sending `/start` to the bot and checking:
 
    ```bash
-   TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/bot token')"
+   TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/password')"
    curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates"
    ```
 

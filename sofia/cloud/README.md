@@ -131,12 +131,12 @@ Telegram's bot documentation recommends creating bots through [@BotFather](https
 
 1. In Telegram, message `@BotFather`.
 2. Run `/newbot` and follow the prompts.
-3. Copy the bot token into 1Password at `op://dev_vault/SOFIA Telegram/bot token`.
+3. Copy the bot token into the 1Password password field at `op://dev_vault/SOFIA Telegram/password`.
 4. Open the new bot chat and send `/start`.
 5. Read the chat id:
 
    ```bash
-   TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/bot token')"
+   TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/password')"
    curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates"
    ```
 

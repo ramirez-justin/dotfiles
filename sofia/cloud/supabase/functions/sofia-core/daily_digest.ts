@@ -82,7 +82,9 @@ export async function fetchDailyDigestSnapshot(
 		.select("id", { count: "exact", head: true })
 		.eq("status", "pending_review");
 	if (pendingCountError) {
-		throw new Error(`load pending review count failed: ${pendingCountError.message}`);
+		throw new Error(
+			`load pending review count failed: ${pendingCountError.message}`,
+		);
 	}
 
 	const { data: candidateRows, error: candidateError } = await supabase
@@ -100,16 +102,21 @@ export async function fetchDailyDigestSnapshot(
 		.select("id", { count: "exact", head: true })
 		.gte("created_at", since);
 	if (eventCountError) {
-		throw new Error(`load recent event count failed: ${eventCountError.message}`);
+		throw new Error(
+			`load recent event count failed: ${eventCountError.message}`,
+		);
 	}
 
-	const { count: redactedEventCount, error: redactedCountError } = await supabase
-		.from("events")
-		.select("id", { count: "exact", head: true })
-		.gte("created_at", since)
-		.eq("sensitivity", "secret_redacted");
+	const { count: redactedEventCount, error: redactedCountError } =
+		await supabase
+			.from("events")
+			.select("id", { count: "exact", head: true })
+			.gte("created_at", since)
+			.eq("sensitivity", "secret_redacted");
 	if (redactedCountError) {
-		throw new Error(`load redacted event count failed: ${redactedCountError.message}`);
+		throw new Error(
+			`load redacted event count failed: ${redactedCountError.message}`,
+		);
 	}
 
 	return {
@@ -154,7 +161,11 @@ export async function sendTelegramMessage({
 export async function deliverDailyDigest(
 	supabase: SupabaseClient,
 	env: Pick<typeof Deno.env, "get"> = Deno.env,
-): Promise<{ snapshot: DailyDigestSnapshot; text: string; telegram: TelegramSendResult }> {
+): Promise<{
+	snapshot: DailyDigestSnapshot;
+	text: string;
+	telegram: TelegramSendResult;
+}> {
 	const botToken = env.get("TELEGRAM_BOT_TOKEN")?.trim();
 	const chatId = env.get("TELEGRAM_CHAT_ID")?.trim();
 	if (!botToken || !chatId) {

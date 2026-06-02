@@ -229,7 +229,7 @@ description = "Set SOFIA Telegram Edge Function secrets from 1Password or enviro
 run = """
 set -e
 project_ref="${SUPABASE_SOFIA_PROJECT_REF:-$(op read 'op://dev_vault/Supabase SOFIA/project id')}"
-bot_token="${TELEGRAM_BOT_TOKEN:-$(op read 'op://dev_vault/SOFIA Telegram/bot token')}"
+bot_token="${TELEGRAM_BOT_TOKEN:-$(op read 'op://dev_vault/SOFIA Telegram/password')}"
 chat_id="${TELEGRAM_CHAT_ID:-$(op read 'op://dev_vault/SOFIA Telegram/chat id')}"
 supabase secrets set \
   --project-ref "$project_ref" \

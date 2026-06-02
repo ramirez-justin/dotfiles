@@ -23,6 +23,20 @@ agent:
   task_completion_guidance: true
   environment_probe: true
   reasoning_effort: medium
+  # Direct `hermes --profile sofia-spike` sessions must explicitly hydrate from
+  # SOFIA before substantive work. The `hermes-sofia` wrapper loads the context
+  # automatically via HERMES_EPHEMERAL_SYSTEM_PROMPT, which takes precedence over
+  # this static fallback.
+  system_prompt: |-
+    # SOFIA boot context requirement
+
+    This profile uses SOFIA Cloud as the primary durable memory surface. At the
+    start of every fresh session, load the `sofia-cloud-memory` skill when the
+    skills tool is available, then verify that SOFIA boot context is already
+    present in the system prompt. If it is not present, immediately call the
+    SOFIA Cloud MCP `get_boot_context` tool before answering substantive
+    questions or starting work. If SOFIA boot context cannot be loaded, stop and
+    surface the failure instead of silently falling back to Hermes local memory.
   disabled_toolsets: []
   verbose: false
 
@@ -113,7 +127,10 @@ delegation:
   subagent_auto_approve: false
 
 skills:
-  external_dirs: []
+  # Reuse the default profile's curated skills while keeping this profile's
+  # config, secrets, sessions, and local state isolated.
+  external_dirs:
+    - ${HOME}/.hermes/skills
   template_vars: true
   inline_shell: false
   guard_agent_created: false

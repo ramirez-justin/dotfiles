@@ -20,8 +20,10 @@ From the dotfiles repo:
 ```bash
 mise run hermes:sofia:link
 mise run hermes:sofia:inject-secrets
-hermes --profile sofia-spike
+mise run hermes:sofia:run
 ```
+
+Use `mise run hermes:sofia:run` for normal starts. It fetches SOFIA boot context before launching Hermes and injects it into the session system prompt. Direct `hermes --profile sofia-spike` still has a static fallback instruction requiring the agent to call SOFIA `get_boot_context` before substantive work, but the wrapper is the preferred path because it gives Hermes context on turn 1.
 
 The link task uses `stow --no-folding` and pre-creates the target profile directory. That is deliberate: generated `.env` must live in `~/.hermes/profiles/sofia-spike/.env`, not inside the git repo through a folded directory symlink.
 
@@ -65,6 +67,14 @@ git status --ignored --short hermes/.hermes/profiles/sofia-spike
 
 ## SOFIA boot context
 
+Normal Hermes starts require SOFIA boot context:
+
+```bash
+mise run hermes:sofia:run
+```
+
+That task runs `scripts/hermes-sofia`, which fetches boot context and exports it through `HERMES_EPHEMERAL_SYSTEM_PROMPT` before `hermes --profile sofia-spike` starts. It fails closed if SOFIA cannot be reached. For an emergency local-only bypass, set `HERMES_SOFIA_BOOT_REQUIRED=0`, but do not use that for normal work.
+
 Fetch boot context directly:
 
 ```bash
@@ -72,6 +82,42 @@ Fetch boot context directly:
 ```
 
 Or in Hermes, use the SOFIA MCP tools once the profile is active.
+
+## SOFIA gateway / Telegram
+
+Telegram gateway sessions need the same SOFIA boot context as local CLI sessions. Use the dedicated gateway wrapper rather than plain `hermes --profile sofia-spike gateway install`:
+
+```bash
+mise run hermes:sofia:link
+mise run hermes:sofia:inject-secrets
+mise run hermes:sofia:gateway:doctor
+mise run hermes:sofia:gateway:plist      # write plist only; does not start
+mise run hermes:sofia:gateway:install    # install + start launchd service
+```
+
+The generated launchd service is `ai.hermes.gateway-sofia-spike` and runs:
+
+```text
+/Users/justinramirez/.hermes/profiles/sofia-spike/scripts/hermes-sofia gateway run --replace
+```
+
+That means Telegram/gateway sessions inherit `HERMES_EPHEMERAL_SYSTEM_PROMPT` from the SOFIA boot-context fetch before the gateway process starts. The plist lives at:
+
+```text
+~/Library/LaunchAgents/ai.hermes.gateway-sofia-spike.plist
+```
+
+Useful follow-ups:
+
+```bash
+mise run hermes:sofia:gateway:status
+mise run hermes:sofia:gateway:restart
+mise run hermes:sofia:gateway:stop
+```
+
+`hermes:sofia:inject-secrets` will copy already-materialized Telegram values from local-only `~/.hermes/.env` into local-only `~/.hermes/profiles/sofia-spike/.env` when explicit env vars or `*_OP_REF` values are not supplied. This avoids symlinking the default Hermes `.env` while still allowing the spike profile to receive Telegram messages.
+
+Do not run the default Hermes gateway and `ai.hermes.gateway-sofia-spike` against the same Telegram bot token at the same time. Stop the default gateway first, then install/start the SOFIA gateway for the live Telegram ergonomics test.
 
 ## MCP verification checklist
 

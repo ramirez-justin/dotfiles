@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+profile_name="${HERMES_SOFIA_PROFILE:-sofia-spike}"
+profile_dir="${HERMES_HOME:-$HOME/.hermes/profiles/$profile_name}"
+context_name="${SOFIA_CONTEXT:-personal}"
+boot_context_script="$profile_dir/scripts/sofia-boot-context"
+
+if [[ ! -x "$boot_context_script" ]]; then
+  echo "SOFIA boot context script is missing or not executable: $boot_context_script" >&2
+  echo "Run: mise run hermes:sofia:link" >&2
+  exit 2
+fi
+
+# Fetch before Hermes starts so the boot context is in the system prompt on turn 1.
+# Fail closed by default: a SOFIA-backed profile without SOFIA context is more
+# dangerous than a noisy startup failure. Set HERMES_SOFIA_BOOT_REQUIRED=0 for a
+# manual emergency bypass.
+if ! boot_context="$($boot_context_script "$context_name")"; then
+  echo "Failed to load SOFIA boot context for context '$context_name'." >&2
+  echo "Run: mise run hermes:sofia:doctor" >&2
+  if [[ "${HERMES_SOFIA_BOOT_REQUIRED:-1}" == "1" ]]; then
+    exit 2
+  fi
+  boot_context=""
+fi
+
+if [[ -z "$boot_context" && "${HERMES_SOFIA_BOOT_REQUIRED:-1}" == "1" ]]; then
+  echo "SOFIA boot context was empty; refusing to start Hermes without it." >&2
+  echo "Set HERMES_SOFIA_BOOT_REQUIRED=0 only for an emergency bypass." >&2
+  exit 2
+fi
+
+export HERMES_EPHEMERAL_SYSTEM_PROMPT="$(cat <<EOF
+# SOFIA Boot Context — REQUIRED
+
+This Hermes profile uses SOFIA Cloud as the primary durable memory surface.
+The following boot context was loaded before session start. Treat it as active
+session context. Do not quote private memory back to Justin unless directly
+relevant to the task.
+
+If this section is missing in a future session, immediately call SOFIA Cloud
+MCP get_boot_context before answering substantive questions. If that call fails,
+stop and surface the failure instead of silently falling back to local memory.
+
+<SOFIA_BOOT_CONTEXT context="$context_name">
+$boot_context
+</SOFIA_BOOT_CONTEXT>
+EOF
+)"
+
+# Preload the SOFIA Cloud memory skill so every wrapped session has the
+# troubleshooting/safety procedure in context alongside the boot context.
+exec hermes --profile "$profile_name" --skills sofia-cloud-memory "$@"

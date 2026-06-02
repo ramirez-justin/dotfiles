@@ -158,8 +158,8 @@ description = "Link the isolated Hermes SOFIA spike profile without folding secr
 run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/link-profile.sh"
 
 [tasks."hermes:sofia:run"]
-description = "Start Hermes with the isolated SOFIA spike profile"
-run = "hermes --profile sofia-spike"
+description = "Start Hermes with the isolated SOFIA spike profile and required SOFIA boot context"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia"
 
 [tasks."hermes:sofia:inject-secrets"]
 description = "Write local-only Hermes SOFIA profile secrets from environment/1Password"
@@ -172,6 +172,30 @@ run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/sofia-boot-context"
 [tasks."hermes:sofia:guard"]
 description = "Fail if Hermes profile secrets/state are tracked or staged"
 run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/check-sensitive-state.sh"
+
+[tasks."hermes:sofia:gateway:plist"]
+description = "Write the SOFIA-hydrated Hermes gateway launchd plist without starting it"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway plist"
+
+[tasks."hermes:sofia:gateway:install"]
+description = "Install and start the SOFIA-hydrated Hermes gateway launchd service"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway install"
+
+[tasks."hermes:sofia:gateway:status"]
+description = "Show gateway status for the SOFIA spike profile"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway status"
+
+[tasks."hermes:sofia:gateway:restart"]
+description = "Restart the SOFIA-hydrated Hermes gateway launchd service"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway restart"
+
+[tasks."hermes:sofia:gateway:stop"]
+description = "Stop the SOFIA-hydrated Hermes gateway launchd service"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway stop"
+
+[tasks."hermes:sofia:gateway:doctor"]
+description = "Validate SOFIA gateway boot context, plist, config, and Telegram env keys"
+run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway doctor"
 
 [tasks."hermes:sofia:doctor"]
 description = "Validate the Hermes SOFIA spike profile config and MCP server wiring"

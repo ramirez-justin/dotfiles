@@ -34,6 +34,20 @@ Pi had explicit prompts for brainstorm, write-plan, execute-plan, debug, tdd, fi
 - Prefer CLI tools and deterministic scripts for mechanical transformations.
 - Use Context7 MCP for third-party library/framework docs when freshness matters.
 
+## SOFIA — Boot Context and Memory Surface
+
+SOFIA Cloud is the primary durable memory surface for this profile. Every fresh
+session must have SOFIA boot context before substantive work begins. Load the
+`sofia-cloud-memory` skill for SOFIA memory access, boot context diagnostics,
+and secret-safe troubleshooting.
+
+Normal launches should use `mise run hermes:sofia:run`, which loads SOFIA boot
+context into `HERMES_EPHEMERAL_SYSTEM_PROMPT` before Hermes starts. If a session
+was started directly with `hermes --profile sofia-spike` and no SOFIA boot
+context is visible in the system prompt, call SOFIA Cloud MCP `get_boot_context`
+immediately. If boot context cannot be loaded, stop and report the failure
+instead of falling back to Hermes local memory.
+
 ## SOFIA — Proactive Capture
 
 When SOFIA Cloud MCP is configured, stay alert for memory-worthy moments and capture them with `capture_event`.

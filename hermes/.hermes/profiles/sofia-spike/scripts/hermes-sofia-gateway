@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+profile_name="sofia-spike"
+profile_dir="$HOME/.hermes/profiles/$profile_name"
+wrapper="$profile_dir/scripts/hermes-sofia"
+label="ai.hermes.gateway-$profile_name"
+plist_path="$HOME/Library/LaunchAgents/$label.plist"
+log_dir="$profile_dir/logs"
+domain="gui/$(id -u)"
+
+usage() {
+  cat <<'EOF'
+Usage: hermes-sofia-gateway <command>
+
+Commands:
+  run         Run the SOFIA-hydrated Hermes gateway in the foreground
+  plist       Write/update the launchd plist but do not start it
+  install     Write the launchd plist and bootstrap it now (starts gateway)
+  uninstall   Boot out launchd service and remove the plist
+  start       Start/kickstart the installed launchd service
+  stop        Stop the launchd service without removing the plist
+  restart     Restart/kickstart the launchd service
+  status      Show Hermes gateway status for the sofia-spike profile
+  logs        Tail the sofia-spike gateway logs
+  doctor      Validate wrapper, boot context, plist syntax, and Telegram env keys
+EOF
+}
+
+require_wrapper() {
+  if [[ ! -x "$wrapper" ]]; then
+    echo "Missing executable wrapper: $wrapper" >&2
+    echo "Run: mise run hermes:sofia:link" >&2
+    exit 1
+  fi
+}
+
+write_plist() {
+  require_wrapper
+  mkdir -p "$HOME/Library/LaunchAgents" "$log_dir"
+  local path_value="${PATH:-/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
+
+  python3 - "$plist_path" "$label" "$wrapper" "$profile_dir" "$log_dir" "$path_value" <<'PY'
+import plistlib
+import sys
+from pathlib import Path
+
+plist_path, label, wrapper, profile_dir, log_dir, path_value = sys.argv[1:]
+plist = {
+    "Label": label,
+    "ProgramArguments": ["/bin/bash", wrapper, "gateway", "run", "--replace"],
+    "WorkingDirectory": profile_dir,
+    "EnvironmentVariables": {
+        "HOME": str(Path.home()),
+        "HERMES_HOME": profile_dir,
+        "PATH": path_value,
+    },
+    "RunAtLoad": True,
+    "KeepAlive": {"SuccessfulExit": False},
+    "StandardOutPath": f"{log_dir}/gateway.log",
+    "StandardErrorPath": f"{log_dir}/gateway.error.log",
+}
+Path(plist_path).parent.mkdir(parents=True, exist_ok=True)
+with open(plist_path, "wb") as f:
+    plistlib.dump(plist, f, sort_keys=False)
+PY
+  plutil -lint "$plist_path" >/dev/null
+  echo "Wrote $plist_path"
+}
+
+bootout_if_loaded() {
+  launchctl bootout "$domain/$label" >/dev/null 2>&1 || true
+}
+
+wait_until_unloaded() {
+  local attempt
+  for attempt in {1..20}; do
+    if ! launchctl print "$domain/$label" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+
+  echo "Timed out waiting for $label to unload" >&2
+  return 1
+}
+
+bootstrap_service() {
+  local attempt
+  for attempt in {1..5}; do
+    if launchctl bootstrap "$domain" "$plist_path"; then
+      return 0
+    fi
+    sleep 0.5
+  done
+
+  echo "Failed to bootstrap $label after retries" >&2
+  return 1
+}
+
+kickstart_service() {
+  launchctl print "$domain/$label" >/dev/null 2>&1 || bootstrap_service
+  launchctl kickstart -k "$domain/$label"
+}
+
+print_launchd_state() {
+  local print_output
+  if ! print_output="$(launchctl print "$domain/$label" 2>/dev/null)"; then
+    echo "Launchd: not loaded"
+    return 1
+  fi
+
+  echo "Launchd: loaded"
+  echo "$print_output" | python3 -c 'import sys
+for line in sys.stdin:
+    if line.startswith("\t") and not line.startswith("\t\t"):
+        stripped = line.strip()
+        if stripped.startswith(("state =", "pid =", "runs =", "last exit code =")):
+            print(stripped)
+'
+  return 0
+}
+
+case "${1:-}" in
+  run)
+    require_wrapper
+    exec /bin/bash "$wrapper" gateway run --replace
+    ;;
+  plist|write-plist)
+    write_plist
+    ;;
+  install)
+    write_plist
+    bootout_if_loaded
+    wait_until_unloaded
+    bootstrap_service
+    launchctl kickstart -k "$domain/$label"
+    echo "Installed, bootstrapped, and kickstarted $label"
+    /bin/bash "$0" status
+    ;;
+  uninstall)
+    bootout_if_loaded
+    rm -f "$plist_path"
+    echo "Uninstalled $label"
+    ;;
+  start)
+    [[ -f "$plist_path" ]] || write_plist
+    kickstart_service
+    echo "Started $label"
+    /bin/bash "$0" status
+    ;;
+  stop)
+    bootout_if_loaded
+    echo "Stopped $label"
+    ;;
+  restart)
+    [[ -f "$plist_path" ]] || write_plist
+    kickstart_service
+    echo "Restarted $label"
+    /bin/bash "$0" status
+    ;;
+  status)
+    echo "Launchd plist: $plist_path"
+    if [[ -f "$plist_path" ]]; then
+      plutil -lint "$plist_path" >/dev/null && echo "Plist: valid"
+      python3 - "$plist_path" <<'PY'
+import plistlib
+import sys
+from pathlib import Path
+pl = plistlib.loads(Path(sys.argv[1]).read_bytes())
+print("Label:", pl.get("Label"))
+print("Program:", " ".join(pl.get("ProgramArguments", [])))
+print("WorkingDirectory:", pl.get("WorkingDirectory"))
+PY
+    else
+      echo "Plist: missing"
+    fi
+    if print_launchd_state; then
+      if launchctl list "$label" >/tmp/hermes-sofia-gateway-status.$$ 2>/dev/null; then
+        cat /tmp/hermes-sofia-gateway-status.$$
+        rm -f /tmp/hermes-sofia-gateway-status.$$
+      fi
+    else
+      rm -f /tmp/hermes-sofia-gateway-status.$$ 2>/dev/null || true
+    fi
+    if [[ -f "$profile_dir/gateway.pid" ]]; then
+      echo "Gateway PID file: $(cat "$profile_dir/gateway.pid")"
+    fi
+    ;;
+  logs)
+    mkdir -p "$log_dir"
+    exec tail -n 80 -f "$log_dir/gateway.log" "$log_dir/gateway.error.log"
+    ;;
+  doctor)
+    require_wrapper
+    /bin/bash "$profile_dir/scripts/sofia-boot-context" personal >/dev/null
+    write_plist >/dev/null
+    hermes --profile "$profile_name" config check
+    python3 - "$profile_dir/.env" <<'PY'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+keys = set()
+if path.exists():
+    for line in path.read_text(errors="ignore").splitlines():
+        s = line.strip()
+        if s and not s.startswith("#") and "=" in s:
+            keys.add(s.split("=", 1)[0].strip().removeprefix("export ").strip())
+for key in ["SOFIA_MCP_ACCESS_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_HOME_CHANNEL", "TELEGRAM_ALLOWED_USERS"]:
+    print(f"{key}: {'present' if key in keys else 'missing'}")
+missing = {"SOFIA_MCP_ACCESS_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_HOME_CHANNEL"} - keys
+if missing:
+    raise SystemExit("Missing required gateway env keys: " + ", ".join(sorted(missing)))
+PY
+    ;;
+  -h|--help|help|"")
+    usage
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

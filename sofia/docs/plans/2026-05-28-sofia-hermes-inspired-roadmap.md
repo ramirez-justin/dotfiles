@@ -52,6 +52,9 @@ Known gaps:
   restored.
 - No first-class scheduled review/briefing loop.
 - No chat gateway for capture/search/review outside coding sessions.
+- Secret bootstrap still assumes attended 1Password approval; unattended Hermes,
+  gateway, and scheduled jobs need a non-interactive secret manager/service-token
+  path instead of desktop `op` approval.
 - Classifier output can still produce unexpected enum values for
   roadmap/feature-like captures, causing capture failure instead of graceful
   review routing.
@@ -78,6 +81,14 @@ Deliverables:
   - transient Cloudflare `521` during restore.
   - missing or invalid `SOFIA_MCP_ACCESS_KEY`.
 - Add an optional keepalive/check job to reduce surprise inactivity.
+- Design a non-interactive secret manager/service-token flow for unattended
+  agents and gateways:
+  - evaluate Bitwarden Secrets Manager, 1Password service accounts/connect, and
+    platform-native secret stores for SOFIA/Hermes deployments;
+  - document when local `0600` `.env` materialization is acceptable vs when a
+    server-side secret store is required;
+  - make rotation and revocation explicit for `SOFIA_MCP_ACCESS_KEY`, Telegram,
+    and provider credentials.
 - Improve boot failure messaging in Pi instructions/hooks: never fall back to
   local Obsidian; surface cloud failure and suggested command.
 - Harden classifier normalization so unknown candidate types/actions degrade to
@@ -87,6 +98,8 @@ Exit criteria:
 
 - A failed boot context points to one diagnostic command.
 - Health check distinguishes auth, DNS, project status, and function errors.
+- Unattended deployments have a documented non-interactive secret path that does
+  not depend on desktop 1Password approval.
 - The restore gotcha is documented in-repo.
 
 ## Phase 2 — SOUL.md and agent character
@@ -285,15 +298,19 @@ Exit criteria:
 ## Near-term recommended plan
 
 1. Implement Phase 1 health check and recovery runbook.
-2. Draft SOUL.md and wire it into cloud boot context.
-3. Add daily/weekly review job design.
-4. Choose Telegram gateway implementation path.
+2. Decide and document the unattended secret manager/service-token path.
+3. Draft SOUL.md and wire it into cloud boot context.
+4. Add daily/weekly review job design.
+5. Choose Telegram gateway implementation path.
 
 ## Open decisions
 
 - Should SOUL.md be human-authored, generated from memory, or hybrid?
 - Should scheduled jobs live in Supabase, local launchd, GitHub Actions, or an
   external cron/gateway?
+- Which non-interactive secret backend should SOFIA/Hermes standardize on for
+  unattended jobs: Bitwarden Secrets Manager, 1Password service accounts/connect,
+  platform-native secret stores, or a hybrid?
 - Should Telegram be a thin SOFIA client or a broader Pi agent interface?
 - How aggressive should proactive skill creation be?
 - Should old local SOFIA runtime be removed after importer/exporter work lands?

@@ -133,6 +133,49 @@ Recovery:
 3. If invalid, update the 1Password item `op://dev_vault/SOFIA MCP/access key` or the Supabase Edge Function secret so they match.
 4. Retry health.
 
+### Telegram digest does not arrive
+
+Symptoms:
+
+- `sofia-evening-telegram-digest` is scheduled, but no Telegram message arrives.
+- Manual `mise run sofia-cloud:send-daily-digest` fails.
+
+Recovery:
+
+1. Confirm the Edge Function has Telegram secrets:
+
+   ```bash
+   mise run sofia-cloud:set-telegram-secrets
+   mise run sofia-cloud:deploy
+   ```
+
+2. Confirm the bot token and chat id by sending `/start` to the bot and checking:
+
+   ```bash
+   TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/bot token')"
+   curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates"
+   ```
+
+3. Trigger a manual send:
+
+   ```bash
+   mise run sofia-cloud:send-daily-digest
+   ```
+
+4. If the manual send works but the scheduled send does not, inspect the Supabase cron job and Vault secrets:
+
+   ```sql
+   select * from cron.job where jobname = 'sofia-evening-telegram-digest';
+   select name from vault.decrypted_secrets where name in ('sofia_project_url', 'sofia_mcp_access_key');
+   ```
+
+5. If Vault secrets are missing, create them:
+
+   ```sql
+   select vault.create_secret('https://<project-ref>.supabase.co', 'sofia_project_url');
+   select vault.create_secret('<MCP_ACCESS_KEY>', 'sofia_mcp_access_key');
+   ```
+
 ## After recovery
 
 Verify boot context from Pi/MCP:

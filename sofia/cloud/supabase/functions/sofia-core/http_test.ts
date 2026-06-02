@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
 	isBootContextRequest,
+	isDailyDigestRequest,
 	parseBootContextParams,
 	shouldPatchMcpAcceptHeader,
 } from "./http.ts";
@@ -40,6 +41,24 @@ Deno.test("isBootContextRequest matches GET /boot-context only", () => {
 		false,
 	);
 	assert.equal(isBootContextRequest("GET", "https://example.test/"), false);
+});
+
+Deno.test("isDailyDigestRequest matches POST /daily-digest only", () => {
+	assert.equal(
+		isDailyDigestRequest("POST", "https://example.test/daily-digest"),
+		true,
+	);
+	assert.equal(
+		isDailyDigestRequest(
+			"POST",
+			"https://example.test/functions/v1/sofia-core/daily-digest",
+		),
+		true,
+	);
+	assert.equal(
+		isDailyDigestRequest("GET", "https://example.test/daily-digest"),
+		false,
+	);
 });
 
 Deno.test("parseBootContextParams validates context and force_refresh", () => {

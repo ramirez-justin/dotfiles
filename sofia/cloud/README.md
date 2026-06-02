@@ -18,6 +18,13 @@ supabase secrets set MCP_ACCESS_KEY=<hex-access-key>
 supabase secrets set OPENROUTER_API_KEY=<provider-key>
 ```
 
+Telegram daily digests also require these Edge Function secrets:
+
+```bash
+supabase secrets set TELEGRAM_BOT_TOKEN=<telegram-bot-token>
+supabase secrets set TELEGRAM_CHAT_ID=<telegram-chat-id>
+```
+
 Supabase provides these automatically inside Edge Functions:
 
 - `SUPABASE_URL`
@@ -78,9 +85,11 @@ mise run sofia-cloud:check
 mise run sofia-cloud:deploy
 mise run sofia-cloud:functions-list
 mise run sofia-cloud:health
+mise run sofia-cloud:set-telegram-secrets
+mise run sofia-cloud:send-daily-digest
 ```
 
-`sofia-cloud:deploy`, `sofia-cloud:functions-list`, and `sofia-cloud:health` read the Supabase project ref from `SUPABASE_SOFIA_PROJECT_REF` when set, otherwise from the 1Password ref `op://dev_vault/Supabase SOFIA/project id`.
+`sofia-cloud:deploy`, `sofia-cloud:functions-list`, `sofia-cloud:health`, and the Telegram tasks read the Supabase project ref from `SUPABASE_SOFIA_PROJECT_REF` when set, otherwise from the 1Password ref `op://dev_vault/Supabase SOFIA/project id`.
 
 If Pi cannot fetch SOFIA boot context, run:
 
@@ -103,6 +112,76 @@ Keep responsibilities separate:
 - `AGENTS.md` and skills — procedures, tool rules, workflow gates, and implementation guidance.
 
 If `SOUL.md` changes, tell Justin. It is Sofia's soul, and he should know.
+
+## Telegram evening digest
+
+SOFIA can send a deterministic evening digest to Justin through Telegram. This v1 digest does not use OpenRouter or any model. It reads SOFIA Cloud database state, formats a short message, and calls Telegram Bot API `sendMessage`.
+
+Digest contents:
+
+- pending memory review count
+- top 3 pending candidate titles
+- recent capture count for the last 24 hours
+- redaction count for the last 24 hours
+- scheduled function health line
+
+### Telegram bot setup
+
+Telegram's bot documentation recommends creating bots through [@BotFather](https://t.me/botfather). The bot token is a secret: anyone with the token has full control of the bot.
+
+1. In Telegram, message `@BotFather`.
+2. Run `/newbot` and follow the prompts.
+3. Copy the bot token into 1Password at `op://dev_vault/SOFIA Telegram/bot token`.
+4. Open the new bot chat and send `/start`.
+5. Read the chat id:
+
+   ```bash
+   TELEGRAM_BOT_TOKEN="$(op read 'op://dev_vault/SOFIA Telegram/bot token')"
+   curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates"
+   ```
+
+   In the JSON response, use `message.chat.id` for the private chat with Justin.
+
+6. Save that chat id in 1Password at `op://dev_vault/SOFIA Telegram/chat id`.
+7. Set Edge Function secrets:
+
+   ```bash
+   mise run sofia-cloud:set-telegram-secrets
+   ```
+
+8. Deploy and test-send:
+
+   ```bash
+   mise run sofia-cloud:deploy
+   mise run sofia-cloud:send-daily-digest
+   ```
+
+### Schedule setup
+
+The migration `supabase/migrations/0003_daily_digest_schedule.sql` installs a `pg_cron` + `pg_net` job named `sofia-evening-telegram-digest` for `23:30 UTC` daily, which lands in Justin's evening Eastern time.
+
+Before the job can invoke the protected endpoint, store the project URL and SOFIA access key in Supabase Vault:
+
+```sql
+select vault.create_secret('https://<project-ref>.supabase.co', 'sofia_project_url');
+select vault.create_secret('<MCP_ACCESS_KEY>', 'sofia_mcp_access_key');
+```
+
+Then push migrations:
+
+```bash
+cd sofia/cloud
+supabase db push
+```
+
+Manual endpoint shape:
+
+```bash
+curl -X POST \
+  -H "content-type: application/json" \
+  -H "x-sofia-key: <MCP_ACCESS_KEY>" \
+  https://<project-ref>.supabase.co/functions/v1/sofia-core/daily-digest
+```
 
 ## Memory reconciliation
 

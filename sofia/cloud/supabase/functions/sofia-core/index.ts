@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { compileBootContext } from "./boot_context.ts";
 import { classifyEvent, embedText } from "./classifier.ts";
+import { deliverDailyDigest } from "./daily_digest.ts";
 import {
 	applyMemoryUpdateFromReconciliation,
 	archiveMemory,
@@ -28,6 +29,7 @@ import {
 } from "./format.ts";
 import {
 	isBootContextRequest,
+	isDailyDigestRequest,
 	parseBootContextParams,
 	shouldPatchMcpAcceptHeader,
 } from "./http.ts";
@@ -540,17 +542,43 @@ server.registerTool(
 	},
 );
 
-const corsHeaders = {
-	"Access-Control-Allow-Origin": "*",
+const baseCorsHeaders = {
 	"Access-Control-Allow-Headers":
 		"authorization, x-client-info, apikey, content-type, x-sofia-key, accept, mcp-session-id",
 	"Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
 };
 
+function allowedOrigins(): Set<string> {
+	return new Set(
+		(Deno.env.get("SOFIA_ALLOWED_ORIGINS") ?? "")
+			.split(",")
+			.map((origin) => origin.trim())
+			.filter(Boolean),
+	);
+}
+
+function corsHeadersForRequest(c: any): Record<string, string> {
+	const origin = c.req.header("origin");
+	if (!origin) return baseCorsHeaders;
+	if (!allowedOrigins().has(origin)) return baseCorsHeaders;
+	return {
+		...baseCorsHeaders,
+		"Access-Control-Allow-Origin": origin,
+		Vary: "Origin",
+	};
+}
+
 const app = new Hono();
-app.options("*", (c: any) => c.text("ok", 200, corsHeaders));
+app.options("*", (c: any) => {
+	const corsHeaders = corsHeadersForRequest(c);
+	if (c.req.header("origin") && !corsHeaders["Access-Control-Allow-Origin"]) {
+		return c.text("CORS origin not allowed", 403, corsHeaders);
+	}
+	return c.text("ok", 200, corsHeaders);
+});
 
 app.all("*", async (c: any) => {
+	const corsHeaders = corsHeadersForRequest(c);
 	const provided =
 		c.req.header("x-sofia-key") || new URL(c.req.url).searchParams.get("key");
 	if (!provided || provided !== MCP_ACCESS_KEY) {
@@ -571,6 +599,29 @@ app.all("*", async (c: any) => {
 		} catch (error) {
 			return c.json(
 				{ error: `boot context failed: ${(error as Error).message}` },
+				500,
+				corsHeaders,
+			);
+		}
+	}
+
+	if (isDailyDigestRequest(c.req.method, c.req.url)) {
+		try {
+			const digest = await deliverDailyDigest(supabase);
+			return c.json(
+				{
+					status: "sent",
+					pending_review_count: digest.snapshot.pendingReviewCount,
+					recent_event_count: digest.snapshot.recentEventCount,
+					redacted_event_count: digest.snapshot.redactedEventCount,
+					telegram_status: digest.telegram.status,
+				},
+				200,
+				corsHeaders,
+			);
+		} catch (error) {
+			return c.json(
+				{ error: `daily digest failed: ${(error as Error).message}` },
 				500,
 				corsHeaders,
 			);

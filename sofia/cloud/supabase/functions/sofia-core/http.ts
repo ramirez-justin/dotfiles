@@ -19,6 +19,13 @@ export function isBootContextRequest(method: string, url: string): boolean {
 	);
 }
 
+export function isDailyDigestRequest(method: string, url: string): boolean {
+	return (
+		method.toUpperCase() === "POST" &&
+		new URL(url).pathname.endsWith("/daily-digest")
+	);
+}
+
 export function parseBootContextParams(url: string): BootContextRequest {
 	const parsed = new URL(url);
 	const context = parsed.searchParams.get("context") ?? "personal";

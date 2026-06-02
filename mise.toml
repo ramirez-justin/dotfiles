@@ -224,6 +224,33 @@ supabase functions list \
 description = "Diagnose SOFIA Cloud project, DNS, Edge Function, and boot context health"
 run = "deno run --allow-env --allow-net --allow-run=op,supabase,dscacheutil {{config_root}}/sofia/cloud/scripts/health.ts"
 
+[tasks."sofia-cloud:set-telegram-secrets"]
+description = "Set SOFIA Telegram Edge Function secrets from 1Password or environment"
+run = """
+set -e
+project_ref="${SUPABASE_SOFIA_PROJECT_REF:-$(op read 'op://dev_vault/Supabase SOFIA/project id')}"
+bot_token="${TELEGRAM_BOT_TOKEN:-$(op read 'op://dev_vault/SOFIA Telegram/bot token')}"
+chat_id="${TELEGRAM_CHAT_ID:-$(op read 'op://dev_vault/SOFIA Telegram/chat id')}"
+supabase secrets set \
+  --project-ref "$project_ref" \
+  TELEGRAM_BOT_TOKEN="$bot_token" \
+  TELEGRAM_CHAT_ID="$chat_id"
+"""
+
+[tasks."sofia-cloud:send-daily-digest"]
+description = "Manually trigger the protected SOFIA Telegram daily digest endpoint"
+run = """
+set -e
+project_ref="${SUPABASE_SOFIA_PROJECT_REF:-$(op read 'op://dev_vault/Supabase SOFIA/project id')}"
+access_key="${SOFIA_MCP_ACCESS_KEY:-$(op read 'op://dev_vault/SOFIA MCP/access key')}"
+curl -fsS \
+  -X POST \
+  -H "content-type: application/json" \
+  -H "x-sofia-key: $access_key" \
+  -d '{"source":"mise"}' \
+  "https://${project_ref}.supabase.co/functions/v1/sofia-core/daily-digest"
+"""
+
 [tasks."sofia-local:init"]
 description = "Legacy local SOFIA bootstrap (transitional until cloud replaces local runtime)"
 run = """

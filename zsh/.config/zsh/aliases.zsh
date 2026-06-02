@@ -25,6 +25,15 @@ alias nv="nvim"
 alias v="nvim"
 alias vim="nvim"
 
+# Hermes
+alias hms="hermes"
+alias hmsetup="hermes setup"
+alias hmconfig="hermes config"
+alias hmgw="hermes gateway"
+alias hmgwi="hermes gateway install"
+alias hmgws="hermes gateway status"
+alias hmgwl="tail -f $HOME/.hermes/logs/gateway.log"
+
 # Safer / friendlier defaults
 alias mkdir="mkdir -p"
 alias cp="cp -r"
@@ -126,7 +135,9 @@ alias fcd='cd $(find . -type d -not -path "*/\.*" | fzf)'
 alias fif='rg --color=always --line-number --no-heading --smart-case "" | fzf --ansi --preview "bat --color=always --style=numbers {1} --highlight-line {2}"'
 
 # Process / memory
-alias fkill="ps -ef | sed 1d | fzf -m | awk '{print \$2}' | xargs kill -9"
+function fkill() {
+    ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -9
+}
 alias fmem="ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -20 | fzf --header-lines=1"
 
 # History / env
@@ -134,8 +145,18 @@ alias hist="history 0 | fzf --ansi --preview 'echo {}' | sed 's/ *[0-9]* *//'"
 alias fenv="env | fzf --preview 'echo {}' | cut -d= -f2"
 
 # Docker (interactive)
-alias dsp='docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | fzf --header-lines=1 | awk "{print \$1}" | xargs -r docker stop'
-alias drm='docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | fzf --header-lines=1 | awk "{print \$1}" | xargs -r docker rm'
+function dsp() {
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" \
+        | fzf --header-lines=1 \
+        | awk '{print $1}' \
+        | xargs -r docker stop
+}
+function drm() {
+    docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" \
+        | fzf --header-lines=1 \
+        | awk '{print $1}' \
+        | xargs -r docker rm
+}
 
 # Markdown viewing
 alias md="glow"

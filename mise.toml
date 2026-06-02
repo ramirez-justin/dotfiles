@@ -99,6 +99,60 @@ run = "git -C {{config_root}} pull --rebase && mise run link"
 description = "Update Pi packages/extensions"
 run = "mise exec -- pi update --extensions"
 
+[tasks."hermes:install"]
+description = "Install Hermes Agent using the official installer"
+run = "curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
+
+[tasks."hermes:update"]
+description = "Update Hermes Agent to the latest version"
+run = "hermes update"
+
+[tasks."hermes:status"]
+description = "Show Hermes version and install locations"
+run = """
+set -e
+hermes --version
+printf '\nFiles:\n'
+printf '  Config:   %s\n' "$HOME/.hermes/config.yaml"
+printf '  API keys: %s\n' "$HOME/.hermes/.env"
+printf '  Data:     %s\n' "$HOME/.hermes/{cron,sessions,logs}/"
+printf '  Code:     %s\n' "$HOME/.hermes/hermes-agent"
+"""
+
+[tasks."hermes:gateway:install"]
+description = "Install Hermes gateway service for messaging and cron"
+run = "hermes gateway install"
+
+[tasks."hermes:gateway:status"]
+description = "Check Hermes gateway service status"
+run = "hermes gateway status"
+
+[tasks."hermes:gateway:logs"]
+description = "Tail Hermes gateway logs"
+run = "tail -f $HOME/.hermes/logs/gateway.log"
+
+[tasks."hermes:link-sofia-docs"]
+description = "Link Hermes shared docs to canonical SOFIA/Pi docs"
+run = """
+set -e
+mkdir -p "$HOME/.hermes"
+
+link_doc() {
+  src="$1"
+  dest="$2"
+  if [ -e "$dest" ] && [ ! -L "$dest" ]; then
+    backup="$dest.bak.$(date +%Y%m%d_%H%M%S)"
+    mv "$dest" "$backup"
+    echo "Backed up $dest -> $backup"
+  fi
+  ln -sfn "$src" "$dest"
+  echo "Linked $dest -> $src"
+}
+
+link_doc "{{config_root}}/sofia/cloud/SOUL.md" "$HOME/.hermes/SOUL.md"
+link_doc "{{config_root}}/pi/.pi/agent/AGENTS.md" "$HOME/.hermes/AGENTS.md"
+"""
+
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"
 run = "brew bundle dump --force --file={{config_root}}/Brewfile"

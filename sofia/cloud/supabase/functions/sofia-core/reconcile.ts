@@ -39,9 +39,28 @@ const ReconcilerSchema = z.object({
 	rationale: z.string(),
 });
 
+const UUID_PATTERN =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function parseReconcilerResponse(raw: string): ReconciliationJudgment {
 	const parsed = JSON.parse(raw);
-	return ReconcilerSchema.parse(parsed);
+	return ReconcilerSchema.parse(repairReconcilerPayload(parsed));
+}
+
+function repairReconcilerPayload(payload: unknown): unknown {
+	if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+		return payload;
+	}
+	const repaired = { ...(payload as Record<string, unknown>) };
+	if (typeof repaired.target_memory_id === "string" && !UUID_PATTERN.test(repaired.target_memory_id)) {
+		delete repaired.target_memory_id;
+	}
+	if (Array.isArray(repaired.related_memory_ids)) {
+		repaired.related_memory_ids = repaired.related_memory_ids.filter((id) =>
+			typeof id === "string" && UUID_PATTERN.test(id)
+		);
+	}
+	return repaired;
 }
 
 export function buildReconcilerPrompt(

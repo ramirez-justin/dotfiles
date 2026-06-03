@@ -112,6 +112,22 @@ Deno.test("parseReconcilerResponse parses strict JSON", () => {
 	assert.equal(parsed.confidence, 0.93);
 });
 
+Deno.test("parseReconcilerResponse repairs malformed optional UUID fields", () => {
+	const parsed = parseReconcilerResponse(
+		JSON.stringify({
+			relationship: "new_memory",
+			target_memory_id: "undefined",
+			related_memory_ids: ["", "not-a-uuid", "11111111-1111-1111-1111-111111111111"],
+			confidence: 0.91,
+			rationale: "New memory; no valid target.",
+		}),
+	);
+
+	assert.equal(parsed.relationship, "new_memory");
+	assert.equal(parsed.target_memory_id, undefined);
+	assert.deepEqual(parsed.related_memory_ids, ["11111111-1111-1111-1111-111111111111"]);
+});
+
 Deno.test("buildReconcilerPrompt includes candidate and memory IDs", () => {
 	const prompt = buildReconcilerPrompt(candidate(), [
 		{

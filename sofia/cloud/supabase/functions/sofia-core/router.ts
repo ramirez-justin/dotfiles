@@ -30,6 +30,14 @@ const REVIEW_THRESHOLDS: Record<string, number> = {
 	open_loop: 0.5,
 };
 
+const PROJECT_MILESTONE_TYPES = new Set(["project_context", "lesson", "fact"]);
+const SENSITIVE_PATTERN =
+	/\b(loan|mortgage|balance|rate|offer|closing|property|address|family|son|partner|medical|doctor|legal|lawyer|bank|salary|compensation|tax|hoa|secret|password|token|credential|dsn|api key|\$\d+)/i;
+const TRANSIENT_PROGRESS_PATTERN =
+	/\b(started|starting|currently|investigating|looking into|checking|will check|will do|next step|todo|to do|planning to|in progress)\b/i;
+const DURABLE_OUTCOME_PATTERN =
+	/\b(deployed|verified|fixed|resolved|completed|merged|pushed|released|applied|created|documented|proved|implemented|migrated|approved|scaled|rebuilt|ran|passed)\b/i;
+
 export function routeCandidate(candidate: CandidateInput): RouteDecision {
 	const redacted = candidate.metadata?.redacted === true;
 
@@ -47,6 +55,28 @@ export function routeCandidate(candidate: CandidateInput): RouteDecision {
 			status: "archived",
 			shouldPromote: false,
 			reason: "worthiness score below archive threshold",
+		};
+	}
+
+	if (isTransientProgress(candidate)) {
+		return {
+			action: "archive",
+			status: "archived",
+			shouldPromote: false,
+			reason: "transient progress without durable outcome should not enter review queue",
+		};
+	}
+
+	if (isSensitiveDomain(candidate)) {
+		return review("sensitive domain requires human review");
+	}
+
+	if (isSafeWorkMilestone(candidate)) {
+		return {
+			action: "auto_promote",
+			status: "auto_promoted",
+			shouldPromote: true,
+			reason: "provenance-backed work milestone meets conservative auto-promotion policy",
 		};
 	}
 
@@ -87,4 +117,42 @@ function review(reason: string): RouteDecision {
 		shouldPromote: false,
 		reason,
 	};
+}
+
+function isSafeWorkMilestone(candidate: CandidateInput): boolean {
+	return PROJECT_MILESTONE_TYPES.has(candidate.candidate_type) &&
+		candidate.metadata?.context === "work" &&
+		candidate.risk_level === "low" &&
+		candidate.worthiness_score >= 0.7 &&
+		candidate.confidence >= 0.85 &&
+		hasProvenance(candidate) &&
+		hasDurableOutcome(candidate);
+}
+
+function hasProvenance(candidate: CandidateInput): boolean {
+	const metadata = candidate.metadata;
+	return Boolean(
+		metadata.project || metadata.repo || metadata.commit || metadata.branch ||
+		metadata.issue || metadata.pr ||
+		(Array.isArray(metadata.entities) && metadata.entities.length > 0) ||
+		candidate.entities.length > 0,
+	);
+}
+
+function hasDurableOutcome(candidate: CandidateInput): boolean {
+	return DURABLE_OUTCOME_PATTERN.test(`${candidate.title}\n${candidate.candidate_text}`);
+}
+
+function isTransientProgress(candidate: CandidateInput): boolean {
+	const text = `${candidate.title}\n${candidate.candidate_text}`;
+	return TRANSIENT_PROGRESS_PATTERN.test(text) && !DURABLE_OUTCOME_PATTERN.test(text);
+}
+
+function isSensitiveDomain(candidate: CandidateInput): boolean {
+	const text = `${candidate.title}\n${candidate.candidate_text}`;
+	if (SENSITIVE_PATTERN.test(text)) return true;
+	return candidate.entities.some((entity) => {
+		const haystack = `${entity.type} ${entity.name} ${entity.evidence ?? ""}`;
+		return /person|place|property|secret|credential/i.test(haystack);
+	});
 }

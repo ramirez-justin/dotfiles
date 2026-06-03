@@ -58,3 +58,68 @@ Deno.test("routeCandidate archives low-worthiness candidates", () => {
 	assert.equal(result.action, "archive");
 	assert.equal(result.status, "archived");
 });
+
+Deno.test("routeCandidate auto-promotes provenance-backed work project milestones", () => {
+	const result = routeCandidate(
+		candidate({
+			candidate_type: "project_context",
+			candidate_text:
+				"Deployed migration 0004 and sofia-core version 28, fixed PostgREST RPC ambiguity with migration 0005.",
+			title: "SOFIA Agent-Native Memory Deployment Follow-Up",
+			worthiness_score: 0.8,
+			confidence: 0.9,
+			recommended_action: "review",
+			metadata: {
+				context: "work",
+				project: "SOFIA Cloud",
+				repo: "/Users/justinramirez/dev/dotfiles",
+				branch: "feat/sofia-agent-native-memory",
+				commit: "16933f3",
+				redacted: false,
+			},
+		}),
+	);
+
+	assert.equal(result.shouldPromote, true);
+	assert.equal(result.action, "auto_promote");
+	assert.match(result.reason, /provenance-backed work milestone/);
+});
+
+Deno.test("routeCandidate reviews provenance-backed milestones in sensitive domains", () => {
+	const result = routeCandidate(
+		candidate({
+			candidate_type: "project_context",
+			candidate_text: "Updated property closing offer details for Jewel St.",
+			worthiness_score: 0.9,
+			confidence: 0.95,
+			recommended_action: "review",
+			metadata: {
+				context: "work",
+				project: "Jewel St",
+				repo: "/Users/justinramirez/dev/dotfiles",
+			},
+		}),
+	);
+
+	assert.equal(result.shouldPromote, false);
+	assert.equal(result.action, "review");
+	assert.match(result.reason, /sensitive/);
+});
+
+Deno.test("routeCandidate archives transient progress without durable outcome", () => {
+	const result = routeCandidate(
+		candidate({
+			candidate_type: "project_context",
+			candidate_text: "Started investigating the GKE deployment issue and will check logs next.",
+			title: "Started GKE investigation",
+			worthiness_score: 0.72,
+			confidence: 0.9,
+			recommended_action: "review",
+			metadata: { context: "work", project: "trading-platform" },
+		}),
+	);
+
+	assert.equal(result.shouldPromote, false);
+	assert.equal(result.action, "archive");
+	assert.match(result.reason, /transient progress/);
+});

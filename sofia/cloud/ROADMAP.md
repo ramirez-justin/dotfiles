@@ -116,7 +116,7 @@
 
 ## Phase 3 — Entity graph model
 
-**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and fast-forward merged locally to `main` (not pushed).
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and pushed to `main`.
 
 **Goal:** make projects, repos, people, systems, tools, decisions, and organizations first-class retrieval anchors rather than loose metadata.
 
@@ -167,7 +167,7 @@
 
 ## Phase 4 — Retrieval policy learning
 
-**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and fast-forward merged locally to `main` (not pushed).
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and pushed to `main`.
 
 **Goal:** use telemetry to tune boot-context inclusion and search behavior without manual guesswork.
 
@@ -205,6 +205,45 @@
 - `sofia/cloud/supabase/functions/sofia-core/retrieval_policy.ts`
 - `sofia/cloud/supabase/functions/sofia-core/retrieval_policy_test.ts`
 - `sofia/cloud/supabase/functions/sofia-core/index.ts`
+- `sofia/cloud/RUNBOOK.md`
+
+---
+
+## Phase 4.5 — Promotion policy tuning
+
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and fast-forward merged locally to `main` (not pushed).
+
+**Goal:** reduce review-queue noise by safely auto-promoting provenance-backed work milestones and auto-archiving transient progress updates.
+
+### Scope
+
+1. Conservative auto-promotion for low-risk work/project milestones.
+   - Applies to `project_context`, `lesson`, and durable `fact` candidates.
+   - Requires work context, confidence >= 0.85, worthiness >= 0.7, durable outcome language, and provenance such as project/repo/commit/branch/entities.
+
+2. Auto-archive transient progress noise.
+   - Archives in-progress/planned/investigating updates when no durable outcome is present.
+
+3. Preserve sensitive review boundaries.
+   - Person/property/financial/security/secret-adjacent candidates still require review.
+
+4. Reconciler resilience.
+   - Malformed optional UUID fields from model output are repaired instead of forcing unnecessary fallback review.
+
+### Acceptance criteria
+
+- Tests cover auto-promote for provenance-backed work milestones.
+- Tests cover review for sensitive milestones.
+- Tests cover archive for transient progress.
+- Tests cover malformed UUID repair in reconciler output.
+- Current review queue is cleared only after explicit approval.
+
+### Suggested files
+
+- `sofia/cloud/supabase/functions/sofia-core/router.ts`
+- `sofia/cloud/supabase/functions/sofia-core/router_test.ts`
+- `sofia/cloud/supabase/functions/sofia-core/reconcile.ts`
+- `sofia/cloud/supabase/functions/sofia-core/reconcile_test.ts`
 - `sofia/cloud/RUNBOOK.md`
 
 ---

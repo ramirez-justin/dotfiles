@@ -370,6 +370,40 @@ If a recommendation looks right, make the actual change through an explicit
 review/update path. Do not script automatic destructive policy changes from this
 report.
 
+## Phase 4.5 promotion policy tuning
+
+Promotion routing is intentionally conservative but should not make Justin approve
+boring, verified project milestones forever.
+
+Auto-promote candidates when all are true:
+
+1. `candidate_type` is `project_context`, `lesson`, or durable `fact`.
+2. `metadata.context` is `work`.
+3. `risk_level` is `low`.
+4. `confidence >= 0.85` and `worthiness_score >= 0.7`.
+5. Candidate text/title includes a durable outcome such as deployed, verified,
+   fixed, completed, merged, pushed, applied, created, documented, proved,
+   implemented, migrated, ran, or passed.
+6. Metadata/entities provide provenance such as project, repo, commit, branch,
+   issue, PR, or entity links.
+
+Still require review for person/property/financial/security/secret-adjacent content,
+redacted content, medium/high risk, and vague milestones without enough details.
+
+Auto-archive transient progress when the candidate says work started/is being
+investigated/is planned but has no durable outcome. These are session/task state,
+not durable memory.
+
+Reconciler parser repair: optional malformed UUID fields such as
+`target_memory_id: "undefined"` are dropped, and invalid `related_memory_ids` are
+filtered before schema validation. This prevents unnecessary fallback-review noise
+while preserving safe review behavior for truly ambiguous reconciliations.
+
+When clearing the existing queue using this policy, approve low-risk durable
+project milestones and archive vague/transient/duplicate entries. Do not approve
+secret-adjacent DSN/API-key/security candidates unless Justin explicitly approves
+that specific item.
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

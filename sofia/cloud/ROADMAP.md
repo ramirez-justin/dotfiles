@@ -116,6 +116,8 @@
 
 ## Phase 3 — Entity graph model
 
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and fast-forward merged locally to `main` (not pushed).
+
 **Goal:** make projects, repos, people, systems, tools, decisions, and organizations first-class retrieval anchors rather than loose metadata.
 
 ### Scope

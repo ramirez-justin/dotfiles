@@ -11,6 +11,7 @@ import type {
   SimilarMemory,
   SofiaContext,
 } from "./types.ts";
+import { resolveEntity, type EntityInput } from "./entities.ts";
 
 export function createServiceClient(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL");
@@ -80,6 +81,54 @@ function sourceTypeFromMetadata(
   return typeof value === "string" && allowed.has(value as ProvenanceSourceType)
     ? (value as ProvenanceSourceType)
     : DEFAULT_SOURCE_TYPE;
+}
+
+async function attachMemoryEntities(
+  supabase: SupabaseClient,
+  memoryId: string,
+  entities: EntityInput[],
+): Promise<string[]> {
+  const rows = await buildEntityAttachmentRows(supabase, entities, (entityId, evidence) => ({
+    memory_id: memoryId,
+    entity_id: entityId,
+    evidence,
+  }));
+  if (rows.length === 0) return [];
+  const { error } = await supabase.from("memory_entities").insert(rows);
+  if (error) throw new Error(`attach memory entities failed: ${error.message}`);
+  return rows.map((row) => row.entity_id as string);
+}
+
+async function attachTodoEntities(
+  supabase: SupabaseClient,
+  todoId: string,
+  entities: EntityInput[],
+): Promise<string[]> {
+  const rows = await buildEntityAttachmentRows(supabase, entities, (entityId, evidence) => ({
+    todo_id: todoId,
+    entity_id: entityId,
+    evidence,
+  }));
+  if (rows.length === 0) return [];
+  const { error } = await supabase.from("todo_entities").insert(rows);
+  if (error) throw new Error(`attach todo entities failed: ${error.message}`);
+  return rows.map((row) => row.entity_id as string);
+}
+
+async function buildEntityAttachmentRows(
+  supabase: SupabaseClient,
+  entities: EntityInput[],
+  buildRow: (entityId: string, evidence: string | null) => Record<string, unknown>,
+): Promise<Array<Record<string, unknown>>> {
+  const rows: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+  for (const entity of entities) {
+    const entityId = await resolveEntity(supabase, entity);
+    if (!entityId || seen.has(entityId)) continue;
+    seen.add(entityId);
+    rows.push(buildRow(entityId, entity.evidence ?? null));
+  }
+  return rows;
 }
 
 async function insertMemoryProvenance(
@@ -237,6 +286,7 @@ export async function promoteCandidate(
     confidence: candidate.confidence,
     changeReason: candidate.reasoning,
   });
+  await attachMemoryEntities(supabase, memoryId, candidate.entities);
   return memoryId;
 }
 
@@ -801,6 +851,13 @@ export async function promoteExistingCandidate(
     changeReason: "human-approved promotion from review queue",
     createdBy: "review_candidates",
   });
+  await attachMemoryEntities(
+    supabase,
+    memoryId,
+    ((candidate.metadata as Record<string, unknown> | null)?.entities as
+      | CandidateInput["entities"]
+      | undefined) ?? [],
+  );
 
   const { error: updateError } = await supabase
     .from("memory_candidates")
@@ -842,7 +899,9 @@ export async function createTodoFromCandidate(
     .select("id")
     .single();
   if (error) throw new Error(`insert todo failed: ${error.message}`);
-  return data.id as string;
+  const todoId = data.id as string;
+  await attachTodoEntities(supabase, todoId, input.candidate.entities);
+  return todoId;
 }
 
 export async function recordMemoryRetrievals(

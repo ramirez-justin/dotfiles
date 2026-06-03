@@ -111,6 +111,8 @@ export type CaptureEventInput = {
 export type BootContextRequest = {
   context: SofiaContext;
   force_refresh?: boolean;
+  entity_id?: string;
+  entity?: string;
 };
 
 export type BootContextResponse = {

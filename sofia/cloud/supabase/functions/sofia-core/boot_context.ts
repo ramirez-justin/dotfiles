@@ -4,6 +4,7 @@ import type {
   BootContextResponse,
   SofiaContext,
 } from "./types.ts";
+import { findEntityId } from "./entities.ts";
 
 const BOOT_ARTIFACT_NAME = "boot_context.md";
 const BOOT_CONTEXT_MAX_CHARS = 12_000;
@@ -85,14 +86,25 @@ export async function compileBootContext(
   supabase: SupabaseClient,
   request: BootContextRequest,
 ): Promise<BootContextResponse> {
-  if (!request.force_refresh) {
+  const hasEntityScope = Boolean(request.entity_id || request.entity);
+  const scopedEntityId = await resolveBootEntityId(supabase, request);
+  const isScoped = hasEntityScope;
+  if (!request.force_refresh && !isScoped) {
     const existing = await loadBootArtifact(supabase, request.context);
     if (existing) return existing;
   }
 
   const contexts = contextsForBoot(request.context);
-  const memories = await loadBootMemories(supabase, contexts);
-  const todos = await loadActiveTodos(supabase, contexts);
+  const memories = isScoped
+    ? scopedEntityId
+      ? await loadBootMemoriesForEntity(supabase, contexts, scopedEntityId)
+      : []
+    : await loadBootMemories(supabase, contexts);
+  const todos = isScoped
+    ? scopedEntityId
+      ? await loadActiveTodosForEntity(supabase, contexts, scopedEntityId)
+      : []
+    : await loadActiveTodos(supabase, contexts);
   const content = renderBootContext(request.context, memories, todos);
   return await persistBootContext(
     supabase,
@@ -101,7 +113,17 @@ export async function compileBootContext(
     contexts,
     memories,
     todos,
+    scopedEntityId ? [scopedEntityId] : [],
   );
+}
+
+async function resolveBootEntityId(
+  supabase: SupabaseClient,
+  request: BootContextRequest,
+): Promise<string | null> {
+  if (request.entity_id) return request.entity_id;
+  if (request.entity) return await findEntityId(supabase, request.entity);
+  return null;
 }
 
 async function loadBootArtifact(
@@ -154,7 +176,48 @@ async function loadBootMemories(
     .limit(120);
 
   if (error) throw new Error(`load boot memories failed: ${error.message}`);
-  return ((data ?? []) as MemoryRow[]).filter(isLifecycleCurrent).sort(
+  return sortBootMemories(((data ?? []) as MemoryRow[]).filter(isLifecycleCurrent));
+}
+
+async function loadBootMemoriesForEntity(
+  supabase: SupabaseClient,
+  contexts: SofiaContext[],
+  entityId: string,
+): Promise<MemoryRow[]> {
+  const memoryIds = await loadMemoryIdsForEntity(supabase, entityId);
+  if (memoryIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("memories")
+    .select(
+      "id, context, memory_type, title, body, confidence, retrieval_priority, last_verified_at, stale_after, expires_at, created_at",
+    )
+    .in("context", contexts)
+    .in("id", memoryIds)
+    .eq("status", "active")
+    .eq("boot_context_eligible", true)
+    .order("retrieval_priority", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(120);
+
+  if (error) throw new Error(`load entity boot memories failed: ${error.message}`);
+  return sortBootMemories(((data ?? []) as MemoryRow[]).filter(isLifecycleCurrent));
+}
+
+async function loadMemoryIdsForEntity(
+  supabase: SupabaseClient,
+  entityId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("memory_entities")
+    .select("memory_id")
+    .eq("entity_id", entityId)
+    .limit(500);
+  if (error) throw new Error(`load entity memory links failed: ${error.message}`);
+  return [...new Set(((data ?? []) as Array<{ memory_id: string }>).map((row) => row.memory_id))];
+}
+
+function sortBootMemories(memories: MemoryRow[]): MemoryRow[] {
+  return memories.sort(
     (a, b) =>
       ((b.retrieval_priority ?? 50) - (a.retrieval_priority ?? 50)) ||
       String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
@@ -175,7 +238,45 @@ async function loadActiveTodos(
     .limit(20);
 
   if (error) throw new Error(`load boot todos failed: ${error.message}`);
-  return ((data ?? []) as TodoRow[]).sort(
+  return sortBootTodos((data ?? []) as TodoRow[]);
+}
+
+async function loadActiveTodosForEntity(
+  supabase: SupabaseClient,
+  contexts: SofiaContext[],
+  entityId: string,
+): Promise<TodoRow[]> {
+  const todoIds = await loadTodoIdsForEntity(supabase, entityId);
+  if (todoIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("todos")
+    .select("id, context, title, status, priority, due_at")
+    .in("context", contexts)
+    .in("id", todoIds)
+    .in("status", ["open", "in_progress", "blocked"])
+    .order("priority", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) throw new Error(`load entity boot todos failed: ${error.message}`);
+  return sortBootTodos((data ?? []) as TodoRow[]);
+}
+
+async function loadTodoIdsForEntity(
+  supabase: SupabaseClient,
+  entityId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("todo_entities")
+    .select("todo_id")
+    .eq("entity_id", entityId)
+    .limit(200);
+  if (error) throw new Error(`load entity todo links failed: ${error.message}`);
+  return [...new Set(((data ?? []) as Array<{ todo_id: string }>).map((row) => row.todo_id))];
+}
+
+function sortBootTodos(todos: TodoRow[]): TodoRow[] {
+  return todos.sort(
     (a, b) => (b.priority ?? 50) - (a.priority ?? 50),
   );
 }
@@ -187,6 +288,7 @@ async function persistBootContext(
   contexts: SofiaContext[],
   memories: MemoryRow[],
   todos: TodoRow[],
+  entityIds: string[] = [],
 ): Promise<BootContextResponse> {
   const includedMemoryIds = [
     ...memories.filter((memory) => memory.context === "shared"),
@@ -208,7 +310,7 @@ async function persistBootContext(
     .insert({
       context,
       included_memory_ids: includedMemoryIds,
-      included_entity_ids: [],
+      included_entity_ids: entityIds,
       included_todo_ids: includedTodoIds,
       markdown: content,
       token_count: tokenCount,
@@ -234,10 +336,25 @@ async function persistBootContext(
     max_chars: BOOT_CONTEXT_MAX_CHARS,
     snapshot_id: snapshotId,
     included_memory_ids: includedMemoryIds,
-    included_entity_ids: [],
+    included_entity_ids: entityIds,
     included_todo_ids: includedTodoIds,
     token_count: tokenCount,
   };
+
+  if (entityIds.length > 0) {
+    return {
+      context,
+      content,
+      generated_at: snapshot.generated_at as string,
+      artifact_id: null,
+      snapshot_id: snapshotId,
+      included_memory_ids: includedMemoryIds,
+      included_entity_ids: entityIds,
+      included_todo_ids: includedTodoIds,
+      token_count: tokenCount,
+      source: "compiled_from_memories",
+    };
+  }
 
   const { data, error } = await supabase
     .from("compiled_artifacts")
@@ -266,7 +383,7 @@ async function persistBootContext(
     artifact_id: data.id as string,
     snapshot_id: snapshotId,
     included_memory_ids: includedMemoryIds,
-    included_entity_ids: [],
+    included_entity_ids: entityIds,
     included_todo_ids: includedTodoIds,
     token_count: tokenCount,
     source: "compiled_from_memories",

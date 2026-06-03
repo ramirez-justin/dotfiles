@@ -32,8 +32,13 @@ export function parseBootContextParams(url: string): BootContextRequest {
 	if (!BOOT_CONTEXTS.has(context as SofiaContext)) {
 		throw new Error(`invalid boot context: ${context}`);
 	}
-	return {
+	const request: BootContextRequest = {
 		context: context as SofiaContext,
 		force_refresh: parsed.searchParams.get("force_refresh") === "true",
 	};
+	const entityId = parsed.searchParams.get("entity_id");
+	const entity = parsed.searchParams.get("entity");
+	if (entityId) request.entity_id = entityId;
+	if (entity) request.entity = entity;
+	return request;
 }

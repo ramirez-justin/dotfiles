@@ -7,6 +7,9 @@ type FakeState = {
   artifact?: Record<string, unknown> | null;
   memories?: Record<string, unknown>[];
   todos?: Record<string, unknown>[];
+  memoryEntityRows?: Record<string, unknown>[];
+  todoEntityRows?: Record<string, unknown>[];
+  entity?: Record<string, unknown> | null;
 };
 
 function fakeSupabase(state: FakeState) {
@@ -16,6 +19,7 @@ function fakeSupabase(state: FakeState) {
     from(table: string) {
       let operation = "select";
       let insertedPayload: unknown;
+      let idFilter: unknown[] | null = null;
       const query = {
         select(_columns?: string) {
           operation = "select";
@@ -24,7 +28,8 @@ function fakeSupabase(state: FakeState) {
         eq(_column: string, _value: unknown) {
           return query;
         },
-        in(_column: string, _value: unknown[]) {
+        in(column: string, value: unknown[]) {
+          if (column === "id") idFilter = value;
           return query;
         },
         order(_column: string, _options?: unknown) {
@@ -46,6 +51,7 @@ function fakeSupabase(state: FakeState) {
           return query;
         },
         async maybeSingle() {
+          if (table === "entities") return { data: state.entity ?? null, error: null };
           return { data: state.artifact ?? null, error: null };
         },
         async single() {
@@ -68,11 +74,25 @@ function fakeSupabase(state: FakeState) {
           };
         },
         then(resolve: (value: { data: unknown; error: null }) => void) {
-          if (table === "todos") {
-            resolve({ data: state.todos ?? [], error: null });
+          if (table === "memory_entities") {
+            resolve({ data: state.memoryEntityRows ?? [], error: null });
             return;
           }
-          resolve({ data: state.memories ?? [], error: null });
+          if (table === "todo_entities") {
+            resolve({ data: state.todoEntityRows ?? [], error: null });
+            return;
+          }
+          if (table === "todos") {
+            const todos = idFilter
+              ? (state.todos ?? []).filter((todo) => idFilter?.includes(todo.id))
+              : (state.todos ?? []);
+            resolve({ data: todos, error: null });
+            return;
+          }
+          const memories = idFilter
+            ? (state.memories ?? []).filter((memory) => idFilter?.includes(memory.id))
+            : (state.memories ?? []);
+          resolve({ data: memories, error: null });
         },
       };
       return query;
@@ -228,6 +248,104 @@ Deno.test("compileBootContext orders by retrieval policy and includes active tod
     result.content,
     /confidence: 0\.99; priority: 95; last verified: 2026-06-01/,
   );
+});
+
+Deno.test("compileBootContext can compile an entity-scoped slice", async () => {
+  const client = fakeSupabase({
+    artifact: null,
+    entity: { id: "entity-tqs" },
+    memoryEntityRows: [{ memory_id: "m-tqs" }],
+    todoEntityRows: [{ todo_id: "todo-tqs" }],
+    memories: [
+      {
+        id: "m-tqs",
+        context: "work",
+        memory_type: "project_context",
+        title: "TelophaseQS stack",
+        body: "TelophaseQS uses NautilusTrader.",
+        retrieval_priority: 80,
+        created_at: "2026-05-01T12:00:00Z",
+      },
+      {
+        id: "m-other",
+        context: "work",
+        memory_type: "project_context",
+        title: "Other project",
+        body: "This should be excluded from scoped context.",
+        retrieval_priority: 90,
+        created_at: "2026-05-01T12:00:00Z",
+      },
+    ],
+    todos: [
+      {
+        id: "todo-tqs",
+        context: "work",
+        title: "Review TelophaseQS entity graph",
+        status: "open",
+        priority: 80,
+      },
+      {
+        id: "todo-other",
+        context: "work",
+        title: "Unrelated todo",
+        status: "open",
+        priority: 90,
+      },
+    ],
+  });
+
+  const result = await compileBootContext(client as never, {
+    context: "work",
+    force_refresh: true,
+    entity: "TelophaseQS",
+  });
+
+  assert.deepEqual(result.included_memory_ids, ["m-tqs"]);
+  assert.deepEqual(result.included_todo_ids, ["todo-tqs"]);
+  assert.deepEqual(result.included_entity_ids, ["entity-tqs"]);
+  assert.match(result.content, /TelophaseQS stack/);
+  assert.match(result.content, /Review TelophaseQS entity graph/);
+  assert.doesNotMatch(result.content, /Other project/);
+  assert.doesNotMatch(result.content, /Unrelated todo/);
+});
+
+Deno.test("compileBootContext does not fall back to global context when scoped entity is missing", async () => {
+  const client = fakeSupabase({
+    artifact: null,
+    entity: null,
+    memories: [
+      {
+        id: "m-global",
+        context: "work",
+        memory_type: "project_context",
+        title: "Global memory",
+        body: "This should not leak into a missing entity slice.",
+        retrieval_priority: 90,
+        created_at: "2026-05-01T12:00:00Z",
+      },
+    ],
+    todos: [
+      {
+        id: "todo-global",
+        context: "work",
+        title: "Global todo",
+        status: "open",
+        priority: 90,
+      },
+    ],
+  });
+
+  const result = await compileBootContext(client as never, {
+    context: "work",
+    force_refresh: true,
+    entity: "MissingProject",
+  });
+
+  assert.deepEqual(result.included_memory_ids, []);
+  assert.deepEqual(result.included_todo_ids, []);
+  assert.deepEqual(result.included_entity_ids, []);
+  assert.doesNotMatch(result.content, /Global memory/);
+  assert.doesNotMatch(result.content, /Global todo/);
 });
 
 Deno.test("compileBootContext omits expired and stale active memories defensively", async () => {

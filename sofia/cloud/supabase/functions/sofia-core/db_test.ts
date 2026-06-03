@@ -60,6 +60,12 @@ function fakeSupabase(record: Record<string, unknown>) {
           calls.push({ table, operation, payload });
           return query;
         },
+        async maybeSingle() {
+          if (table === "entities") {
+            return { data: null, error: null };
+          }
+          return { data: null, error: null };
+        },
         async single() {
           if (table === "memory_candidates" && operation === "insert") {
             return { data: { id: "candidate-review-1" }, error: null };
@@ -75,6 +81,9 @@ function fakeSupabase(record: Record<string, unknown>) {
           }
           if (table === "memories" && operation === "insert") {
             return { data: { id: "memory-1" }, error: null };
+          }
+          if (table === "entities" && operation === "insert") {
+            return { data: { id: "entity-1" }, error: null };
           }
           if (table === "todos" && operation === "insert") {
             return { data: { id: "todo-1" }, error: null };
@@ -444,6 +453,71 @@ Deno.test("promoteCandidate stores retrieval policy and first-class provenance",
   ]);
 });
 
+Deno.test("promoteCandidate attaches candidate entities to the memory graph", async () => {
+  const client = fakeSupabase({ id: "candidate-1" });
+
+  const memoryId = await promoteCandidate(
+    client as never,
+    "candidate-1",
+    "work",
+    {
+      candidate_type: "project_context",
+      candidate_text: "TelophaseQS uses NautilusTrader for paper trading.",
+      title: "TelophaseQS paper trading stack",
+      worthiness_score: 0.88,
+      confidence: 0.93,
+      risk_level: "low",
+      recommended_action: "auto_promote",
+      reasoning: "Project architecture context.",
+      entities: [{ type: "project", name: "TelophaseQS", evidence: "TelophaseQS" }],
+      metadata: {},
+    },
+    [0.1, 0.2],
+  );
+
+  assert.equal(memoryId, "memory-1");
+  assert.deepEqual(client.calls.filter((call) =>
+    call.table === "entities" || call.table === "entity_aliases" ||
+    call.table === "memory_entities"
+  ), [
+    {
+      table: "entities",
+      operation: "insert",
+      payload: {
+        entity_type: "project",
+        name: "TelophaseQS",
+        normalized_name: "telophaseqs",
+        external_refs: {},
+        metadata: {},
+        status: "active",
+      },
+    },
+    {
+      table: "entity_aliases",
+      operation: "insert",
+      payload: [
+        {
+          entity_id: "entity-1",
+          alias: "TelophaseQS",
+          normalized_alias: "telophaseqs",
+          source: "agent",
+          confidence: 1,
+          metadata: {},
+        },
+      ],
+    },
+    {
+      table: "memory_entities",
+      operation: "insert",
+      payload: [{
+        memory_id: "memory-1",
+        entity_id: "entity-1",
+        evidence: "TelophaseQS",
+      }],
+    },
+  ]);
+});
+
 Deno.test("createTodoFromCandidate stores todo workflow state instead of memory", async () => {
   const client = fakeSupabase({ id: "todo-1" });
 
@@ -494,6 +568,70 @@ Deno.test("createTodoFromCandidate stores todo workflow state instead of memory"
           project_entity_id: "11111111-1111-1111-1111-111111111111",
         },
       },
+    },
+  ]);
+});
+
+Deno.test("createTodoFromCandidate attaches candidate entities to todo graph", async () => {
+  const client = fakeSupabase({ id: "todo-1" });
+
+  const todoId = await createTodoFromCandidate(client as never, {
+    candidateId: "candidate-1",
+    eventId: "event-1",
+    context: "work",
+    candidate: {
+      candidate_type: "todo",
+      candidate_text: "Follow up on SOFIA entity graph.",
+      title: "Follow up on entity graph",
+      worthiness_score: 0.8,
+      confidence: 0.9,
+      risk_level: "low",
+      recommended_action: "review",
+      reasoning: "Action item extracted from session.",
+      entities: [{ type: "system", name: "SOFIA", evidence: "SOFIA" }],
+      metadata: {},
+    },
+  });
+
+  assert.equal(todoId, "todo-1");
+  assert.deepEqual(client.calls.filter((call) =>
+    call.table === "entities" || call.table === "entity_aliases" ||
+    call.table === "todo_entities"
+  ), [
+    {
+      table: "entities",
+      operation: "insert",
+      payload: {
+        entity_type: "system",
+        name: "SOFIA",
+        normalized_name: "sofia",
+        external_refs: {},
+        metadata: {},
+        status: "active",
+      },
+    },
+    {
+      table: "entity_aliases",
+      operation: "insert",
+      payload: [
+        {
+          entity_id: "entity-1",
+          alias: "SOFIA",
+          normalized_alias: "sofia",
+          source: "agent",
+          confidence: 1,
+          metadata: {},
+        },
+      ],
+    },
+    {
+      table: "todo_entities",
+      operation: "insert",
+      payload: [{
+        todo_id: "todo-1",
+        entity_id: "entity-1",
+        evidence: "SOFIA",
+      }],
     },
   ]);
 });

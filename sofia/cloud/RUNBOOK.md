@@ -271,6 +271,52 @@ order by created_at desc
 limit 20;
 ```
 
+## Phase 3 entity graph model
+
+Phase 3 makes projects, repos, systems, people, tools, organizations, decisions,
+and related concepts first-class retrieval anchors.
+
+Runtime behavior:
+
+1. Candidate `entities` metadata is normalized through `entities.ts`.
+2. Canonical entities get stable aliases in `entity_aliases`.
+3. Promoted memories attach through `memory_entities`.
+4. Todos/open loops attach through `todo_entities`.
+5. Vector search accepts entity scope via `entity_id` or `entity` and filters through the graph.
+6. Boot context supports scoped slices with `entity_id` or `entity`, writing a snapshot without overwriting the global compiled artifact.
+
+Useful examples:
+
+```bash
+# entity-scoped HTTP boot-context slice
+curl -fsS "$SOFIA_CLOUD_URL/boot-context?context=work&force_refresh=true&entity=TelophaseQS" \
+  -H "x-sofia-key: $SOFIA_MCP_ACCESS_KEY"
+```
+
+```sql
+select e.id, e.entity_type, e.name, array_agg(ea.alias order by ea.alias) as aliases
+from entities e
+left join entity_aliases ea on ea.entity_id = e.id
+where e.status = 'active'
+group by e.id
+order by e.created_at desc
+limit 20;
+
+select e.name, me.relationship, m.title
+from memory_entities me
+join entities e on e.id = me.entity_id
+join memories m on m.id = me.memory_id
+where e.normalized_name = 'telophaseqs'
+order by me.created_at desc;
+
+select e.name, te.relationship, t.title, t.status
+from todo_entities te
+join entities e on e.id = te.entity_id
+join todos t on t.id = te.todo_id
+where e.normalized_name = 'telophaseqs'
+order by te.created_at desc;
+```
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

@@ -66,6 +66,8 @@ type SearchMemoryInput = {
   session_id?: string;
   agent_name?: string;
   include_provenance?: boolean;
+  entity_id?: string;
+  entity?: string;
 };
 
 type ListRecentInput = {
@@ -93,6 +95,8 @@ type GetArtifactInput = {
 type GetBootContextInput = {
   context: "personal" | "work" | "shared";
   force_refresh?: boolean;
+  entity_id?: string;
+  entity?: string;
 };
 
 type RecordMemoryFeedbackInput = {
@@ -330,6 +334,8 @@ server.registerTool(
       session_id: z.string().optional(),
       agent_name: z.string().optional(),
       include_provenance: z.boolean().default(false),
+      entity_id: z.string().uuid().optional(),
+      entity: z.string().optional(),
     },
   },
   async ({
@@ -341,6 +347,8 @@ server.registerTool(
     session_id,
     agent_name,
     include_provenance,
+    entity_id,
+    entity,
   }: SearchMemoryInput) => {
     try {
       const embedding = await embedText(query, OPENROUTER_API_KEY);
@@ -351,6 +359,8 @@ server.registerTool(
         filter_context: context === "both" ? null : context,
         include_archived: false,
         activation_trigger_filter: activation_trigger ?? null,
+        filter_entity_id: entity_id ?? null,
+        filter_entity_name: entity ?? null,
       });
       if (error) return textResponse(`search failed: ${error.message}`, true);
       const rows = include_provenance
@@ -666,13 +676,17 @@ server.registerTool(
     inputSchema: {
       context: z.enum(["personal", "work", "shared"]).default("personal"),
       force_refresh: z.boolean().optional(),
+      entity_id: z.string().uuid().optional(),
+      entity: z.string().optional(),
     },
   },
-  async ({ context, force_refresh }: GetBootContextInput) => {
+  async ({ context, force_refresh, entity_id, entity }: GetBootContextInput) => {
     try {
       const bootContext = await compileBootContext(supabase, {
         context,
         force_refresh,
+        entity_id,
+        entity,
       });
       return textResponse(formatJson(bootContext));
     } catch (error) {

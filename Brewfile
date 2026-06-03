@@ -95,3 +95,4 @@ vscode "anysphere.remote-ssh"
 vscode "vscodevim.vim"
 cargo "lazycli"
 uv "pipenv-uv-migrate"
+uv "sqlfluff", with: ["chardet<6", "dbt-snowflake", "sqlfluff-templater-dbt"]

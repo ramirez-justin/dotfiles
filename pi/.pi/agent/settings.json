@@ -41,6 +41,7 @@
     "npm:@zenobius/pi-rose-pine",
     "npm:pi-mcp-adapter",
     "npm:pi-powerline-footer",
+    "npm:@juicesharp/rpiv-todo",
     {
       "source": "npm:context-mode",
       "skills": [

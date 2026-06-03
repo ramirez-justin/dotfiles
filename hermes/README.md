@@ -13,6 +13,16 @@ This dotfiles topic creates an isolated Hermes profile named `sofia-spike` that 
 - Hermes local memory disabled/minimized so durable memory flows through SOFIA Cloud.
 - Checkpoints enabled for safer coding experiments.
 
+## Runbook
+
+Operational commands and troubleshooting live in:
+
+```text
+hermes/RUNBOOK.md
+```
+
+Short version: use `sofia` for local CLI sessions and `mise run hermes:sofia:gateway:*` for the launchd-backed Telegram gateway.
+
 ## Install/link
 
 From the dotfiles repo:
@@ -23,7 +33,7 @@ mise run hermes:sofia:inject-secrets
 mise run hermes:sofia:run
 ```
 
-Use `mise run hermes:sofia:run` for normal starts. It fetches SOFIA boot context before launching Hermes and injects it into the session system prompt. Direct `hermes --profile sofia-spike` still has a static fallback instruction requiring the agent to call SOFIA `get_boot_context` before substantive work, but the wrapper is the preferred path because it gives Hermes context on turn 1.
+Use `sofia` for normal starts. It fetches SOFIA boot context before launching Hermes and injects it into the session system prompt. Direct `hermes --profile sofia-spike` still has a static fallback instruction requiring the agent to call SOFIA `get_boot_context` before substantive work, but the wrapper is the preferred path because it gives Hermes context on turn 1.
 
 The link task uses `stow --no-folding` and pre-creates the target profile directory. That is deliberate: generated `.env` must live in `~/.hermes/profiles/sofia-spike/.env`, not inside the git repo through a folded directory symlink.
 
@@ -68,6 +78,12 @@ git status --ignored --short hermes/.hermes/profiles/sofia-spike
 ## SOFIA boot context
 
 Normal Hermes starts require SOFIA boot context:
+
+```bash
+sofia
+```
+
+Equivalent mise task:
 
 ```bash
 mise run hermes:sofia:run

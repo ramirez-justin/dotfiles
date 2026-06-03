@@ -34,6 +34,10 @@ alias hmgwi="hermes gateway install"
 alias hmgws="hermes gateway status"
 alias hmgwl="tail -f $HOME/.hermes/logs/gateway.log"
 
+# SOFIA-backed Hermes profile. Use this instead of plain
+# `hermes --profile sofia-spike` so boot context is loaded before turn 1.
+alias sofia="$HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia"
+
 # Safer / friendlier defaults
 alias mkdir="mkdir -p"
 alias cp="cp -r"

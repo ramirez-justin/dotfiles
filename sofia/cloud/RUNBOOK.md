@@ -183,6 +183,43 @@ Recovery:
    select vault.create_secret('<MCP_ACCESS_KEY>', 'sofia_mcp_access_key');
    ```
 
+## Agent-native memory debugging
+
+When an agent appears to know a fact, inspect the compiled boot context and its
+snapshot before assuming vector search returned it:
+
+1. Call `get_boot_context` or fetch `/boot-context?context=<context>` and note
+   the `snapshot_id`, `included_memory_ids`, and `included_todo_ids`.
+2. Inspect `boot_context_snapshots` for that snapshot to see the exact rendered
+   markdown, source query, compiler version, and token count.
+3. For a specific memory, inspect `memory_provenance` to verify source type,
+   source ref/URI, capture actor, evidence snippet/summary, confidence, and
+   last verification timestamp.
+4. If a retrieved memory was stale or confusing, record feedback through the
+   `record_memory_feedback` MCP tool so retrieval policy can be tuned later.
+5. Todos/open loops should be checked in `todos`, not in `memories`.
+
+Useful SQL shapes:
+
+```sql
+select id, generated_at, included_memory_ids, included_todo_ids, token_count
+from boot_context_snapshots
+where context = 'personal'
+order by generated_at desc
+limit 5;
+
+select source_type, source_ref, captured_by, confidence, evidence_summary,
+       last_verified_at
+from memory_provenance
+where memory_id = '<memory-id>'
+order by created_at desc;
+
+select id, title, status, priority, due_at
+from todos
+where context = 'personal' and status in ('open', 'in_progress', 'blocked')
+order by priority desc, created_at desc;
+```
+
 ## After recovery
 
 Verify boot context from Pi/MCP:

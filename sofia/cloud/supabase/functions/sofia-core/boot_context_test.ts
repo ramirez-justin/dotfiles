@@ -4,130 +4,228 @@ import { compileBootContext } from "./boot_context.ts";
 type Call = { table: string; operation: string; payload?: unknown };
 
 type FakeState = {
-	artifact?: Record<string, unknown> | null;
-	memories?: Record<string, unknown>[];
+  artifact?: Record<string, unknown> | null;
+  memories?: Record<string, unknown>[];
+  todos?: Record<string, unknown>[];
 };
 
 function fakeSupabase(state: FakeState) {
-	const calls: Call[] = [];
-	const client = {
-		calls,
-		from(table: string) {
-			let operation = "select";
-			const query = {
-				select(_columns?: string) {
-					operation = "select";
-					return query;
-				},
-				eq(_column: string, _value: unknown) {
-					return query;
-				},
-				in(_column: string, _value: unknown[]) {
-					return query;
-				},
-				order(_column: string, _options?: unknown) {
-					return query;
-				},
-				limit(_value: number) {
-					return query;
-				},
-				upsert(payload: unknown, _options?: unknown) {
-					operation = "upsert";
-					calls.push({ table, operation, payload });
-					return query;
-				},
-				async maybeSingle() {
-					return { data: state.artifact ?? null, error: null };
-				},
-				async single() {
-					return {
-						data: {
-							id: "artifact-new",
-							generated_at: "2026-05-02T00:00:00.000Z",
-						},
-						error: null,
-					};
-				},
-				then(resolve: (value: { data: unknown; error: null }) => void) {
-					resolve({ data: state.memories ?? [], error: null });
-				},
-			};
-			return query;
-		},
-	};
-	return client;
+  const calls: Call[] = [];
+  const client = {
+    calls,
+    from(table: string) {
+      let operation = "select";
+      let insertedPayload: unknown;
+      const query = {
+        select(_columns?: string) {
+          operation = "select";
+          return query;
+        },
+        eq(_column: string, _value: unknown) {
+          return query;
+        },
+        in(_column: string, _value: unknown[]) {
+          return query;
+        },
+        order(_column: string, _options?: unknown) {
+          return query;
+        },
+        limit(_value: number) {
+          return query;
+        },
+        upsert(payload: unknown, _options?: unknown) {
+          operation = "upsert";
+          insertedPayload = payload;
+          calls.push({ table, operation, payload });
+          return query;
+        },
+        insert(payload: unknown) {
+          operation = "insert";
+          insertedPayload = payload;
+          calls.push({ table, operation, payload });
+          return query;
+        },
+        async maybeSingle() {
+          return { data: state.artifact ?? null, error: null };
+        },
+        async single() {
+          if (table === "boot_context_snapshots") {
+            return {
+              data: {
+                id: "snapshot-new",
+                generated_at: "2026-05-02T00:00:00.000Z",
+                ...(insertedPayload as Record<string, unknown>),
+              },
+              error: null,
+            };
+          }
+          return {
+            data: {
+              id: "artifact-new",
+              generated_at: "2026-05-02T00:00:00.000Z",
+            },
+            error: null,
+          };
+        },
+        then(resolve: (value: { data: unknown; error: null }) => void) {
+          if (table === "todos") {
+            resolve({ data: state.todos ?? [], error: null });
+            return;
+          }
+          resolve({ data: state.memories ?? [], error: null });
+        },
+      };
+      return query;
+    },
+  };
+  return client;
 }
 
 Deno.test("compileBootContext returns existing artifact unless forced", async () => {
-	const client = fakeSupabase({
-		artifact: {
-			id: "artifact-1",
-			content:
-				"# SOFIA — your second brain context (context: personal)\nExisting",
-			generated_at: "2026-05-01T12:00:00.000Z",
-		},
-	});
+  const client = fakeSupabase({
+    artifact: {
+      id: "artifact-1",
+      content:
+        "# SOFIA — your second brain context (context: personal)\nExisting",
+      generated_at: "2026-05-01T12:00:00.000Z",
+    },
+  });
 
-	const result = await compileBootContext(client as never, {
-		context: "personal",
-	});
+  const result = await compileBootContext(client as never, {
+    context: "personal",
+  });
 
-	assert.equal(result.artifact_id, "artifact-1");
-	assert.equal(result.source, "compiled_artifacts");
-	assert.equal(result.content.includes("Existing"), true);
-	assert.deepEqual(client.calls, []);
+  assert.equal(result.artifact_id, "artifact-1");
+  assert.equal(result.source, "compiled_artifacts");
+  assert.equal(result.content.includes("Existing"), true);
+  assert.deepEqual(client.calls, []);
 });
 
 Deno.test("compileBootContext compiles shared plus requested context memories", async () => {
-	const client = fakeSupabase({
-		artifact: null,
-		memories: [
-			{
-				id: "m-shared",
-				context: "shared",
-				memory_type: "operating_rule",
-				title: "Do not reveal secrets",
-				body: "Never copy secrets into persistent files.",
-				confidence: 0.98,
-				created_at: "2026-05-01T10:00:00Z",
-			},
-			{
-				id: "m-personal",
-				context: "personal",
-				memory_type: "project_context",
-				title: "New home purchase",
-				body: "Closing is planned for 2026-05-15.",
-				confidence: 0.95,
-				created_at: "2026-05-01T11:00:00Z",
-			},
-		],
-	});
+  const client = fakeSupabase({
+    artifact: null,
+    memories: [
+      {
+        id: "m-shared",
+        context: "shared",
+        memory_type: "operating_rule",
+        title: "Do not reveal secrets",
+        body: "Never copy secrets into persistent files.",
+        confidence: 0.98,
+        created_at: "2026-05-01T10:00:00Z",
+      },
+      {
+        id: "m-personal",
+        context: "personal",
+        memory_type: "project_context",
+        title: "New home purchase",
+        body: "Closing is planned for 2026-05-15.",
+        confidence: 0.95,
+        created_at: "2026-05-01T11:00:00Z",
+      },
+    ],
+  });
 
-	const result = await compileBootContext(client as never, {
-		context: "personal",
-		force_refresh: true,
-	});
+  const result = await compileBootContext(client as never, {
+    context: "personal",
+    force_refresh: true,
+  });
 
-	assert.equal(result.context, "personal");
-	assert.equal(result.source, "compiled_from_memories");
-	assert.match(
-		result.content,
-		/^# SOFIA — your second brain context \(context: personal\)/,
-	);
-	assert.match(result.content, /## SOUL — Who Sofia Is/);
-	assert.match(
-		result.content,
-		/You're not a chatbot\. You're becoming someone\. You are Sofia\./,
-	);
-	assert.match(
-		result.content,
-		/Be genuinely helpful, not performatively helpful\./,
-	);
-	assert.match(result.content, /## Shared Memory/);
-	assert.match(result.content, /Do not reveal secrets/);
-	assert.match(result.content, /## Personal Memory/);
-	assert.match(result.content, /New home purchase/);
-	assert.equal(client.calls.length, 1);
-	assert.equal(client.calls[0].table, "compiled_artifacts");
-	assert.equal(client.calls[0].operation, "upsert");
+  assert.equal(result.context, "personal");
+  assert.equal(result.source, "compiled_from_memories");
+  assert.equal(result.snapshot_id, "snapshot-new");
+  assert.deepEqual(result.included_memory_ids, ["m-shared", "m-personal"]);
+  assert.match(
+    result.content,
+    /^# SOFIA — your second brain context \(context: personal\)/,
+  );
+  assert.match(result.content, /## SOUL — Who Sofia Is/);
+  assert.match(
+    result.content,
+    /You're not a chatbot\. You're becoming someone\. You are Sofia\./,
+  );
+  assert.match(
+    result.content,
+    /Be genuinely helpful, not performatively helpful\./,
+  );
+  assert.match(result.content, /## Shared Memory/);
+  assert.match(result.content, /Do not reveal secrets/);
+  assert.match(result.content, /## Personal Memory/);
+  assert.match(result.content, /New home purchase/);
+  assert.equal(client.calls.length, 2);
+  assert.equal(client.calls[0].table, "boot_context_snapshots");
+  assert.equal(client.calls[0].operation, "insert");
+  assert.deepEqual(
+    (client.calls[0].payload as Record<string, unknown>).included_memory_ids,
+    [
+      "m-shared",
+      "m-personal",
+    ],
+  );
+  assert.equal(
+    typeof (client.calls[0].payload as Record<string, unknown>).token_count,
+    "number",
+  );
+  assert.equal(client.calls[1].table, "compiled_artifacts");
+  assert.equal(client.calls[1].operation, "upsert");
+});
+
+Deno.test("compileBootContext orders by retrieval policy and includes active todos", async () => {
+  const client = fakeSupabase({
+    artifact: null,
+    memories: [
+      {
+        id: "m-low",
+        context: "personal",
+        memory_type: "fact",
+        title: "Low priority fact",
+        body: "Useful only on demand.",
+        confidence: 0.8,
+        retrieval_priority: 10,
+        last_verified_at: null,
+        created_at: "2026-05-01T10:00:00Z",
+      },
+      {
+        id: "m-high",
+        context: "personal",
+        memory_type: "operating_rule",
+        title: "High priority rule",
+        body: "Always prefer cloud memory.",
+        confidence: 0.99,
+        retrieval_priority: 95,
+        last_verified_at: "2026-06-01T00:00:00Z",
+        created_at: "2026-05-01T11:00:00Z",
+      },
+    ],
+    todos: [
+      {
+        id: "todo-1",
+        context: "personal",
+        title: "Review memory graph",
+        status: "open",
+        priority: 80,
+        due_at: null,
+      },
+    ],
+  });
+
+  const result = await compileBootContext(client as never, {
+    context: "personal",
+    force_refresh: true,
+  });
+
+  assert.equal(result.snapshot_id, "snapshot-new");
+  assert.deepEqual(result.included_memory_ids, ["m-high", "m-low"]);
+  assert.deepEqual(result.included_todo_ids, ["todo-1"]);
+  assert.equal(
+    result.content.indexOf("High priority rule") <
+      result.content.indexOf("Low priority fact"),
+    true,
+  );
+  assert.match(result.content, /## Active Todos/);
+  assert.match(result.content, /Review memory graph/);
+  assert.match(
+    result.content,
+    /confidence: 0\.99; priority: 95; last verified: 2026-06-01/,
+  );
 });

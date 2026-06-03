@@ -205,6 +205,34 @@ curl -X POST \
   https://<project-ref>.supabase.co/functions/v1/sofia-core/daily-digest
 ```
 
+## Agent-native memory model
+
+SOFIA Cloud is structured as an evidence-backed memory lifecycle rather than a
+flat notes store:
+
+- `events` are append-only raw captures from users, agents, automations, repos,
+  issues, PRs, docs, sessions, or APIs.
+- `memory_candidates` are extracted claims awaiting routing, review, or
+  reconciliation.
+- `memories` are accepted durable knowledge with lifecycle status,
+  retrieval policy, confidence, and version history.
+- `memory_provenance` records first-class evidence: source type, source ref/URI,
+  capture actor, confidence, snippets/summaries, and verification timestamps.
+- `memory_edges` stores typed memory relationships such as `supports`,
+  `contradicts`, `updates`, `supersedes`, `depends_on`, `derived_from`, and
+  `belongs_to_project`.
+- `todos` stores action state separately from memories, with owner, due date,
+  priority, source candidate/event, project attachment, and dependency support.
+- `memory_retrievals` records lightweight usefulness telemetry so SOFIA can learn
+  what deserves boot-context inclusion versus ordinary search retrieval.
+- `boot_context_snapshots` stores immutable compiled boot-context snapshots with
+  included memory/todo IDs and token counts for debuggability.
+
+Retrieval policy lives on `memories` through `retrieval_priority`,
+`boot_context_eligible`, `activation_triggers`, and `expires_at`. The boot
+compiler prioritizes active, boot-eligible memories by retrieval priority and
+records exactly what was included in each snapshot.
+
 ## Memory reconciliation
 
 SOFIA can reconcile new memory candidates against active memories before
@@ -220,7 +248,10 @@ versions safe high-confidence updates, and sends conflicts, merges, sensitive
 updates, and uncertain changes to the existing candidate review queue.
 
 Reconciliation decisions are stored in `memory_reconciliations` and should be
-inspected through `review_candidates` when a candidate is pending review.
+inspected through `review_candidates` when a candidate is pending review. Review
+rows can now carry severity, reviewer prompts, resolution notes, resolved-by, and
+resolved-at metadata so agents can explain why a candidate was accepted,
+rejected, superseded, or merged.
 
 ## Pi MCP client setup
 

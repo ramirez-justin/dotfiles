@@ -8,36 +8,39 @@ import { compileBootContext } from "./boot_context.ts";
 import { classifyEvent, embedText } from "./classifier.ts";
 import { deliverDailyDigest } from "./daily_digest.ts";
 import {
-	applyMemoryUpdateFromReconciliation,
-	archiveMemory,
-	createServiceClient,
-	findSimilarMemories,
-	getPendingReconciliationForCandidate,
-	insertCandidate,
-	insertEvent,
-	insertReconciliation,
-	markCandidateArchived,
-	markReconciliationStatus,
-	promoteCandidate,
-	promoteExistingCandidate,
+  applyMemoryUpdateFromReconciliation,
+  archiveMemory,
+  createServiceClient,
+  createTodoFromCandidate,
+  findSimilarMemories,
+  getPendingReconciliationForCandidate,
+  insertCandidate,
+  insertEvent,
+  insertReconciliation,
+  markCandidateArchived,
+  markReconciliationStatus,
+  promoteCandidate,
+  promoteExistingCandidate,
+  recordMemoryFeedback,
+  recordMemoryRetrievals,
 } from "./db.ts";
 import {
-	formatJson,
-	sanitizeRowForMcp,
-	sanitizeRowsForMcp,
-	textResponse,
+  formatJson,
+  sanitizeRowForMcp,
+  sanitizeRowsForMcp,
+  textResponse,
 } from "./format.ts";
 import {
-	isBootContextRequest,
-	isDailyDigestRequest,
-	parseBootContextParams,
-	shouldPatchMcpAcceptHeader,
+  isBootContextRequest,
+  isDailyDigestRequest,
+  parseBootContextParams,
+  shouldPatchMcpAcceptHeader,
 } from "./http.ts";
 import {
-	alignReconciliationStatusWithRoute,
-	applyReconciliationPolicy,
-	fallbackReconciliationDecision,
-	judgeReconciliation,
+  alignReconciliationStatusWithRoute,
+  applyReconciliationPolicy,
+  fallbackReconciliationDecision,
+  judgeReconciliation,
 } from "./reconcile.ts";
 import { redactSecrets } from "./redact.ts";
 import { routeCandidate } from "./router.ts";
@@ -46,620 +49,744 @@ import type { CaptureEventInput, SofiaContext } from "./types.ts";
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY")!;
 const MCP_ACCESS_KEY = Deno.env.get("MCP_ACCESS_KEY")!;
 const RECONCILIATION_ENABLED =
-	Deno.env.get("SOFIA_RECONCILIATION_ENABLED") === "true";
+  Deno.env.get("SOFIA_RECONCILIATION_ENABLED") === "true";
 const supabase = createServiceClient();
 
 const server = new McpServer({ name: "sofia-cloud", version: "0.1.0" });
 
 type SearchMemoryInput = {
-	query: string;
-	context: "personal" | "work" | "shared" | "both";
-	limit: number;
-	threshold: number;
+  query: string;
+  context: "personal" | "work" | "shared" | "both";
+  limit: number;
+  threshold: number;
+  activation_trigger?: string;
+  session_id?: string;
+  agent_name?: string;
+  include_provenance?: boolean;
 };
 
 type ListRecentInput = {
-	kind: "events" | "candidates" | "memories";
-	context: "personal" | "work" | "shared" | "both";
-	limit: number;
+  kind: "events" | "candidates" | "memories";
+  context: "personal" | "work" | "shared" | "both";
+  limit: number;
 };
 
 type ReviewCandidatesInput = {
-	action: "list" | "approve" | "reject" | "archive";
-	candidate_id?: string;
-	limit: number;
+  action: "list" | "approve" | "reject" | "archive";
+  candidate_id?: string;
+  limit: number;
 };
 
 type ArchiveMemoryInput = {
-	memory_id: string;
-	reason?: string;
+  memory_id: string;
+  reason?: string;
 };
 
 type GetArtifactInput = {
-	artifact_name: string;
-	context: "personal" | "work" | "shared";
+  artifact_name: string;
+  context: "personal" | "work" | "shared";
 };
 
 type GetBootContextInput = {
-	context: "personal" | "work" | "shared";
-	force_refresh?: boolean;
+  context: "personal" | "work" | "shared";
+  force_refresh?: boolean;
+};
+
+type RecordMemoryFeedbackInput = {
+  retrieval_id: string;
+  was_used?: boolean;
+  was_helpful?: boolean;
+  caused_confusion?: boolean;
+  feedback?: string;
 };
 
 server.registerTool(
-	"capture_event",
-	{
-		title: "Capture SOFIA Event",
-		description:
-			"Capture raw material into SOFIA. The memory pipeline will redact secrets, extract memory candidates, auto-promote high-confidence low-risk memories, and queue uncertain candidates for review.",
-		inputSchema: {
-			content: z.string().min(1).describe("Raw content to capture"),
-			context: z.enum(["personal", "work", "shared"]).default("personal"),
-			source: z.string().default("mcp"),
-			source_ref: z.string().optional(),
-			type_hint: z.string().optional(),
-			metadata: z.record(z.unknown()).optional(),
-		},
-	},
-	async (input: CaptureEventInput) => {
-		try {
-			const capture = input;
-			const redacted = redactSecrets(capture.content);
-			const eventEmbedding = redacted.redacted
-				? null
-				: await embedText(redacted.content, OPENROUTER_API_KEY);
-			const eventId = await insertEvent(
-				supabase,
-				capture,
-				redacted.content,
-				redacted.redacted ? "secret_redacted" : "normal",
-				eventEmbedding,
-				redacted.labels,
-			);
+  "capture_event",
+  {
+    title: "Capture SOFIA Event",
+    description:
+      "Capture raw material into SOFIA. The memory pipeline will redact secrets, extract memory candidates, auto-promote high-confidence low-risk memories, and queue uncertain candidates for review.",
+    inputSchema: {
+      content: z.string().min(1).describe("Raw content to capture"),
+      context: z.enum(["personal", "work", "shared"]).default("personal"),
+      source: z.string().default("mcp"),
+      source_ref: z.string().optional(),
+      type_hint: z.string().optional(),
+      metadata: z.record(z.unknown()).optional(),
+    },
+  },
+  async (input: CaptureEventInput) => {
+    try {
+      const capture = input;
+      const redacted = redactSecrets(capture.content);
+      const eventEmbedding = redacted.redacted
+        ? null
+        : await embedText(redacted.content, OPENROUTER_API_KEY);
+      const eventId = await insertEvent(
+        supabase,
+        capture,
+        redacted.content,
+        redacted.redacted ? "secret_redacted" : "normal",
+        eventEmbedding,
+        redacted.labels,
+      );
 
-			const classifierInput: CaptureEventInput = {
-				...capture,
-				content: redacted.content,
-				metadata: { ...(capture.metadata ?? {}), redacted: redacted.redacted },
-			};
-			const candidates = await classifyEvent(
-				classifierInput,
-				OPENROUTER_API_KEY,
-			);
+      const classifierInput: CaptureEventInput = {
+        ...capture,
+        content: redacted.content,
+        metadata: { ...(capture.metadata ?? {}), redacted: redacted.redacted },
+      };
+      const candidates = await classifyEvent(
+        classifierInput,
+        OPENROUTER_API_KEY,
+      );
 
-			const results = [];
-			for (const candidate of candidates) {
-				candidate.metadata = {
-					...candidate.metadata,
-					context: capture.context,
-					redacted: redacted.redacted,
-				};
-				const route = routeCandidate(candidate);
-				const candidateId = await insertCandidate(
-					supabase,
-					eventId,
-					capture.context,
-					candidate,
-					route,
-				);
-				let memoryId: string | null = null;
-				let reconciliation: Record<string, unknown> | null = null;
-				const canBecomeMemory =
-					candidate.candidate_type !== "todo" &&
-					candidate.candidate_type !== "open_loop";
+      const results = [];
+      for (const candidate of candidates) {
+        candidate.metadata = {
+          ...candidate.metadata,
+          context: capture.context,
+          redacted: redacted.redacted,
+        };
+        const route = routeCandidate(candidate);
+        const candidateId = await insertCandidate(
+          supabase,
+          eventId,
+          capture.context,
+          candidate,
+          route,
+        );
+        let memoryId: string | null = null;
+        let todoId: string | null = null;
+        let reconciliation: Record<string, unknown> | null = null;
+        const canBecomeMemory = candidate.candidate_type !== "todo" &&
+          candidate.candidate_type !== "open_loop";
 
-				if (
-					canBecomeMemory &&
-					(route.shouldPromote || route.status === "pending_review")
-				) {
-					const memoryEmbedding = await embedText(
-						candidate.candidate_text,
-						OPENROUTER_API_KEY,
-					);
+        if (!canBecomeMemory) {
+          todoId = await createTodoFromCandidate(supabase, {
+            candidateId,
+            eventId,
+            context: capture.context,
+            candidate,
+          });
+        }
 
-					if (RECONCILIATION_ENABLED) {
-						let decision;
-						try {
-							const similarMemories = await findSimilarMemories(
-								supabase,
-								memoryEmbedding,
-								capture.context,
-							);
-							const judgment = await judgeReconciliation(
-								candidate,
-								similarMemories,
-								OPENROUTER_API_KEY,
-							);
-							decision = applyReconciliationPolicy(candidate, judgment);
-						} catch (error) {
-							decision = fallbackReconciliationDecision(
-								candidate,
-								(error as Error).message,
-							);
-						}
+        if (
+          canBecomeMemory &&
+          (route.shouldPromote || route.status === "pending_review")
+        ) {
+          const memoryEmbedding = await embedText(
+            candidate.candidate_text,
+            OPENROUTER_API_KEY,
+          );
 
-						decision = alignReconciliationStatusWithRoute(
-							decision,
-							route.shouldPromote,
-						);
+          if (RECONCILIATION_ENABLED) {
+            let decision;
+            try {
+              const similarMemories = await findSimilarMemories(
+                supabase,
+                memoryEmbedding,
+                capture.context,
+              );
+              const judgment = await judgeReconciliation(
+                candidate,
+                similarMemories,
+                OPENROUTER_API_KEY,
+              );
+              decision = applyReconciliationPolicy(candidate, judgment);
+            } catch (error) {
+              decision = fallbackReconciliationDecision(
+                candidate,
+                (error as Error).message,
+              );
+            }
 
-						const reconciliationId = await insertReconciliation(
-							supabase,
-							candidateId,
-							capture.context,
-							decision,
-						);
-						reconciliation = { id: reconciliationId, ...decision };
+            decision = alignReconciliationStatusWithRoute(
+              decision,
+              route.shouldPromote,
+            );
 
-						if (decision.action === "promote_new" && route.shouldPromote) {
-							memoryId = await promoteCandidate(
-								supabase,
-								candidateId,
-								capture.context,
-								candidate,
-								memoryEmbedding,
-							);
-						} else if (decision.action === "archive_duplicate") {
-							await markCandidateArchived(
-								supabase,
-								candidateId,
-								`duplicate/same-fact reconciliation with ${
-									decision.target_memory_id ?? "active memory"
-								}`,
-							);
-						} else if (
-							decision.action === "update_existing" &&
-							decision.target_memory_id
-						) {
-							memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
-								candidateId,
-								reconciliationId,
-								targetMemoryId: decision.target_memory_id,
-								title: decision.proposed_title ?? candidate.title,
-								body: decision.proposed_body ?? candidate.candidate_text,
-								confidence: Math.max(candidate.confidence, decision.confidence),
-								changeReason: `reconciliation auto-update: ${decision.policy_reason}`,
-								status: "auto_applied",
-							});
-						}
-					} else if (route.shouldPromote) {
-						memoryId = await promoteCandidate(
-							supabase,
-							candidateId,
-							capture.context,
-							candidate,
-							memoryEmbedding,
-						);
-					}
-				}
+            const reconciliationId = await insertReconciliation(
+              supabase,
+              candidateId,
+              capture.context,
+              decision,
+            );
+            reconciliation = { id: reconciliationId, ...decision };
 
-				results.push({
-					candidateId,
-					memoryId,
-					type: candidate.candidate_type,
-					title: candidate.title,
-					route,
-					reconciliation,
-				});
-			}
+            if (decision.action === "promote_new" && route.shouldPromote) {
+              memoryId = await promoteCandidate(
+                supabase,
+                candidateId,
+                capture.context,
+                candidate,
+                memoryEmbedding,
+              );
+            } else if (decision.action === "archive_duplicate") {
+              await markCandidateArchived(
+                supabase,
+                candidateId,
+                `duplicate/same-fact reconciliation with ${
+                  decision.target_memory_id ?? "active memory"
+                }`,
+              );
+            } else if (
+              decision.action === "update_existing" &&
+              decision.target_memory_id
+            ) {
+              memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
+                candidateId,
+                reconciliationId,
+                targetMemoryId: decision.target_memory_id,
+                title: decision.proposed_title ?? candidate.title,
+                body: decision.proposed_body ?? candidate.candidate_text,
+                confidence: Math.max(candidate.confidence, decision.confidence),
+                changeReason:
+                  `reconciliation auto-update: ${decision.policy_reason}`,
+                status: "auto_applied",
+              });
+            }
+          } else if (route.shouldPromote) {
+            memoryId = await promoteCandidate(
+              supabase,
+              candidateId,
+              capture.context,
+              candidate,
+              memoryEmbedding,
+            );
+          }
+        }
 
-			return textResponse(
-				formatJson({
-					eventId,
-					redacted: redacted.redacted,
-					candidates: results,
-				}),
-			);
-		} catch (error) {
-			return textResponse(
-				`capture_event failed: ${(error as Error).message}`,
-				true,
-			);
-		}
-	},
+        results.push({
+          candidateId,
+          memoryId,
+          type: candidate.candidate_type,
+          title: candidate.title,
+          route,
+          reconciliation,
+        });
+      }
+
+      return textResponse(
+        formatJson({
+          eventId,
+          redacted: redacted.redacted,
+          candidates: results,
+        }),
+      );
+    } catch (error) {
+      return textResponse(
+        `capture_event failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
+);
+
+async function attachProvenanceToRows(
+  rows: Record<string, unknown>[],
+): Promise<Record<string, unknown>[]> {
+  if (rows.length === 0) return rows;
+  const memoryIds = rows.map((row) => row.id as string).filter(Boolean);
+  const { data, error } = await supabase
+    .from("memory_provenance")
+    .select(
+      "memory_id, source_type, source_ref, source_uri, captured_by, confidence, evidence_quote, evidence_summary, last_verified_at, created_at",
+    )
+    .in("memory_id", memoryIds)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`load memory provenance failed: ${error.message}`);
+  const provenanceByMemory = new Map<string, Record<string, unknown>[]>();
+  for (const provenance of (data ?? []) as Record<string, unknown>[]) {
+    const memoryId = provenance.memory_id as string;
+    const existing = provenanceByMemory.get(memoryId) ?? [];
+    existing.push(provenance);
+    provenanceByMemory.set(memoryId, existing);
+  }
+  return rows.map((row) => ({
+    ...row,
+    provenance: provenanceByMemory.get(row.id as string) ?? [],
+  }));
+}
+
+server.registerTool(
+  "search_memory",
+  {
+    title: "Search SOFIA Memory",
+    description: "Search promoted durable SOFIA memories by meaning.",
+    inputSchema: {
+      query: z.string().min(1),
+      context: z.enum(["personal", "work", "shared", "both"]).default("both"),
+      limit: z.number().int().min(1).max(20).default(10),
+      threshold: z.number().min(0).max(1).default(0.5),
+      activation_trigger: z.string().optional(),
+      session_id: z.string().optional(),
+      agent_name: z.string().optional(),
+      include_provenance: z.boolean().default(false),
+    },
+  },
+  async ({
+    query,
+    context,
+    limit,
+    threshold,
+    activation_trigger,
+    session_id,
+    agent_name,
+    include_provenance,
+  }: SearchMemoryInput) => {
+    try {
+      const embedding = await embedText(query, OPENROUTER_API_KEY);
+      const { data, error } = await supabase.rpc("match_memories", {
+        query_embedding: embedding,
+        match_threshold: threshold,
+        match_count: limit,
+        filter_context: context === "both" ? null : context,
+        include_archived: false,
+        activation_trigger_filter: activation_trigger ?? null,
+      });
+      if (error) return textResponse(`search failed: ${error.message}`, true);
+      const rows = include_provenance
+        ? await attachProvenanceToRows(
+          (data ?? []) as Record<string, unknown>[],
+        )
+        : (data ?? []);
+      const telemetryContext = context === "both" ? "shared" : context;
+      await recordMemoryRetrievals(supabase, {
+        query,
+        context: telemetryContext,
+        sessionId: session_id,
+        agentName: agent_name ?? "sofia",
+        toolName: "search_memory",
+        activationTrigger: activation_trigger,
+        results: rows.map((row: Record<string, unknown>) => ({
+          id: row.id as string,
+          similarity: row.similarity as number | undefined,
+        })),
+      });
+      return textResponse(formatJson(sanitizeRowsForMcp(rows)));
+    } catch (error) {
+      return textResponse(
+        `search_memory failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
 );
 
 server.registerTool(
-	"search_memory",
-	{
-		title: "Search SOFIA Memory",
-		description: "Search promoted durable SOFIA memories by meaning.",
-		inputSchema: {
-			query: z.string().min(1),
-			context: z.enum(["personal", "work", "shared", "both"]).default("both"),
-			limit: z.number().int().min(1).max(20).default(10),
-			threshold: z.number().min(0).max(1).default(0.5),
-		},
-	},
-	async ({ query, context, limit, threshold }: SearchMemoryInput) => {
-		try {
-			const embedding = await embedText(query, OPENROUTER_API_KEY);
-			const { data, error } = await supabase.rpc("match_memories", {
-				query_embedding: embedding,
-				match_threshold: threshold,
-				match_count: limit,
-				filter_context: context === "both" ? null : context,
-				include_archived: false,
-			});
-			if (error) return textResponse(`search failed: ${error.message}`, true);
-			return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
-		} catch (error) {
-			return textResponse(
-				`search_memory failed: ${(error as Error).message}`,
-				true,
-			);
-		}
-	},
+  "record_memory_feedback",
+  {
+    title: "Record SOFIA Memory Retrieval Feedback",
+    description:
+      "Record whether a retrieved memory was used, helpful, or confusing so SOFIA can tune boot context and retrieval policy.",
+    inputSchema: {
+      retrieval_id: z.string().uuid(),
+      was_used: z.boolean().optional(),
+      was_helpful: z.boolean().optional(),
+      caused_confusion: z.boolean().optional(),
+      feedback: z.string().optional(),
+    },
+  },
+  async ({
+    retrieval_id,
+    was_used,
+    was_helpful,
+    caused_confusion,
+    feedback,
+  }: RecordMemoryFeedbackInput) => {
+    try {
+      await recordMemoryFeedback(supabase, {
+        retrievalId: retrieval_id,
+        wasUsed: was_used,
+        wasHelpful: was_helpful,
+        causedConfusion: caused_confusion,
+        feedback,
+      });
+      return textResponse(
+        formatJson({ retrieval_id, status: "feedback_recorded" }),
+      );
+    } catch (error) {
+      return textResponse(
+        `record_memory_feedback failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
 );
 
 server.registerTool(
-	"list_recent",
-	{
-		title: "List Recent SOFIA Items",
-		description: "List recent events, candidates, or durable memories.",
-		inputSchema: {
-			kind: z.enum(["events", "candidates", "memories"]).default("memories"),
-			context: z.enum(["personal", "work", "shared", "both"]).default("both"),
-			limit: z.number().int().min(1).max(50).default(10),
-		},
-	},
-	async ({ kind, context, limit }: ListRecentInput) => {
-		const table = kind === "candidates" ? "memory_candidates" : kind;
-		let query = supabase
-			.from(table)
-			.select("*")
-			.order("created_at", { ascending: false })
-			.limit(limit);
-		if (context !== "both")
-			query = query.eq("context", context as SofiaContext);
-		const { data, error } = await query;
-		if (error)
-			return textResponse(`list_recent failed: ${error.message}`, true);
-		return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
-	},
+  "list_recent",
+  {
+    title: "List Recent SOFIA Items",
+    description: "List recent events, candidates, or durable memories.",
+    inputSchema: {
+      kind: z.enum(["events", "candidates", "memories"]).default("memories"),
+      context: z.enum(["personal", "work", "shared", "both"]).default("both"),
+      limit: z.number().int().min(1).max(50).default(10),
+    },
+  },
+  async ({ kind, context, limit }: ListRecentInput) => {
+    const table = kind === "candidates" ? "memory_candidates" : kind;
+    let query = supabase
+      .from(table)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (context !== "both") {
+      query = query.eq("context", context as SofiaContext);
+    }
+    const { data, error } = await query;
+    if (error) {
+      return textResponse(`list_recent failed: ${error.message}`, true);
+    }
+    return textResponse(formatJson(sanitizeRowsForMcp(data ?? [])));
+  },
 );
 
 server.registerTool(
-	"review_candidates",
-	{
-		title: "Review SOFIA Memory Candidates",
-		description: "List or update memory candidates awaiting review.",
-		inputSchema: {
-			action: z.enum(["list", "approve", "reject", "archive"]).default("list"),
-			candidate_id: z.string().uuid().optional(),
-			limit: z.number().int().min(1).max(20).default(10),
-		},
-	},
-	async ({ action, candidate_id, limit }: ReviewCandidatesInput) => {
-		if (action === "list") {
-			const { data, error } = await supabase
-				.from("memory_candidates")
-				.select("*")
-				.eq("status", "pending_review")
-				.order("created_at", { ascending: false })
-				.limit(limit);
-			if (error) {
-				return textResponse(`review list failed: ${error.message}`, true);
-			}
+  "review_candidates",
+  {
+    title: "Review SOFIA Memory Candidates",
+    description: "List or update memory candidates awaiting review.",
+    inputSchema: {
+      action: z.enum(["list", "approve", "reject", "archive"]).default("list"),
+      candidate_id: z.string().uuid().optional(),
+      limit: z.number().int().min(1).max(20).default(10),
+    },
+  },
+  async ({ action, candidate_id, limit }: ReviewCandidatesInput) => {
+    if (action === "list") {
+      const { data, error } = await supabase
+        .from("memory_candidates")
+        .select("*")
+        .eq("status", "pending_review")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) {
+        return textResponse(`review list failed: ${error.message}`, true);
+      }
 
-			const candidates = data ?? [];
-			const candidateIds = candidates.map((row) => row.id);
-			let reconciliations: Record<string, unknown>[] = [];
-			if (candidateIds.length > 0) {
-				const { data: reconciliationRows, error: reconciliationError } =
-					await supabase
-						.from("memory_reconciliations")
-						.select("*")
-						.in("candidate_id", candidateIds);
-				if (reconciliationError) {
-					return textResponse(
-						`review reconciliation list failed: ${reconciliationError.message}`,
-						true,
-					);
-				}
-				reconciliations = reconciliationRows ?? [];
-			}
-			const reconciliationByCandidate = new Map(
-				reconciliations.map((row) => [row.candidate_id, row]),
-			);
-			return textResponse(
-				formatJson(
-					sanitizeRowsForMcp(
-						candidates.map((row) => ({
-							...row,
-							reconciliation: reconciliationByCandidate.get(row.id) ?? null,
-						})),
-					),
-				),
-			);
-		}
+      const candidates = data ?? [];
+      const candidateIds = candidates.map((row) => row.id);
+      let reconciliations: Record<string, unknown>[] = [];
+      if (candidateIds.length > 0) {
+        const { data: reconciliationRows, error: reconciliationError } =
+          await supabase
+            .from("memory_reconciliations")
+            .select("*")
+            .in("candidate_id", candidateIds);
+        if (reconciliationError) {
+          return textResponse(
+            `review reconciliation list failed: ${reconciliationError.message}`,
+            true,
+          );
+        }
+        reconciliations = reconciliationRows ?? [];
+      }
+      const reconciliationByCandidate = new Map(
+        reconciliations.map((row) => [row.candidate_id, row]),
+      );
+      return textResponse(
+        formatJson(
+          sanitizeRowsForMcp(
+            candidates.map((row) => ({
+              ...row,
+              reconciliation: reconciliationByCandidate.get(row.id) ?? null,
+            })),
+          ),
+        ),
+      );
+    }
 
-		if (!candidate_id)
-			return textResponse(
-				"candidate_id is required for approve/reject/archive",
-				true,
-			);
+    if (!candidate_id) {
+      return textResponse(
+        "candidate_id is required for approve/reject/archive",
+        true,
+      );
+    }
 
-		if (action === "approve") {
-			const { data: candidate, error: loadError } = await supabase
-				.from("memory_candidates")
-				.select("candidate_text")
-				.eq("id", candidate_id)
-				.single();
-			if (loadError) {
-				return textResponse(
-					`load candidate failed: ${loadError.message}`,
-					true,
-				);
-			}
+    if (action === "approve") {
+      const { data: candidate, error: loadError } = await supabase
+        .from("memory_candidates")
+        .select("candidate_text")
+        .eq("id", candidate_id)
+        .single();
+      if (loadError) {
+        return textResponse(
+          `load candidate failed: ${loadError.message}`,
+          true,
+        );
+      }
 
-			const reconciliation = await getPendingReconciliationForCandidate(
-				supabase,
-				candidate_id,
-			);
-			if (
-				reconciliation?.action === "review_update" &&
-				reconciliation.target_memory_id
-			) {
-				const memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
-					candidateId: candidate_id,
-					reconciliationId: reconciliation.id as string,
-					targetMemoryId: reconciliation.target_memory_id as string,
-					title:
-						(reconciliation.proposed_title as string | null) ??
-						"Updated memory",
-					body:
-						(reconciliation.proposed_body as string | null) ??
-						(candidate.candidate_text as string),
-					confidence: reconciliation.confidence as number,
-					changeReason: `review-approved reconciliation update: ${
-						reconciliation.policy_reason ?? "human approved"
-					}`,
-					status: "approved",
-				});
-				return textResponse(
-					formatJson({
-						candidate_id,
-						memoryId,
-						status: "approved",
-						reconciliation_id: reconciliation.id,
-					}),
-				);
-			}
+      const reconciliation = await getPendingReconciliationForCandidate(
+        supabase,
+        candidate_id,
+      );
+      if (
+        reconciliation?.action === "review_update" &&
+        reconciliation.target_memory_id
+      ) {
+        const memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
+          candidateId: candidate_id,
+          reconciliationId: reconciliation.id as string,
+          targetMemoryId: reconciliation.target_memory_id as string,
+          title: (reconciliation.proposed_title as string | null) ??
+            "Updated memory",
+          body: (reconciliation.proposed_body as string | null) ??
+            (candidate.candidate_text as string),
+          confidence: reconciliation.confidence as number,
+          changeReason: `review-approved reconciliation update: ${
+            reconciliation.policy_reason ?? "human approved"
+          }`,
+          status: "approved",
+        });
+        return textResponse(
+          formatJson({
+            candidate_id,
+            memoryId,
+            status: "approved",
+            reconciliation_id: reconciliation.id,
+          }),
+        );
+      }
 
-			const embedding = await embedText(
-				candidate.candidate_text as string,
-				OPENROUTER_API_KEY,
-			);
-			const memoryId = await promoteExistingCandidate(
-				supabase,
-				candidate_id,
-				embedding,
-			);
-			return textResponse(
-				formatJson({ candidate_id, memoryId, status: "approved" }),
-			);
-		}
+      const embedding = await embedText(
+        candidate.candidate_text as string,
+        OPENROUTER_API_KEY,
+      );
+      const memoryId = await promoteExistingCandidate(
+        supabase,
+        candidate_id,
+        embedding,
+      );
+      return textResponse(
+        formatJson({ candidate_id, memoryId, status: "approved" }),
+      );
+    }
 
-		const status = action === "reject" ? "rejected" : "archived";
-		const { data, error } = await supabase
-			.from("memory_candidates")
-			.update({ status })
-			.eq("id", candidate_id)
-			.select("*")
-			.single();
-		if (error) {
-			return textResponse(`review update failed: ${error.message}`, true);
-		}
-		const reconciliation = await getPendingReconciliationForCandidate(
-			supabase,
-			candidate_id,
-		);
-		if (reconciliation?.id) {
-			await markReconciliationStatus(
-				supabase,
-				reconciliation.id as string,
-				status,
-			);
-		}
-		return textResponse(formatJson(data));
-	},
+    const status = action === "reject" ? "rejected" : "archived";
+    const { data, error } = await supabase
+      .from("memory_candidates")
+      .update({ status })
+      .eq("id", candidate_id)
+      .select("*")
+      .single();
+    if (error) {
+      return textResponse(`review update failed: ${error.message}`, true);
+    }
+    const reconciliation = await getPendingReconciliationForCandidate(
+      supabase,
+      candidate_id,
+    );
+    if (reconciliation?.id) {
+      await markReconciliationStatus(
+        supabase,
+        reconciliation.id as string,
+        status,
+      );
+    }
+    return textResponse(formatJson(data));
+  },
 );
 
 server.registerTool(
-	"archive_memory",
-	{
-		title: "Archive SOFIA Memory",
-		description:
-			"Archive a promoted SOFIA memory without deleting it. Use this to clean up test memories or retire stale durable memories while preserving history.",
-		inputSchema: {
-			memory_id: z.string().uuid(),
-			reason: z.string().optional(),
-		},
-	},
-	async ({ memory_id, reason }: ArchiveMemoryInput) => {
-		try {
-			const memory = await archiveMemory(supabase, memory_id, reason);
-			return textResponse(formatJson(sanitizeRowForMcp(memory)));
-		} catch (error) {
-			return textResponse(
-				`archive_memory failed: ${(error as Error).message}`,
-				true,
-			);
-		}
-	},
+  "archive_memory",
+  {
+    title: "Archive SOFIA Memory",
+    description:
+      "Archive a promoted SOFIA memory without deleting it. Use this to clean up test memories or retire stale durable memories while preserving history.",
+    inputSchema: {
+      memory_id: z.string().uuid(),
+      reason: z.string().optional(),
+    },
+  },
+  async ({ memory_id, reason }: ArchiveMemoryInput) => {
+    try {
+      const memory = await archiveMemory(supabase, memory_id, reason);
+      return textResponse(formatJson(sanitizeRowForMcp(memory)));
+    } catch (error) {
+      return textResponse(
+        `archive_memory failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
 );
 
 server.registerTool(
-	"get_boot_context",
-	{
-		title: "Get SOFIA Boot Context",
-		description:
-			"Fetch SOFIA Cloud boot context for agent system prompt injection. This is the cloud runtime replacement for local Obsidian/SOFIA vault boot files.",
-		inputSchema: {
-			context: z.enum(["personal", "work", "shared"]).default("personal"),
-			force_refresh: z.boolean().optional(),
-		},
-	},
-	async ({ context, force_refresh }: GetBootContextInput) => {
-		try {
-			const bootContext = await compileBootContext(supabase, {
-				context,
-				force_refresh,
-			});
-			return textResponse(formatJson(bootContext));
-		} catch (error) {
-			return textResponse(
-				`get_boot_context failed: ${(error as Error).message}`,
-				true,
-			);
-		}
-	},
+  "get_boot_context",
+  {
+    title: "Get SOFIA Boot Context",
+    description:
+      "Fetch SOFIA Cloud boot context for agent system prompt injection. This is the cloud runtime replacement for local Obsidian/SOFIA vault boot files.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared"]).default("personal"),
+      force_refresh: z.boolean().optional(),
+    },
+  },
+  async ({ context, force_refresh }: GetBootContextInput) => {
+    try {
+      const bootContext = await compileBootContext(supabase, {
+        context,
+        force_refresh,
+      });
+      return textResponse(formatJson(bootContext));
+    } catch (error) {
+      return textResponse(
+        `get_boot_context failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
 );
 
 server.registerTool(
-	"get_artifact",
-	{
-		title: "Get SOFIA Compiled Artifact",
-		description:
-			"Fetch a compiled artifact such as USER.md, SOUL.md, or context memory.",
-		inputSchema: {
-			artifact_name: z.string(),
-			context: z.enum(["personal", "work", "shared"]).default("personal"),
-		},
-	},
-	async ({ artifact_name, context }: GetArtifactInput) => {
-		const { data, error } = await supabase
-			.from("compiled_artifacts")
-			.select("content, generated_at, metadata")
-			.eq("artifact_name", artifact_name)
-			.eq("context", context)
-			.maybeSingle();
-		if (error)
-			return textResponse(`get_artifact failed: ${error.message}`, true);
-		if (!data)
-			return textResponse(`No artifact found for ${context}/${artifact_name}`);
-		return textResponse(data.content as string);
-	},
+  "get_artifact",
+  {
+    title: "Get SOFIA Compiled Artifact",
+    description:
+      "Fetch a compiled artifact such as USER.md, SOUL.md, or context memory.",
+    inputSchema: {
+      artifact_name: z.string(),
+      context: z.enum(["personal", "work", "shared"]).default("personal"),
+    },
+  },
+  async ({ artifact_name, context }: GetArtifactInput) => {
+    const { data, error } = await supabase
+      .from("compiled_artifacts")
+      .select("content, generated_at, metadata")
+      .eq("artifact_name", artifact_name)
+      .eq("context", context)
+      .maybeSingle();
+    if (error) {
+      return textResponse(`get_artifact failed: ${error.message}`, true);
+    }
+    if (!data) {
+      return textResponse(`No artifact found for ${context}/${artifact_name}`);
+    }
+    return textResponse(data.content as string);
+  },
 );
 
 const baseCorsHeaders = {
-	"Access-Control-Allow-Headers":
-		"authorization, x-client-info, apikey, content-type, x-sofia-key, accept, mcp-session-id",
-	"Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-sofia-key, accept, mcp-session-id",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
 };
 
 function allowedOrigins(): Set<string> {
-	return new Set(
-		(Deno.env.get("SOFIA_ALLOWED_ORIGINS") ?? "")
-			.split(",")
-			.map((origin) => origin.trim())
-			.filter(Boolean),
-	);
+  return new Set(
+    (Deno.env.get("SOFIA_ALLOWED_ORIGINS") ?? "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
 }
 
 function corsHeadersForRequest(c: any): Record<string, string> {
-	const origin = c.req.header("origin");
-	if (!origin) return baseCorsHeaders;
-	if (!allowedOrigins().has(origin)) return baseCorsHeaders;
-	return {
-		...baseCorsHeaders,
-		"Access-Control-Allow-Origin": origin,
-		Vary: "Origin",
-	};
+  const origin = c.req.header("origin");
+  if (!origin) return baseCorsHeaders;
+  if (!allowedOrigins().has(origin)) return baseCorsHeaders;
+  return {
+    ...baseCorsHeaders,
+    "Access-Control-Allow-Origin": origin,
+    Vary: "Origin",
+  };
 }
 
 const app = new Hono();
 app.options("*", (c: any) => {
-	const corsHeaders = corsHeadersForRequest(c);
-	if (c.req.header("origin") && !corsHeaders["Access-Control-Allow-Origin"]) {
-		return c.text("CORS origin not allowed", 403, corsHeaders);
-	}
-	return c.text("ok", 200, corsHeaders);
+  const corsHeaders = corsHeadersForRequest(c);
+  if (c.req.header("origin") && !corsHeaders["Access-Control-Allow-Origin"]) {
+    return c.text("CORS origin not allowed", 403, corsHeaders);
+  }
+  return c.text("ok", 200, corsHeaders);
 });
 
 app.all("*", async (c: any) => {
-	const corsHeaders = corsHeadersForRequest(c);
-	const provided =
-		c.req.header("x-sofia-key") || new URL(c.req.url).searchParams.get("key");
-	if (!provided || provided !== MCP_ACCESS_KEY) {
-		return c.json(
-			{ error: "Invalid or missing SOFIA access key" },
-			401,
-			corsHeaders,
-		);
-	}
+  const corsHeaders = corsHeadersForRequest(c);
+  const provided = c.req.header("x-sofia-key") ||
+    new URL(c.req.url).searchParams.get("key");
+  if (!provided || provided !== MCP_ACCESS_KEY) {
+    return c.json(
+      { error: "Invalid or missing SOFIA access key" },
+      401,
+      corsHeaders,
+    );
+  }
 
-	if (isBootContextRequest(c.req.method, c.req.url)) {
-		try {
-			const bootContext = await compileBootContext(
-				supabase,
-				parseBootContextParams(c.req.url),
-			);
-			return c.json(bootContext, 200, corsHeaders);
-		} catch (error) {
-			return c.json(
-				{ error: `boot context failed: ${(error as Error).message}` },
-				500,
-				corsHeaders,
-			);
-		}
-	}
+  if (isBootContextRequest(c.req.method, c.req.url)) {
+    try {
+      const bootContext = await compileBootContext(
+        supabase,
+        parseBootContextParams(c.req.url),
+      );
+      return c.json(bootContext, 200, corsHeaders);
+    } catch (error) {
+      return c.json(
+        { error: `boot context failed: ${(error as Error).message}` },
+        500,
+        corsHeaders,
+      );
+    }
+  }
 
-	if (isDailyDigestRequest(c.req.method, c.req.url)) {
-		try {
-			const digest = await deliverDailyDigest(supabase);
-			return c.json(
-				{
-					status: "sent",
-					pending_review_count: digest.snapshot.pendingReviewCount,
-					recent_event_count: digest.snapshot.recentEventCount,
-					redacted_event_count: digest.snapshot.redactedEventCount,
-					telegram_status: digest.telegram.status,
-				},
-				200,
-				corsHeaders,
-			);
-		} catch (error) {
-			return c.json(
-				{ error: `daily digest failed: ${(error as Error).message}` },
-				500,
-				corsHeaders,
-			);
-		}
-	}
+  if (isDailyDigestRequest(c.req.method, c.req.url)) {
+    try {
+      const digest = await deliverDailyDigest(supabase);
+      return c.json(
+        {
+          status: "sent",
+          pending_review_count: digest.snapshot.pendingReviewCount,
+          recent_event_count: digest.snapshot.recentEventCount,
+          redacted_event_count: digest.snapshot.redactedEventCount,
+          telegram_status: digest.telegram.status,
+        },
+        200,
+        corsHeaders,
+      );
+    } catch (error) {
+      return c.json(
+        { error: `daily digest failed: ${(error as Error).message}` },
+        500,
+        corsHeaders,
+      );
+    }
+  }
 
-	if (
-		c.req.method === "GET" &&
-		!c.req.header("accept")?.includes("text/event-stream")
-	) {
-		return c.json(
-			{
-				name: "sofia-cloud",
-				status: "ok",
-				message:
-					"SOFIA MCP endpoint is deployed. Connect with an MCP client, or POST JSON-RPC with Accept: application/json, text/event-stream.",
-			},
-			200,
-			corsHeaders,
-		);
-	}
+  if (
+    c.req.method === "GET" &&
+    !c.req.header("accept")?.includes("text/event-stream")
+  ) {
+    return c.json(
+      {
+        name: "sofia-cloud",
+        status: "ok",
+        message:
+          "SOFIA MCP endpoint is deployed. Connect with an MCP client, or POST JSON-RPC with Accept: application/json, text/event-stream.",
+      },
+      200,
+      corsHeaders,
+    );
+  }
 
-	if (shouldPatchMcpAcceptHeader(c.req.method, c.req.header("accept"))) {
-		const headers = new Headers(c.req.raw.headers);
-		headers.set("Accept", "application/json, text/event-stream");
-		const patched = new Request(c.req.raw.url, {
-			method: c.req.raw.method,
-			headers,
-			body: c.req.raw.body,
-			// @ts-expect-error duplex is required for streaming body in Deno.
-			duplex: "half",
-		});
-		Object.defineProperty(c.req, "raw", { value: patched, writable: true });
-	}
+  if (shouldPatchMcpAcceptHeader(c.req.method, c.req.header("accept"))) {
+    const headers = new Headers(c.req.raw.headers);
+    headers.set("Accept", "application/json, text/event-stream");
+    const patched = new Request(c.req.raw.url, {
+      method: c.req.raw.method,
+      headers,
+      body: c.req.raw.body,
+      // @ts-expect-error duplex is required for streaming body in Deno.
+      duplex: "half",
+    });
+    Object.defineProperty(c.req, "raw", { value: patched, writable: true });
+  }
 
-	const transport = new StreamableHTTPTransport();
-	await server.connect(transport);
-	return transport.handleRequest(c);
+  const transport = new StreamableHTTPTransport();
+  await server.connect(transport);
+  return transport.handleRequest(c);
 });
 
 Deno.serve(app.fetch);

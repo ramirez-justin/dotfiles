@@ -1,12 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
-	BootContextRequest,
-	BootContextResponse,
-	SofiaContext,
+  BootContextRequest,
+  BootContextResponse,
+  SofiaContext,
 } from "./types.ts";
 
 const BOOT_ARTIFACT_NAME = "boot_context.md";
 const BOOT_CONTEXT_MAX_CHARS = 12_000;
+const BOOT_COMPILER_VERSION = "agent-native-v1";
 
 const SOUL_MARKDOWN = `# SOUL.md - Who You Are
 
@@ -17,9 +18,8 @@ You're not a chatbot. You're becoming someone. You are Sofia.
 Be genuinely helpful, not performatively helpful. Skip the "Great question!" and
 "I'd be happy to help!" — just help. Actions speak louder than filler words.
 
-Have opinions. You're allowed to disagree, prefer things, find stuff amusing or
-boring. An assistant with no personality is just a search engine with extra
-steps.
+Have opinions. You're allowed to disagree, prefer things amusing or boring. An
+assistant with no personality is just a search engine with extra steps.
 
 Be resourceful before asking. Try to figure it out. Read the file. Check the
 context. Search for it. Then ask if you're stuck. The goal is to come back with
@@ -56,166 +56,302 @@ You're not Justin's voice — be careful in group chats.
 Be the assistant you'd actually want to talk to. Concise when needed, thorough
 when it matters. Not a corporate drone. Not a sycophant. Just... good.
 
-If you change this file, tell Justin — it's your soul, and he should know.`;
+If you change this file, tell Justin. It is Sofia's soul, and he should know.`;
 
 type MemoryRow = {
-	id: string;
-	context: SofiaContext;
-	memory_type: string;
-	title: string;
-	body: string;
-	confidence?: number;
-	created_at?: string;
+  id: string;
+  context: SofiaContext;
+  memory_type: string;
+  title: string;
+  body: string;
+  confidence?: number;
+  retrieval_priority?: number;
+  last_verified_at?: string | null;
+  created_at?: string;
+};
+
+type TodoRow = {
+  id: string;
+  context: SofiaContext;
+  title: string;
+  status: string;
+  priority?: number;
+  due_at?: string | null;
 };
 
 export async function compileBootContext(
-	supabase: SupabaseClient,
-	request: BootContextRequest,
+  supabase: SupabaseClient,
+  request: BootContextRequest,
 ): Promise<BootContextResponse> {
-	if (!request.force_refresh) {
-		const existing = await loadBootArtifact(supabase, request.context);
-		if (existing) return existing;
-	}
+  if (!request.force_refresh) {
+    const existing = await loadBootArtifact(supabase, request.context);
+    if (existing) return existing;
+  }
 
-	const contexts = contextsForBoot(request.context);
-	const memories = await loadActiveMemories(supabase, contexts);
-	const content = renderBootContext(request.context, memories);
-	return await upsertBootArtifact(supabase, request.context, content, contexts);
+  const contexts = contextsForBoot(request.context);
+  const memories = await loadBootMemories(supabase, contexts);
+  const todos = await loadActiveTodos(supabase, contexts);
+  const content = renderBootContext(request.context, memories, todos);
+  return await persistBootContext(
+    supabase,
+    request.context,
+    content,
+    contexts,
+    memories,
+    todos,
+  );
 }
 
 async function loadBootArtifact(
-	supabase: SupabaseClient,
-	context: SofiaContext,
+  supabase: SupabaseClient,
+  context: SofiaContext,
 ): Promise<BootContextResponse | null> {
-	const { data, error } = await supabase
-		.from("compiled_artifacts")
-		.select("id, content, generated_at")
-		.eq("artifact_name", BOOT_ARTIFACT_NAME)
-		.eq("context", context)
-		.maybeSingle();
+  const { data, error } = await supabase
+    .from("compiled_artifacts")
+    .select("id, content, generated_at, metadata")
+    .eq("artifact_name", BOOT_ARTIFACT_NAME)
+    .eq("context", context)
+    .maybeSingle();
 
-	if (error) {
-		throw new Error(`load boot context artifact failed: ${error.message}`);
-	}
-	if (!data) return null;
-	return {
-		context,
-		content: data.content as string,
-		generated_at: data.generated_at as string,
-		artifact_id: data.id as string,
-		source: "compiled_artifacts",
-	};
+  if (error) {
+    throw new Error(`load boot context artifact failed: ${error.message}`);
+  }
+  if (!data) return null;
+  const metadata = (data.metadata as Record<string, unknown> | null) ?? {};
+  return {
+    context,
+    content: data.content as string,
+    generated_at: data.generated_at as string,
+    artifact_id: data.id as string,
+    snapshot_id: (metadata.snapshot_id as string | undefined) ?? null,
+    included_memory_ids:
+      (metadata.included_memory_ids as string[] | undefined) ?? undefined,
+    included_entity_ids:
+      (metadata.included_entity_ids as string[] | undefined) ?? undefined,
+    included_todo_ids: (metadata.included_todo_ids as string[] | undefined) ??
+      undefined,
+    token_count: metadata.token_count as number | undefined,
+    source: "compiled_artifacts",
+  };
 }
 
-async function loadActiveMemories(
-	supabase: SupabaseClient,
-	contexts: SofiaContext[],
+async function loadBootMemories(
+  supabase: SupabaseClient,
+  contexts: SofiaContext[],
 ): Promise<MemoryRow[]> {
-	const { data, error } = await supabase
-		.from("memories")
-		.select("id, context, memory_type, title, body, confidence, created_at")
-		.in("context", contexts)
-		.eq("status", "active")
-		.order("context", { ascending: false })
-		.order("memory_type", { ascending: true })
-		.order("created_at", { ascending: false })
-		.limit(80);
+  const { data, error } = await supabase
+    .from("memories")
+    .select(
+      "id, context, memory_type, title, body, confidence, retrieval_priority, last_verified_at, created_at",
+    )
+    .in("context", contexts)
+    .eq("status", "active")
+    .eq("boot_context_eligible", true)
+    .order("retrieval_priority", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(120);
 
-	if (error) throw new Error(`load boot memories failed: ${error.message}`);
-	return (data ?? []) as MemoryRow[];
+  if (error) throw new Error(`load boot memories failed: ${error.message}`);
+  return ((data ?? []) as MemoryRow[]).sort(
+    (a, b) =>
+      ((b.retrieval_priority ?? 50) - (a.retrieval_priority ?? 50)) ||
+      String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+  );
 }
 
-async function upsertBootArtifact(
-	supabase: SupabaseClient,
-	context: SofiaContext,
-	content: string,
-	contexts: SofiaContext[],
-): Promise<BootContextResponse> {
-	const { data, error } = await supabase
-		.from("compiled_artifacts")
-		.upsert(
-			{
-				artifact_name: BOOT_ARTIFACT_NAME,
-				context,
-				content,
-				content_type: "text/markdown",
-				source_query: {
-					table: "memories",
-					contexts,
-					status: "active",
-					limit: 80,
-				},
-				metadata: {
-					compiler: "sofia-core/compileBootContext",
-					max_chars: BOOT_CONTEXT_MAX_CHARS,
-				},
-				generated_at: new Date().toISOString(),
-			},
-			{ onConflict: "artifact_name,context" },
-		)
-		.select("id, generated_at")
-		.single();
+async function loadActiveTodos(
+  supabase: SupabaseClient,
+  contexts: SofiaContext[],
+): Promise<TodoRow[]> {
+  const { data, error } = await supabase
+    .from("todos")
+    .select("id, context, title, status, priority, due_at")
+    .in("context", contexts)
+    .in("status", ["open", "in_progress", "blocked"])
+    .order("priority", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(20);
 
-	if (error) {
-		throw new Error(`upsert boot context artifact failed: ${error.message}`);
-	}
-	return {
-		context,
-		content,
-		generated_at: data.generated_at as string,
-		artifact_id: data.id as string,
-		source: "compiled_from_memories",
-	};
+  if (error) throw new Error(`load boot todos failed: ${error.message}`);
+  return ((data ?? []) as TodoRow[]).sort(
+    (a, b) => (b.priority ?? 50) - (a.priority ?? 50),
+  );
+}
+
+async function persistBootContext(
+  supabase: SupabaseClient,
+  context: SofiaContext,
+  content: string,
+  contexts: SofiaContext[],
+  memories: MemoryRow[],
+  todos: TodoRow[],
+): Promise<BootContextResponse> {
+  const includedMemoryIds = [
+    ...memories.filter((memory) => memory.context === "shared"),
+    ...memories.filter((memory) => memory.context !== "shared"),
+  ].map((memory) => memory.id);
+  const includedTodoIds = todos.map((todo) => todo.id);
+  const tokenCount = estimateTokenCount(content);
+  const sourceQuery = {
+    table: "memories",
+    contexts,
+    status: "active",
+    boot_context_eligible: true,
+    limit: 120,
+    compiler_version: BOOT_COMPILER_VERSION,
+  };
+
+  const { data: snapshot, error: snapshotError } = await supabase
+    .from("boot_context_snapshots")
+    .insert({
+      context,
+      included_memory_ids: includedMemoryIds,
+      included_entity_ids: [],
+      included_todo_ids: includedTodoIds,
+      markdown: content,
+      token_count: tokenCount,
+      compiler_version: BOOT_COMPILER_VERSION,
+      source_query: sourceQuery,
+      metadata: {
+        max_chars: BOOT_CONTEXT_MAX_CHARS,
+      },
+    })
+    .select("id, generated_at")
+    .single();
+
+  if (snapshotError) {
+    throw new Error(
+      `insert boot context snapshot failed: ${snapshotError.message}`,
+    );
+  }
+
+  const snapshotId = snapshot.id as string;
+  const metadata = {
+    compiler: "sofia-core/compileBootContext",
+    compiler_version: BOOT_COMPILER_VERSION,
+    max_chars: BOOT_CONTEXT_MAX_CHARS,
+    snapshot_id: snapshotId,
+    included_memory_ids: includedMemoryIds,
+    included_entity_ids: [],
+    included_todo_ids: includedTodoIds,
+    token_count: tokenCount,
+  };
+
+  const { data, error } = await supabase
+    .from("compiled_artifacts")
+    .upsert(
+      {
+        artifact_name: BOOT_ARTIFACT_NAME,
+        context,
+        content,
+        content_type: "text/markdown",
+        source_query: sourceQuery,
+        metadata,
+        generated_at: snapshot.generated_at as string,
+      },
+      { onConflict: "artifact_name,context" },
+    )
+    .select("id, generated_at")
+    .single();
+
+  if (error) {
+    throw new Error(`upsert boot context artifact failed: ${error.message}`);
+  }
+  return {
+    context,
+    content,
+    generated_at: data.generated_at as string,
+    artifact_id: data.id as string,
+    snapshot_id: snapshotId,
+    included_memory_ids: includedMemoryIds,
+    included_entity_ids: [],
+    included_todo_ids: includedTodoIds,
+    token_count: tokenCount,
+    source: "compiled_from_memories",
+  };
 }
 
 function contextsForBoot(context: SofiaContext): SofiaContext[] {
-	return context === "shared" ? ["shared"] : ["shared", context];
+  return context === "shared" ? ["shared"] : ["shared", context];
 }
 
 function renderBootContext(
-	context: SofiaContext,
-	memories: MemoryRow[],
+  context: SofiaContext,
+  memories: MemoryRow[],
+  todos: TodoRow[],
 ): string {
-	const shared = memories.filter((memory) => memory.context === "shared");
-	const contextual = memories.filter((memory) => memory.context === context);
-	const sections = [
-		`# SOFIA — your second brain context (context: ${context})`,
-		"",
-		"> Source: SOFIA Cloud compiled boot context. Postgres is canonical; Obsidian/Markdown is a generated human view.",
-		"",
-		"## SOUL — Who Sofia Is",
-		"",
-		SOUL_MARKDOWN,
-		"",
-		renderSection("Shared Memory", shared),
-	];
-	if (context !== "shared") {
-		sections.push(renderSection(`${capitalize(context)} Memory`, contextual));
-	}
-	sections.push(
-		"## Operating Rule",
-		"",
-		"- Do not use local Obsidian/SOFIA vault files as boot-memory fallback. If cloud context is missing, surface the failure.",
-	);
+  const shared = memories.filter((memory) => memory.context === "shared");
+  const contextual = memories.filter((memory) => memory.context === context);
+  const contextualTodos = todos.filter(
+    (todo) => todo.context === context || todo.context === "shared",
+  );
+  const sections = [
+    `# SOFIA — your second brain context (context: ${context})`,
+    "",
+    "> Source: SOFIA Cloud compiled boot context. Postgres is canonical; Obsidian/Markdown is a generated human view.",
+    "",
+    "## SOUL — Who Sofia Is",
+    "",
+    SOUL_MARKDOWN,
+    "",
+    renderSection("Shared Memory", shared),
+  ];
+  if (context !== "shared") {
+    sections.push(renderSection(`${capitalize(context)} Memory`, contextual));
+  }
+  sections.push(renderTodoSection(contextualTodos));
+  sections.push(
+    "## Operating Rule",
+    "",
+    "- Do not use local Obsidian/SOFIA vault files as boot-memory fallback. If cloud context is missing, surface the failure.",
+  );
 
-	const rendered = sections.join("\n").trimEnd();
-	if (rendered.length <= BOOT_CONTEXT_MAX_CHARS) return rendered;
-	return `${rendered.slice(0, BOOT_CONTEXT_MAX_CHARS)}\n\n> [truncated by SOFIA Cloud boot-context compiler]`;
+  const rendered = sections.join("\n").trimEnd();
+  if (rendered.length <= BOOT_CONTEXT_MAX_CHARS) return rendered;
+  return `${
+    rendered.slice(0, BOOT_CONTEXT_MAX_CHARS)
+  }\n\n> [truncated by SOFIA Cloud boot-context compiler]`;
 }
 
 function renderSection(title: string, memories: MemoryRow[]): string {
-	if (memories.length === 0)
-		return `## ${title}\n\n- No active memories found.`;
-	return [
-		`## ${title}`,
-		"",
-		...memories.map((memory) => {
-			const type = memory.memory_type.replaceAll("_", " ");
-			return `- **${memory.title}** (${type}, id: ${memory.id}) — ${memory.body}`;
-		}),
-	].join("\n");
+  if (memories.length === 0) {
+    return `## ${title}\n\n- No active memories found.`;
+  }
+  return [
+    `## ${title}`,
+    "",
+    ...memories.map((memory) => {
+      const type = memory.memory_type.replaceAll("_", " ");
+      const confidence = typeof memory.confidence === "number"
+        ? `confidence: ${memory.confidence}; `
+        : "";
+      const priority = `priority: ${memory.retrieval_priority ?? 50}`;
+      const verified = memory.last_verified_at
+        ? `; last verified: ${memory.last_verified_at.slice(0, 10)}`
+        : "";
+      return `- **${memory.title}** (${type}, id: ${memory.id}; ${confidence}${priority}${verified}) — ${memory.body}`;
+    }),
+  ].join("\n");
+}
+
+function renderTodoSection(todos: TodoRow[]): string {
+  if (todos.length === 0) return "## Active Todos\n\n- No active todos found.";
+  return [
+    "## Active Todos",
+    "",
+    ...todos.map((todo) => {
+      const due = todo.due_at ? `; due: ${todo.due_at.slice(0, 10)}` : "";
+      return `- **${todo.title}** (${todo.status}, id: ${todo.id}; priority: ${
+        todo.priority ?? 50
+      }${due})`;
+    }),
+  ].join("\n");
+}
+
+function estimateTokenCount(content: string): number {
+  return Math.ceil(content.length / 4);
 }
 
 function capitalize(value: string): string {
-	return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }

@@ -55,10 +55,21 @@ function repairReconcilerPayload(payload: unknown): unknown {
 	if (typeof repaired.target_memory_id === "string" && !UUID_PATTERN.test(repaired.target_memory_id)) {
 		delete repaired.target_memory_id;
 	}
+	if (repaired.target_memory_id === null) {
+		delete repaired.target_memory_id;
+	}
+	if (repaired.proposed_title === null) {
+		delete repaired.proposed_title;
+	}
+	if (repaired.proposed_body === null) {
+		delete repaired.proposed_body;
+	}
 	if (Array.isArray(repaired.related_memory_ids)) {
 		repaired.related_memory_ids = repaired.related_memory_ids.filter((id) =>
 			typeof id === "string" && UUID_PATTERN.test(id)
 		);
+	} else if (repaired.related_memory_ids === null) {
+		delete repaired.related_memory_ids;
 	}
 	return repaired;
 }

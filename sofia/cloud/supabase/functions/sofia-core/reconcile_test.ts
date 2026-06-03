@@ -128,6 +128,26 @@ Deno.test("parseReconcilerResponse repairs malformed optional UUID fields", () =
 	assert.deepEqual(parsed.related_memory_ids, ["11111111-1111-1111-1111-111111111111"]);
 });
 
+Deno.test("parseReconcilerResponse drops null optional fields", () => {
+	const parsed = parseReconcilerResponse(
+		JSON.stringify({
+			relationship: "new_memory",
+			target_memory_id: null,
+			related_memory_ids: null,
+			proposed_title: null,
+			proposed_body: null,
+			confidence: 0.91,
+			rationale: "New memory; optional fields absent.",
+		}),
+	);
+
+	assert.equal(parsed.relationship, "new_memory");
+	assert.equal(parsed.target_memory_id, undefined);
+	assert.deepEqual(parsed.related_memory_ids, []);
+	assert.equal(parsed.proposed_title, undefined);
+	assert.equal(parsed.proposed_body, undefined);
+});
+
 Deno.test("buildReconcilerPrompt includes candidate and memory IDs", () => {
 	const prompt = buildReconcilerPrompt(candidate(), [
 		{

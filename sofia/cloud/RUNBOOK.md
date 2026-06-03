@@ -317,6 +317,59 @@ where e.normalized_name = 'telophaseqs'
 order by te.created_at desc;
 ```
 
+## Phase 4 retrieval policy learning
+
+Phase 4 adds read-only retrieval telemetry reports and gated recommendations for
+boot-context eligibility and retrieval priority. It does not apply policy changes
+automatically.
+
+MCP report tool after `sofia-core` deploy/reload:
+
+```json
+{
+  "tool": "get_retrieval_policy_report",
+  "arguments": {
+    "context": "both",
+    "limit": 10,
+    "minimum_retrievals": 1
+  }
+}
+```
+
+Report sections:
+
+1. `top_helpful` — memories with high `was_helpful` feedback rate.
+2. `top_confusing` — memories with `caused_confusion` feedback.
+3. `boot_unused` — boot-context memories included in snapshots with no recorded use.
+4. `recommendations` — gated suggestions only:
+   - `enable_boot_context`
+   - `raise_priority`
+   - `lower_priority`
+   - `disable_boot_context`
+   - `needs_review`
+
+Useful SQL:
+
+```sql
+select memory_id, title, retrieval_count, helpful_count, confusing_count,
+       helpful_rate, confusing_rate, retrieval_priority, boot_context_eligible
+from memory_retrieval_policy_stats
+where status = 'active'
+order by confusing_rate desc, confusing_count desc
+limit 20;
+
+select memory_id, title, boot_snapshot_count, used_count, helpful_count,
+       confusing_count, retrieval_priority, boot_context_eligible
+from boot_context_memory_usage
+where used_count = 0
+order by boot_snapshot_count desc, retrieval_priority desc
+limit 20;
+```
+
+If a recommendation looks right, make the actual change through an explicit
+review/update path. Do not script automatic destructive policy changes from this
+report.
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

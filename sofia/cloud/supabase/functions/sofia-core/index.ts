@@ -46,6 +46,7 @@ import {
   judgeReconciliation,
 } from "./reconcile.ts";
 import { redactSecrets } from "./redact.ts";
+import { buildRetrievalPolicyReport } from "./retrieval_policy.ts";
 import { routeCandidate } from "./router.ts";
 import type { CaptureEventInput, SofiaContext } from "./types.ts";
 
@@ -105,6 +106,12 @@ type RecordMemoryFeedbackInput = {
   was_helpful?: boolean;
   caused_confusion?: boolean;
   feedback?: string;
+};
+
+type RetrievalPolicyReportInput = {
+  context: "personal" | "work" | "shared" | "both";
+  limit: number;
+  minimum_retrievals: number;
 };
 
 server.registerTool(
@@ -426,6 +433,31 @@ server.registerTool(
     } catch (error) {
       return textResponse(
         `record_memory_feedback failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
+);
+
+server.registerTool(
+  "get_retrieval_policy_report",
+  {
+    title: "Get SOFIA Retrieval Policy Report",
+    description:
+      "Return read-only retrieval telemetry and gated policy recommendations for boot-context eligibility and retrieval priority. This tool never mutates memories.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared", "both"]).default("both"),
+      limit: z.number().int().min(1).max(50).default(10),
+      minimum_retrievals: z.number().int().min(1).max(100).default(1),
+    },
+  },
+  async (input: RetrievalPolicyReportInput) => {
+    try {
+      const report = await buildRetrievalPolicyReport(supabase, input);
+      return textResponse(formatJson(report));
+    } catch (error) {
+      return textResponse(
+        `get_retrieval_policy_report failed: ${(error as Error).message}`,
         true,
       );
     }

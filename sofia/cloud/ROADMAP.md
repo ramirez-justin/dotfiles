@@ -167,6 +167,8 @@
 
 ## Phase 4 — Retrieval policy learning
 
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and fast-forward merged locally to `main` (not pushed).
+
 **Goal:** use telemetry to tune boot-context inclusion and search behavior without manual guesswork.
 
 ### Scope

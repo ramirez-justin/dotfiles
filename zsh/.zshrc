@@ -224,8 +224,9 @@ complete -o nospace -C /opt/homebrew/bin/terragrunt terragrunt
 # 1password cli autocomplete
 eval "$(op completion zsh)"; compdef _op op
 
-# Setup fzf key bindings and completion
-eval "$(fzf --zsh)"
+# Setup fzf key bindings and completion. fzf's generated zsh integration may
+# try to restore the read-only zle option; suppress only that benign warning.
+eval "$(fzf --zsh)" 2> >(grep -v "can't change option: zle" >&2)
 
 # Mise-en-place
 eval "$(/opt/homebrew/bin/mise activate zsh)"

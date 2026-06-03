@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import {
+  applyMemorySupersessionFromReconciliation,
   applyMemoryUpdateFromReconciliation,
   archiveMemory,
   createTodoFromCandidate,
   insertReconciliation,
   markCandidateArchived,
+  markExpiredMemoriesStale,
+  queueHighPriorityStaleMemoryReviews,
   promoteCandidate,
   promoteExistingCandidate,
   recordMemoryFeedback,
@@ -31,14 +34,41 @@ function fakeSupabase(record: Record<string, unknown>) {
         eq(_column: string, _value: unknown) {
           return query;
         },
+        lt(_column: string, _value: unknown) {
+          return query;
+        },
+        or(_filters: string) {
+          return query;
+        },
+        gte(_column: string, _value: unknown) {
+          return query;
+        },
+        not(_column: string, _operator: string, _value: unknown) {
+          return query;
+        },
+        is(_column: string, _value: unknown) {
+          return query;
+        },
+        limit(_value: number) {
+          return query;
+        },
+        order(_column: string, _options?: unknown) {
+          return query;
+        },
         update(payload: unknown) {
           operation = "update";
           calls.push({ table, operation, payload });
           return query;
         },
         async single() {
+          if (table === "memory_candidates" && operation === "insert") {
+            return { data: { id: "candidate-review-1" }, error: null };
+          }
           if (table === "memory_candidates") {
             return { data: record, error: null };
+          }
+          if (table === "events" && operation === "insert") {
+            return { data: { id: "event-review-1" }, error: null };
           }
           if (table === "memory_reconciliations" && operation === "insert") {
             return { data: { id: "reconciliation-1" }, error: null };
@@ -54,7 +84,14 @@ function fakeSupabase(record: Record<string, unknown>) {
           }
           return { data: record, error: null };
         },
-        then(resolve: (value: { error: null }) => void) {
+        then(resolve: (value: { data?: unknown; error: null }) => void) {
+          if (table === "memories" && record.highPriorityStaleMemories) {
+            resolve({
+              data: (record.highPriorityStaleMemories as unknown[]) ?? [],
+              error: null,
+            });
+            return;
+          }
           resolve({ error: null });
         },
       };
@@ -507,6 +544,215 @@ Deno.test("recordMemoryRetrievals writes usefulness telemetry rows", async () =>
           returned_in_boot_context: false,
         },
       ],
+    },
+  ]);
+});
+
+Deno.test("markExpiredMemoriesStale disables stale active memories for boot context", async () => {
+  const client = fakeSupabase({ id: "memory-1" });
+
+  await markExpiredMemoriesStale(client as never, "2026-06-03T12:00:00.000Z");
+
+  assert.deepEqual(client.calls, [
+    {
+      table: "memories",
+      operation: "update",
+      payload: {
+        status: "stale",
+        boot_context_eligible: false,
+        review_reason:
+          "memory lifecycle maintenance marked this memory stale because stale_after or expires_at passed",
+      },
+    },
+  ]);
+});
+
+Deno.test("queueHighPriorityStaleMemoryReviews creates review candidates", async () => {
+  const client = fakeSupabase({
+    highPriorityStaleMemories: [
+      {
+        id: "memory-stale-1",
+        context: "personal",
+        memory_type: "operating_rule",
+        title: "Old operating rule",
+        body: "Use the old memory source.",
+        retrieval_priority: 92,
+        stale_after: "2026-06-01T00:00:00.000Z",
+        expires_at: null,
+        metadata: { existing: true },
+      },
+    ],
+  });
+
+  const queued = await queueHighPriorityStaleMemoryReviews(client as never);
+
+  assert.deepEqual(queued, ["candidate-review-1"]);
+  assert.deepEqual(client.calls, [
+    {
+      table: "events",
+      operation: "insert",
+      payload: {
+        context: "personal",
+        source: "lifecycle_maintenance",
+        source_ref: "memory-stale-1",
+        content:
+          "High-priority memory needs freshness review: Old operating rule\n\nUse the old memory source.",
+        embedding: null,
+        sensitivity: "normal",
+        metadata: {
+          type_hint: "stale_memory_review",
+          redaction_labels: [],
+          source_memory_id: "memory-stale-1",
+          memory_type: "operating_rule",
+          retrieval_priority: 92,
+          stale_after: "2026-06-01T00:00:00.000Z",
+          expires_at: null,
+        },
+      },
+    },
+    {
+      table: "memory_candidates",
+      operation: "insert",
+      payload: {
+        event_id: "event-review-1",
+        context: "personal",
+        candidate_type: "open_loop",
+        candidate_text:
+          "Review high-priority stale memory 'Old operating rule' (memory-stale-1) and decide whether to verify, update, supersede, or archive it.",
+        worthiness_score: 0.9,
+        confidence: 0.85,
+        risk_level: "medium",
+        recommended_action: "review",
+        reasoning:
+          "Lifecycle maintenance found a boot-worthy or high-priority memory whose stale_after/expires_at timestamp has passed.",
+        status: "pending_review",
+        metadata: {
+          title: "Review stale memory: Old operating rule",
+          source_memory_id: "memory-stale-1",
+          review_type: "stale_memory",
+          memory_type: "operating_rule",
+          retrieval_priority: 92,
+          stale_after: "2026-06-01T00:00:00.000Z",
+          expires_at: null,
+        },
+      },
+    },
+    {
+      table: "memories",
+      operation: "update",
+      payload: {
+        review_reason: "high-priority stale memory queued for review",
+        metadata: {
+          existing: true,
+          stale_review_candidate_id: "candidate-review-1",
+        },
+      },
+    },
+  ]);
+});
+
+Deno.test("applyMemorySupersessionFromReconciliation creates replacement and supersedes old memory", async () => {
+  const client = fakeSupabase({
+    id: "memory-old",
+    memory_type: "preference",
+    embedding: [0.1, 0.2],
+    current_version: 3,
+    retrieval_priority: 75,
+    boot_context_eligible: true,
+    activation_triggers: ["sofia"],
+    metadata: { existing: true },
+  });
+
+  const replacementId = await applyMemorySupersessionFromReconciliation(
+    client as never,
+    {
+      candidateId: "candidate-1",
+      reconciliationId: "reconciliation-1",
+      targetMemoryId: "memory-old",
+      context: "personal",
+      title: "Updated preference",
+      body: "Justin prefers direct local merge after verification when solo.",
+      confidence: 0.97,
+      changeReason: "safe high-confidence supersession",
+    },
+  );
+
+  assert.equal(replacementId, "memory-1");
+  const supersededAt = (client.calls[3].payload as Record<string, unknown>)
+    .last_verified_at;
+  assert.equal(typeof supersededAt, "string");
+  assert.deepEqual(client.calls, [
+    {
+      table: "memories",
+      operation: "insert",
+      payload: {
+        context: "personal",
+        memory_type: "preference",
+        title: "Updated preference",
+        body: "Justin prefers direct local merge after verification when solo.",
+        embedding: [0.1, 0.2],
+        confidence: 0.97,
+        status: "active",
+        created_from_candidate_id: "candidate-1",
+        current_version: 1,
+        retrieval_priority: 75,
+        boot_context_eligible: true,
+        activation_triggers: ["sofia"],
+        last_verified_at: supersededAt,
+        metadata: {
+          supersedes_memory_id: "memory-old",
+          supersession_reconciliation_id: "reconciliation-1",
+        },
+      },
+    },
+    {
+      table: "memory_versions",
+      operation: "insert",
+      payload: {
+        memory_id: "memory-1",
+        version: 1,
+        title: "Updated preference",
+        body: "Justin prefers direct local merge after verification when solo.",
+        change_reason: "safe high-confidence supersession",
+        created_by: "memory_reconciliation",
+      },
+    },
+    {
+      table: "memory_edges",
+      operation: "insert",
+      payload: {
+        from_memory_id: "memory-1",
+        to_memory_id: "memory-old",
+        relation: "supersedes",
+        metadata: { reconciliation_id: "reconciliation-1" },
+      },
+    },
+    {
+      table: "memories",
+      operation: "update",
+      payload: {
+        status: "superseded",
+        superseded_by_memory_id: "memory-1",
+        boot_context_eligible: false,
+        review_reason: "safe high-confidence supersession",
+        last_verified_at: supersededAt,
+        metadata: {
+          existing: true,
+          superseded_by: "memory-1",
+          supersession_reconciliation_id: "reconciliation-1",
+          superseded_at: supersededAt,
+        },
+      },
+    },
+    {
+      table: "memory_candidates",
+      operation: "update",
+      payload: { status: "approved" },
+    },
+    {
+      table: "memory_reconciliations",
+      operation: "update",
+      payload: { status: "auto_applied" },
     },
   ]);
 });

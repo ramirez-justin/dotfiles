@@ -230,3 +230,60 @@ mise run sofia-cloud:health
 
 Then start or reload Pi. If MCP metadata is stale, reconnect or reload the
 `sofia-cloud` server.
+
+## Phase 2 lifecycle maintenance
+
+Run lifecycle maintenance after deployments or when stale/expired memory behavior looks wrong:
+
+```bash
+# via MCP tool: run_lifecycle_maintenance
+# or live smoke through Hermes once MCP tools are reloaded:
+hermes --profile sofia-spike mcp test sofia-cloud
+```
+
+The Phase 2 lifecycle path:
+
+1. Active memories with `stale_after < now()` or `expires_at < now()` are marked `stale` and removed from boot-context eligibility.
+2. Default vector search excludes inactive, expired, and stale memories unless `include_archived=true` is explicitly used for audit/debugging.
+3. Boot-context compilation defensively filters expired/stale rows even if maintenance has not run yet.
+4. High-priority stale memories queue `pending_review` open-loop candidates with `metadata.review_type = 'stale_memory'` so Justin/agents can verify, update, supersede, or archive them.
+5. Safe high-confidence reconciliation updates now create a new active memory and mark the old memory `superseded`, linked by a `memory_edges.relation = 'supersedes'` edge.
+
+Useful SQL:
+
+```sql
+select id, title, status, retrieval_priority, stale_after, expires_at, review_reason
+from memories
+where status in ('stale', 'superseded')
+order by updated_at desc
+limit 20;
+
+select id, candidate_text, metadata->>'source_memory_id' as source_memory_id
+from memory_candidates
+where status = 'pending_review'
+  and metadata->>'review_type' = 'stale_memory'
+order by created_at desc;
+
+select from_memory_id, to_memory_id, relation, metadata
+from memory_edges
+where relation = 'supersedes'
+order by created_at desc
+limit 20;
+```
+
+## Cross-agent SOFIA consistency
+
+Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:
+
+```bash
+cd ~/dev/dotfiles
+mise run sofia-cloud:agent-consistency
+```
+
+For a live boot-context fetch through the linked Hermes helper:
+
+```bash
+SOFIA_AGENT_CONSISTENCY_LIVE=1 mise run sofia-cloud:agent-consistency
+```
+
+This check verifies the Supabase project ref, Pi `mcp.json`, Hermes `sofia-spike` MCP config, local-memory disabled state, lifecycle tool exposure, and optional live SOFIA Cloud boot-context markers.

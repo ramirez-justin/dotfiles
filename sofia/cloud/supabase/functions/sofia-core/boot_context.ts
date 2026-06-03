@@ -67,6 +67,8 @@ type MemoryRow = {
   confidence?: number;
   retrieval_priority?: number;
   last_verified_at?: string | null;
+  stale_after?: string | null;
+  expires_at?: string | null;
   created_at?: string;
 };
 
@@ -142,7 +144,7 @@ async function loadBootMemories(
   const { data, error } = await supabase
     .from("memories")
     .select(
-      "id, context, memory_type, title, body, confidence, retrieval_priority, last_verified_at, created_at",
+      "id, context, memory_type, title, body, confidence, retrieval_priority, last_verified_at, stale_after, expires_at, created_at",
     )
     .in("context", contexts)
     .eq("status", "active")
@@ -152,7 +154,7 @@ async function loadBootMemories(
     .limit(120);
 
   if (error) throw new Error(`load boot memories failed: ${error.message}`);
-  return ((data ?? []) as MemoryRow[]).sort(
+  return ((data ?? []) as MemoryRow[]).filter(isLifecycleCurrent).sort(
     (a, b) =>
       ((b.retrieval_priority ?? 50) - (a.retrieval_priority ?? 50)) ||
       String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
@@ -311,6 +313,13 @@ function renderBootContext(
   return `${
     rendered.slice(0, BOOT_CONTEXT_MAX_CHARS)
   }\n\n> [truncated by SOFIA Cloud boot-context compiler]`;
+}
+
+function isLifecycleCurrent(memory: MemoryRow): boolean {
+  const now = Date.now();
+  if (memory.expires_at && Date.parse(memory.expires_at) <= now) return false;
+  if (memory.stale_after && Date.parse(memory.stale_after) <= now) return false;
+  return true;
 }
 
 function renderSection(title: string, memories: MemoryRow[]): string {

@@ -362,7 +362,7 @@ export async function applyMemoryUpdateFromReconciliation(
 ): Promise<string> {
   const { data: memory, error: loadError } = await supabase
     .from("memories")
-    .select("id, current_version, metadata")
+    .select("id, current_version, metadata, memory_type, embedding, retrieval_priority, boot_context_eligible, activation_triggers")
     .eq("id", input.targetMemoryId)
     .single();
   if (loadError) {
@@ -426,6 +426,255 @@ export async function applyMemoryUpdateFromReconciliation(
   }
 
   return input.targetMemoryId;
+}
+
+export async function applyMemorySupersessionFromReconciliation(
+  supabase: SupabaseClient,
+  input: {
+    candidateId: string;
+    reconciliationId: string;
+    targetMemoryId: string;
+    context: SofiaContext;
+    title: string;
+    body: string;
+    confidence: number;
+    changeReason: string;
+    status?: "auto_applied" | "approved";
+  },
+): Promise<string> {
+  const { data: oldMemory, error: loadError } = await supabase
+    .from("memories")
+    .select(
+      "id, memory_type, embedding, metadata, retrieval_priority, boot_context_eligible, activation_triggers",
+    )
+    .eq("id", input.targetMemoryId)
+    .single();
+  if (loadError) {
+    throw new Error(`load target memory failed: ${loadError.message}`);
+  }
+
+  const supersededAt = new Date().toISOString();
+  const { data: replacement, error: insertError } = await supabase
+    .from("memories")
+    .insert({
+      context: input.context,
+      memory_type: oldMemory.memory_type as string,
+      title: input.title,
+      body: input.body,
+      embedding: oldMemory.embedding ?? null,
+      confidence: input.confidence,
+      status: "active",
+      created_from_candidate_id: input.candidateId,
+      current_version: 1,
+      retrieval_priority: (oldMemory.retrieval_priority as number | null) ??
+        retrievalPriorityForType(oldMemory.memory_type as MemoryType),
+      boot_context_eligible:
+        (oldMemory.boot_context_eligible as boolean | null) ?? true,
+      activation_triggers:
+        (oldMemory.activation_triggers as string[] | null) ??
+          DEFAULT_ACTIVATION_TRIGGERS,
+      last_verified_at: supersededAt,
+      metadata: {
+        supersedes_memory_id: input.targetMemoryId,
+        supersession_reconciliation_id: input.reconciliationId,
+      },
+    })
+    .select("id")
+    .single();
+  if (insertError) {
+    throw new Error(`insert superseding memory failed: ${insertError.message}`);
+  }
+
+  const replacementId = replacement.id as string;
+  const { error: versionError } = await supabase
+    .from("memory_versions")
+    .insert({
+      memory_id: replacementId,
+      version: 1,
+      title: input.title,
+      body: input.body,
+      change_reason: input.changeReason,
+      created_by: "memory_reconciliation",
+    });
+  if (versionError) {
+    throw new Error(`insert superseding memory version failed: ${versionError.message}`);
+  }
+
+  const { error: edgeError } = await supabase
+    .from("memory_edges")
+    .insert({
+      from_memory_id: replacementId,
+      to_memory_id: input.targetMemoryId,
+      relation: "supersedes",
+      metadata: { reconciliation_id: input.reconciliationId },
+    });
+  if (edgeError) {
+    throw new Error(`insert supersession edge failed: ${edgeError.message}`);
+  }
+
+  const oldMetadata =
+    (oldMemory.metadata as Record<string, unknown> | null) ?? {};
+  const { error: supersedeError } = await supabase
+    .from("memories")
+    .update({
+      status: "superseded",
+      superseded_by_memory_id: replacementId,
+      boot_context_eligible: false,
+      review_reason: input.changeReason,
+      last_verified_at: supersededAt,
+      metadata: {
+        ...oldMetadata,
+        superseded_by: replacementId,
+        supersession_reconciliation_id: input.reconciliationId,
+        superseded_at: supersededAt,
+      },
+    })
+    .eq("id", input.targetMemoryId);
+  if (supersedeError) {
+    throw new Error(`mark memory superseded failed: ${supersedeError.message}`);
+  }
+
+  const { error: candidateError } = await supabase
+    .from("memory_candidates")
+    .update({ status: "approved" })
+    .eq("id", input.candidateId);
+  if (candidateError) {
+    throw new Error(`mark candidate approved failed: ${candidateError.message}`);
+  }
+
+  const { error: reconciliationError } = await supabase
+    .from("memory_reconciliations")
+    .update({ status: input.status ?? "auto_applied" })
+    .eq("id", input.reconciliationId);
+  if (reconciliationError) {
+    throw new Error(
+      `mark reconciliation supersession applied failed: ${reconciliationError.message}`,
+    );
+  }
+
+  return replacementId;
+}
+
+export async function markExpiredMemoriesStale(
+  supabase: SupabaseClient,
+  nowIso = new Date().toISOString(),
+): Promise<void> {
+  const { error } = await supabase
+    .from("memories")
+    .update({
+      status: "stale",
+      boot_context_eligible: false,
+      review_reason:
+        "memory lifecycle maintenance marked this memory stale because stale_after or expires_at passed",
+    })
+    .eq("status", "active")
+    .or(`stale_after.lt.${nowIso},expires_at.lt.${nowIso}`);
+  if (error) {
+    throw new Error(`mark stale memories failed: ${error.message}`);
+  }
+}
+
+export async function queueHighPriorityStaleMemoryReviews(
+  supabase: SupabaseClient,
+  minimumPriority = 70,
+): Promise<string[]> {
+  const { data: memories, error: loadError } = await supabase
+    .from("memories")
+    .select(
+      "id, context, memory_type, title, body, retrieval_priority, stale_after, expires_at, metadata",
+    )
+    .eq("status", "stale")
+    .gte("retrieval_priority", minimumPriority)
+    .is("metadata->stale_review_candidate_id", null)
+    .order("retrieval_priority", { ascending: false })
+    .limit(25);
+  if (loadError) {
+    throw new Error(`load stale memories for review failed: ${loadError.message}`);
+  }
+
+  const queuedCandidateIds: string[] = [];
+  for (const memory of (memories ?? []) as Record<string, unknown>[]) {
+    const title = memory.title as string;
+    const memoryId = memory.id as string;
+    const content = `High-priority memory needs freshness review: ${title}\n\n${memory.body as string}`;
+    const eventPayload = {
+      context: memory.context as SofiaContext,
+      source: "lifecycle_maintenance",
+      source_ref: memoryId,
+      content,
+      embedding: null,
+      sensitivity: "normal",
+      metadata: {
+        type_hint: "stale_memory_review",
+        redaction_labels: [],
+        source_memory_id: memoryId,
+        memory_type: memory.memory_type as string,
+        retrieval_priority: memory.retrieval_priority as number,
+        stale_after: (memory.stale_after as string | null) ?? null,
+        expires_at: (memory.expires_at as string | null) ?? null,
+      },
+    };
+    const { data: event, error: eventError } = await supabase
+      .from("events")
+      .insert(eventPayload)
+      .select("id")
+      .single();
+    if (eventError) {
+      throw new Error(`insert stale review event failed: ${eventError.message}`);
+    }
+
+    const candidatePayload = {
+      event_id: event.id as string,
+      context: memory.context as SofiaContext,
+      candidate_type: "open_loop",
+      candidate_text:
+        `Review high-priority stale memory '${title}' (${memoryId}) and decide whether to verify, update, supersede, or archive it.`,
+      worthiness_score: 0.9,
+      confidence: 0.85,
+      risk_level: "medium",
+      recommended_action: "review",
+      reasoning:
+        "Lifecycle maintenance found a boot-worthy or high-priority memory whose stale_after/expires_at timestamp has passed.",
+      status: "pending_review",
+      metadata: {
+        title: `Review stale memory: ${title}`,
+        source_memory_id: memoryId,
+        review_type: "stale_memory",
+        memory_type: memory.memory_type as string,
+        retrieval_priority: memory.retrieval_priority as number,
+        stale_after: (memory.stale_after as string | null) ?? null,
+        expires_at: (memory.expires_at as string | null) ?? null,
+      },
+    };
+    const { data: candidate, error: candidateError } = await supabase
+      .from("memory_candidates")
+      .insert(candidatePayload)
+      .select("id")
+      .single();
+    if (candidateError) {
+      throw new Error(
+        `insert stale review candidate failed: ${candidateError.message}`,
+      );
+    }
+    const oldMetadata = (memory.metadata as Record<string, unknown> | null) ?? {};
+    const { error: updateMemoryError } = await supabase
+      .from("memories")
+      .update({
+        review_reason: "high-priority stale memory queued for review",
+        metadata: {
+          ...oldMetadata,
+          stale_review_candidate_id: candidate.id as string,
+        },
+      })
+      .eq("id", memoryId);
+    if (updateMemoryError) {
+      throw new Error(
+        `mark stale memory review queued failed: ${updateMemoryError.message}`,
+      );
+    }
+    queuedCandidateIds.push(candidate.id as string);
+  }
+  return queuedCandidateIds;
 }
 
 export async function getPendingReconciliationForCandidate(

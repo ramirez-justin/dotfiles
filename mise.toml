@@ -208,6 +208,10 @@ hermes --profile sofia-spike mcp test sofia-cloud
 hermes --profile sofia-spike mcp test context7
 """
 
+[tasks."sofia-cloud:agent-consistency"]
+description = "Verify Pi and Hermes both point at SOFIA Cloud without local-vault fallback"
+run = "bash {{config_root}}/sofia/cloud/scripts/agent_consistency_check.sh"
+
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"
 run = "brew bundle dump --force --file={{config_root}}/Brewfile"

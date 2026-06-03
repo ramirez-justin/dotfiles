@@ -8,6 +8,7 @@ import { compileBootContext } from "./boot_context.ts";
 import { classifyEvent, embedText } from "./classifier.ts";
 import { deliverDailyDigest } from "./daily_digest.ts";
 import {
+  applyMemorySupersessionFromReconciliation,
   applyMemoryUpdateFromReconciliation,
   archiveMemory,
   createServiceClient,
@@ -18,9 +19,11 @@ import {
   insertEvent,
   insertReconciliation,
   markCandidateArchived,
+  markExpiredMemoriesStale,
   markReconciliationStatus,
   promoteCandidate,
   promoteExistingCandidate,
+  queueHighPriorityStaleMemoryReviews,
   recordMemoryFeedback,
   recordMemoryRetrievals,
 } from "./db.ts";
@@ -234,17 +237,21 @@ server.registerTool(
               decision.action === "update_existing" &&
               decision.target_memory_id
             ) {
-              memoryId = await applyMemoryUpdateFromReconciliation(supabase, {
-                candidateId,
-                reconciliationId,
-                targetMemoryId: decision.target_memory_id,
-                title: decision.proposed_title ?? candidate.title,
-                body: decision.proposed_body ?? candidate.candidate_text,
-                confidence: Math.max(candidate.confidence, decision.confidence),
-                changeReason:
-                  `reconciliation auto-update: ${decision.policy_reason}`,
-                status: "auto_applied",
-              });
+              memoryId = await applyMemorySupersessionFromReconciliation(
+                supabase,
+                {
+                  candidateId,
+                  reconciliationId,
+                  targetMemoryId: decision.target_memory_id,
+                  context: capture.context,
+                  title: decision.proposed_title ?? candidate.title,
+                  body: decision.proposed_body ?? candidate.candidate_text,
+                  confidence: Math.max(candidate.confidence, decision.confidence),
+                  changeReason:
+                    `reconciliation auto-supersession: ${decision.policy_reason}`,
+                  status: "auto_applied",
+                },
+              );
             }
           } else if (route.shouldPromote) {
             memoryId = await promoteCandidate(
@@ -409,6 +416,42 @@ server.registerTool(
     } catch (error) {
       return textResponse(
         `record_memory_feedback failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
+);
+
+server.registerTool(
+  "run_lifecycle_maintenance",
+  {
+    title: "Run SOFIA Memory Lifecycle Maintenance",
+    description:
+      "Mark expired/stale active memories stale and queue review candidates for high-priority stale memories.",
+    inputSchema: {
+      now: z.string().datetime().optional(),
+      minimum_review_priority: z.number().int().min(0).max(100).default(70),
+    },
+  },
+  async ({ now, minimum_review_priority }: {
+    now?: string;
+    minimum_review_priority: number;
+  }) => {
+    try {
+      await markExpiredMemoriesStale(supabase, now);
+      const queued_candidate_ids = await queueHighPriorityStaleMemoryReviews(
+        supabase,
+        minimum_review_priority,
+      );
+      return textResponse(
+        formatJson({
+          status: "lifecycle_maintenance_complete",
+          queued_candidate_ids,
+        }),
+      );
+    } catch (error) {
+      return textResponse(
+        `run_lifecycle_maintenance failed: ${(error as Error).message}`,
         true,
       );
     }

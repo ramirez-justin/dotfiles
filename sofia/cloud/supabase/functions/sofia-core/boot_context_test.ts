@@ -229,3 +229,51 @@ Deno.test("compileBootContext orders by retrieval policy and includes active tod
     /confidence: 0\.99; priority: 95; last verified: 2026-06-01/,
   );
 });
+
+Deno.test("compileBootContext omits expired and stale active memories defensively", async () => {
+  const client = fakeSupabase({
+    artifact: null,
+    memories: [
+      {
+        id: "m-expired",
+        context: "personal",
+        memory_type: "fact",
+        title: "Expired fact",
+        body: "This should not be in boot context.",
+        retrieval_priority: 95,
+        expires_at: "2000-01-01T00:00:00.000Z",
+        created_at: "2026-05-01T12:00:00Z",
+      },
+      {
+        id: "m-stale",
+        context: "personal",
+        memory_type: "fact",
+        title: "Stale fact",
+        body: "This should not be in boot context either.",
+        retrieval_priority: 94,
+        stale_after: "2000-01-01T00:00:00.000Z",
+        created_at: "2026-05-01T12:00:00Z",
+      },
+      {
+        id: "m-current",
+        context: "personal",
+        memory_type: "operating_rule",
+        title: "Current rule",
+        body: "This stays visible.",
+        retrieval_priority: 70,
+        expires_at: "2999-01-01T00:00:00.000Z",
+        created_at: "2026-05-01T12:00:00Z",
+      },
+    ],
+  });
+
+  const result = await compileBootContext(client as never, {
+    context: "personal",
+    force_refresh: true,
+  });
+
+  assert.deepEqual(result.included_memory_ids, ["m-current"]);
+  assert.doesNotMatch(result.content, /Expired fact/);
+  assert.doesNotMatch(result.content, /Stale fact/);
+  assert.match(result.content, /Current rule/);
+});

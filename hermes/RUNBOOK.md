@@ -249,3 +249,26 @@ mise run hermes:sofia:guard
 ```
 
 Then commit normally.
+
+## Cross-agent SOFIA consistency check
+
+After SOFIA Cloud deployments or MCP tool changes, verify Hermes and Pi are still pointed at the same cloud runtime:
+
+```bash
+cd ~/dev/dotfiles
+mise run sofia-cloud:agent-consistency
+```
+
+For a live boot-context smoke test through the linked Hermes helper:
+
+```bash
+SOFIA_AGENT_CONSISTENCY_LIVE=1 mise run sofia-cloud:agent-consistency
+```
+
+Healthy output confirms:
+
+- Pi `~/.pi/agent/mcp.json` uses the deployed `sofia-core` URL and `${SOFIA_MCP_ACCESS_KEY}`.
+- Hermes `sofia-spike` uses `${SOFIA_CLOUD_URL}` and `${SOFIA_MCP_ACCESS_KEY}`.
+- Hermes local durable memory remains disabled.
+- The SOFIA MCP include list exposes boot context and lifecycle tools.
+- Optional live mode returns SOFIA Cloud compiled boot context with the Postgres-canonical marker.

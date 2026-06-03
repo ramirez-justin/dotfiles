@@ -359,24 +359,3 @@ curl -fsS \
   -d '{"source":"mise"}' \
   "https://${project_ref}.supabase.co/functions/v1/sofia-core/daily-digest"
 """
-
-[tasks."sofia-local:init"]
-description = "Legacy local SOFIA bootstrap (transitional until cloud replaces local runtime)"
-run = """
-set -e
-cd ~/.local/share/sofia/src
-uv sync
-~/.local/bin/sofia init
-mkdir -p ~/.local/state/sofia
-launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.sofia.indexer.plist || true
-launchctl enable gui/$UID/com.sofia.indexer || true
-echo "SOFIA local runtime bootstrapped. Next: open Claude Code in ~/dev/SOFIA and run /sofia-init"
-"""
-
-[tasks."sofia-local:status"]
-description = "Legacy local SOFIA health check"
-run = "~/.local/bin/sofia doctor"
-
-[tasks."sofia-local:reindex"]
-description = "Legacy local SOFIA search index rebuild"
-run = "~/.local/bin/sofia index --rebuild"

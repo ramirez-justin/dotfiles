@@ -22,12 +22,6 @@ The tracked `~/.local/bin/sofia` wrapper executes:
 ~/.hermes/profiles/sofia-spike/scripts/hermes-sofia
 ```
 
-The legacy local SOFIA second-brain CLI is still available as:
-
-```bash
-sofia-local
-```
-
 Equivalent mise command:
 
 ```bash

@@ -108,8 +108,9 @@ mise run sofia-cloud:health
 
 Then follow `sofia/cloud/RUNBOOK.md` for the failing layer.
 
-Legacy local-vault runtime tasks are grouped under `sofia-local:*` during the
-transition to cloud canonical storage.
+SOFIA Cloud/Postgres is the canonical storage and runtime surface. The old
+local-vault runtime tasks have been retired; use the SOFIA Cloud checks and the
+Hermes SOFIA profile runbook instead.
 
 ## SOUL and operating instructions
 

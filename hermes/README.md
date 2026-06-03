@@ -21,7 +21,7 @@ Operational commands and troubleshooting live in:
 hermes/RUNBOOK.md
 ```
 
-Short version: use `sofia` for local CLI sessions (`sofia-local` for the legacy local SOFIA CLI) and `mise run hermes:sofia:gateway:*` for the launchd-backed Telegram gateway.
+Short version: use `sofia` for local CLI sessions and `mise run hermes:sofia:gateway:*` for the launchd-backed Telegram gateway.
 
 ## Install/link
 

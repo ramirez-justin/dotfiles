@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# sofia — wrapper that runs the typer CLI from the stowed src dir
-# Resolves the repo path and invokes uv run regardless of $PWD.
-set -uo pipefail
+# sofia — SOFIA-backed Hermes CLI.
+# Use `sofia-local` for the legacy local SOFIA second-brain CLI.
+set -euo pipefail
 
-SOFIA_SRC="${SOFIA_SRC:-$HOME/.local/share/sofia/src}"
+wrapper="${HERMES_SOFIA_WRAPPER:-$HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia}"
 
-if [[ ! -d "$SOFIA_SRC" ]]; then
-  echo "sofia: source not found at $SOFIA_SRC" >&2
-  echo "Did you run 'mise run link' to stow the sofia topic?" >&2
+if [[ ! -x "$wrapper" ]]; then
+  echo "sofia: Hermes SOFIA wrapper is missing or not executable: $wrapper" >&2
+  echo "Run: cd ~/dev/dotfiles && mise run hermes:sofia:link" >&2
   exit 1
 fi
 
-cd "$SOFIA_SRC"
-exec uv run --quiet python -m sofia.cli "$@"
+exec "$wrapper" "$@"

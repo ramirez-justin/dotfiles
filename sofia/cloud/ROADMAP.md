@@ -433,7 +433,7 @@ Reason: Phases 1–6 established the agent-native memory graph, lifecycle automa
 
 ## Post-Phase 7 candidate — Trust-tiered agent-created artifacts
 
-Hermes Agent PR/issue #1840 changed agent-created skill install policy from `(allow, block, block)` to `(allow, allow, block)`: trusted and caution-level findings are allowed, while critical findings remain blocked. SOFIA Cloud can use the same shape for memory/artifact governance.
+Hermes Agent PR #1840 changed agent-created skill install policy from `(allow, block, block)` to `(allow, allow, block)`: trusted and caution-level findings are allowed, while critical findings remain blocked. SOFIA Cloud can use the same trust-policy shape for memory/artifact governance.
 
 Potential SOFIA implementation:
 

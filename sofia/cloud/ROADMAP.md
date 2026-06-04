@@ -2,7 +2,7 @@
 
 **Goal:** evolve SOFIA Cloud from a graph-capable memory system into a self-maintaining, evidence-backed agent memory/control plane.
 
-**Current baseline:** Phase 2 is deployed. SOFIA now has raw events, candidates, durable memories, first-class provenance, lifecycle/status fields, typed relations, retrieval policy fields, todos, retrieval telemetry, boot-context snapshots, stale/expired memory maintenance, safe supersession edges, and Pi/Hermes cloud consistency checks.
+**Current baseline:** Phase 6 is deployed. SOFIA now has raw events, candidates, durable memories, first-class provenance, lifecycle/status fields, typed relations, retrieval policy fields, normalized entities, todos, retrieval telemetry, boot-context snapshots, stale/expired memory maintenance, safe supersession edges, task/session handoffs, contradiction QA, and Pi/Hermes cloud consistency checks.
 
 **Tracking rule:** this roadmap is the source of truth for project direction. Concrete implementation tasks should live as SOFIA `todos` once the todo API grows task-management tools; until then, track active engineering work in this file and commit updates as work lands.
 
@@ -427,6 +427,18 @@ Recommended operating cadence:
 
 ## Immediate next phase recommendation
 
-Start with **Phase 3 — Entity graph model**.
+Start with **Phase 7 — Operational dashboards and daily review loop**.
 
-Reason: Phase 2 made lifecycle fields operational, which prevents stale/superseded memory drift. The next unlock is normalized entities so projects, repos, systems, people, and decisions become stable retrieval anchors instead of loose metadata.
+Reason: Phases 1–6 established the agent-native memory graph, lifecycle automation, retrieval policy telemetry, task/session handoffs, and contradiction QA. The next unlock is making maintenance routine and visible: deterministic daily digest, operator health reports, contradiction/review counts, stale high-priority memories, confusing retrievals, and boot snapshot links.
+
+## Post-Phase 7 candidate — Trust-tiered agent-created artifacts
+
+Hermes Agent PR/issue #1840 changed agent-created skill install policy from `(allow, block, block)` to `(allow, allow, block)`: trusted and caution-level findings are allowed, while critical findings remain blocked. SOFIA Cloud can use the same shape for memory/artifact governance.
+
+Potential SOFIA implementation:
+
+- Add a trust tier/policy field for agent-created captures, memories, todos, handoffs, and generated artifacts.
+- Allow low-risk/caution-level agent-created project evidence to flow into candidates or task artifacts without manual blocking.
+- Keep critical findings fail-closed: secrets, exfiltration, prompt injection, credential handling, public/external side effects, and security-sensitive personal/property/financial data stay review-only or blocked.
+- Store policy decision provenance so agents can explain why a capture was allowed, reviewed, or blocked.
+- Feed policy outcomes into Phase 7 QA/digest reports.

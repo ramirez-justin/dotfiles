@@ -431,14 +431,15 @@ Start with **Phase 7 — Operational dashboards and daily review loop**.
 
 Reason: Phases 1–6 established the agent-native memory graph, lifecycle automation, retrieval policy telemetry, task/session handoffs, and contradiction QA. The next unlock is making maintenance routine and visible: deterministic daily digest, operator health reports, contradiction/review counts, stale high-priority memories, confusing retrievals, and boot snapshot links.
 
-## Post-Phase 7 candidate — Trust-tiered agent-created artifacts
+## Post-Phase 7 candidate — Emoji reaction learning
 
-Hermes Agent PR #1840 changed agent-created skill install policy from `(allow, block, block)` to `(allow, allow, block)`: trusted and caution-level findings are allowed, while critical findings remain blocked. SOFIA Cloud can use the same trust-policy shape for memory/artifact governance.
+Hermes Agent issue #18408 proposes Telegram emoji reaction learning: reactions on bot messages become opt-in implicit feedback for user preferences, response style, skill behavior, and quick emoji-based confirmations. SOFIA Cloud is a natural persistence/reconciliation layer for this because it already has raw captures, candidate extraction, durable memories, task/session handoffs, retrieval telemetry, provenance, and QA review surfaces.
 
 Potential SOFIA implementation:
 
-- Add a trust tier/policy field for agent-created captures, memories, todos, handoffs, and generated artifacts.
-- Allow low-risk/caution-level agent-created project evidence to flow into candidates or task artifacts without manual blocking.
-- Keep critical findings fail-closed: secrets, exfiltration, prompt injection, credential handling, public/external side effects, and security-sensitive personal/property/financial data stay review-only or blocked.
-- Store policy decision provenance so agents can explain why a capture was allowed, reviewed, or blocked.
-- Feed policy outcomes into Phase 7 QA/digest reports.
+- Add append-only `reaction_events` for Telegram `message_reaction` updates with user, message, emoji, timestamp, session/task context, and redacted message preview.
+- Add `reaction_analyses` for classifier output: sentiment, confidence, category, what worked/failed, and suggested preference update.
+- Add `learned_preferences` or reuse memory candidates for stable patterns only after thresholds are met; single reactions stay telemetry, not durable memory.
+- Feed positive/negative patterns into retrieval policy, boot context, skill prompts, and Phase 7 digest/QA reports.
+- Keep the feature opt-in and privacy-bounded: DM/user-owned reactions only by default; group reactions ignored unless explicitly enabled.
+- Treat negative/ambiguous reactions as review/QA signals, not automatic destructive edits to SOFIA memory.

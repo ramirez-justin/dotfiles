@@ -5,6 +5,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Hono } from "hono";
 import { z } from "zod";
 import { compileBootContext } from "./boot_context.ts";
+import {
+  buildMemoryQaReport,
+  createContradictionReview,
+  type ContradictionReviewInput,
+  type MemoryQaReportInput,
+} from "./contradictions.ts";
 import { classifyEvent, embedText } from "./classifier.ts";
 import { deliverDailyDigest } from "./daily_digest.ts";
 import {
@@ -585,6 +591,54 @@ server.registerTool(
       return textResponse(formatJson(await listActiveTaskRuns(supabase, input)));
     } catch (error) {
       return textResponse(`list_active_task_runs failed: ${(error as Error).message}`, true);
+    }
+  },
+);
+
+server.registerTool(
+  "create_contradiction_review",
+  {
+    title: "Create SOFIA Contradiction Review",
+    description: "Queue an explicit review item when two active memories appear to contradict, update, or duplicate each other.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared"]),
+      primary_memory_id: z.string().uuid(),
+      conflicting_memory_id: z.string().uuid(),
+      relation: z.enum(["contradicts", "updates", "duplicates", "related_to"]).default("contradicts"),
+      severity: z.enum(["low", "medium", "high"]).default("medium"),
+      confidence: z.number().min(0).max(1).default(0),
+      rationale: z.string().min(1),
+      proposed_resolution: z.string().optional(),
+      source: z.enum(["candidate_reconciliation", "memory_qa", "manual", "automation"]).default("manual"),
+      candidate_id: z.string().uuid().optional(),
+      reconciliation_id: z.string().uuid().optional(),
+      metadata: z.record(z.unknown()).optional(),
+    },
+  },
+  async (input: ContradictionReviewInput) => {
+    try {
+      return textResponse(formatJson(await createContradictionReview(supabase, input)));
+    } catch (error) {
+      return textResponse(`create_contradiction_review failed: ${(error as Error).message}`, true);
+    }
+  },
+);
+
+server.registerTool(
+  "get_memory_qa_report",
+  {
+    title: "Get SOFIA Memory QA Report",
+    description: "Return actionable memory QA rows: unresolved contradictions, weak provenance, and stale high-priority memories.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared"]).optional(),
+      limit: z.number().int().min(1).max(100).default(20),
+    },
+  },
+  async (input: MemoryQaReportInput) => {
+    try {
+      return textResponse(formatJson(await buildMemoryQaReport(supabase, input)));
+    } catch (error) {
+      return textResponse(`get_memory_qa_report failed: ${(error as Error).message}`, true);
     }
   },
 );

@@ -8,6 +8,7 @@ type FakeState = {
   memories?: Record<string, unknown>[];
   todos?: Record<string, unknown>[];
   handoffs?: Record<string, unknown>[];
+  unresolvedContradictions?: Record<string, unknown>[];
   memoryEntityRows?: Record<string, unknown>[];
   todoEntityRows?: Record<string, unknown>[];
   entity?: Record<string, unknown> | null;
@@ -95,6 +96,10 @@ function fakeSupabase(state: FakeState) {
               ? (state.handoffs ?? []).filter((handoff) => idFilter?.includes(handoff.id))
               : (state.handoffs ?? []);
             resolve({ data: handoffs, error: null });
+            return;
+          }
+          if (table === "unresolved_memory_contradictions") {
+            resolve({ data: state.unresolvedContradictions ?? [], error: null });
             return;
           }
           const memories = idFilter
@@ -428,4 +433,56 @@ Deno.test("compileBootContext includes active session handoffs", async () => {
   assert.match(result.content, /## Active Session Handoffs/);
   assert.match(result.content, /Resume SOFIA Phase 5/);
   assert.match(result.content, /Continue from deployed migration and passing tests/);
+});
+
+
+Deno.test("compileBootContext omits one side of unresolved high-confidence contradictions", async () => {
+  const client = fakeSupabase({
+    artifact: null,
+    memories: [
+      {
+        id: "m-old",
+        context: "work",
+        memory_type: "project_context",
+        title: "Old SOFIA phase status",
+        body: "Phase 5 is pending deployment.",
+        confidence: 0.9,
+        retrieval_priority: 80,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "m-new",
+        context: "work",
+        memory_type: "project_context",
+        title: "New SOFIA phase status",
+        body: "Phase 5 is deployed and verified.",
+        confidence: 0.96,
+        retrieval_priority: 80,
+        created_at: "2026-02-01T00:00:00Z",
+      },
+    ],
+    unresolvedContradictions: [
+      {
+        review_id: "review-1",
+        primary_memory_id: "m-old",
+        conflicting_memory_id: "m-new",
+        confidence: 0.95,
+        severity: "high",
+      },
+    ],
+  });
+
+  const result = await compileBootContext(client as never, {
+    context: "work",
+    force_refresh: true,
+  });
+
+  assert.match(result.content, /New SOFIA phase status/);
+  assert.doesNotMatch(result.content, /Old SOFIA phase status/);
+  assert.deepEqual(result.included_memory_ids, ["m-new"]);
+  assert.deepEqual(
+    ((client.calls[0].payload as Record<string, unknown>).metadata as Record<string, unknown>)
+      .omitted_contradicted_memory_ids,
+    ["m-old"],
+  );
 });

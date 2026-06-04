@@ -5,6 +5,7 @@ import type {
   SofiaContext,
 } from "./types.ts";
 import { findEntityId } from "./entities.ts";
+import { filterUnresolvedContradictionsForBoot } from "./contradictions.ts";
 
 const BOOT_ARTIFACT_NAME = "boot_context.md";
 const BOOT_CONTEXT_MAX_CHARS = 12_000;
@@ -119,16 +120,20 @@ export async function compileBootContext(
       ? await loadActiveHandoffs(supabase, contexts, scopedEntityId)
       : []
     : await loadActiveHandoffs(supabase, contexts);
-  const content = renderBootContext(request.context, memories, todos, handoffs);
+  const contradictionPairs = await loadUnresolvedContradictionPairs(supabase, contexts);
+  const filtered = filterUnresolvedContradictionsForBoot(memories, contradictionPairs);
+  const bootMemories = filtered.memories;
+  const content = renderBootContext(request.context, bootMemories, todos, handoffs);
   return await persistBootContext(
     supabase,
     request.context,
     content,
     contexts,
-    memories,
+    bootMemories,
     todos,
     handoffs,
     scopedEntityId ? [scopedEntityId] : [],
+    filtered.omittedMemoryIds,
   );
 }
 
@@ -171,6 +176,9 @@ async function loadBootArtifact(
       undefined,
     included_handoff_ids:
       (metadata.included_handoff_ids as string[] | undefined) ?? undefined,
+    omitted_contradicted_memory_ids:
+      (metadata.omitted_contradicted_memory_ids as string[] | undefined) ??
+        undefined,
     token_count: metadata.token_count as number | undefined,
     source: "compiled_artifacts",
   };
@@ -298,6 +306,26 @@ function sortBootTodos(todos: TodoRow[]): TodoRow[] {
   );
 }
 
+async function loadUnresolvedContradictionPairs(
+  supabase: SupabaseClient,
+  contexts: SofiaContext[],
+): Promise<Array<{ primary_memory_id: string; conflicting_memory_id: string; confidence?: number; severity?: "low" | "medium" | "high" }>> {
+  const { data, error } = await supabase
+    .from("unresolved_memory_contradictions")
+    .select("primary_memory_id, conflicting_memory_id, confidence, severity")
+    .in("context", contexts)
+    .limit(100);
+  if (error) {
+    throw new Error(`load unresolved contradiction pairs failed: ${error.message}`);
+  }
+  return (data ?? []) as Array<{
+    primary_memory_id: string;
+    conflicting_memory_id: string;
+    confidence?: number;
+    severity?: "low" | "medium" | "high";
+  }>;
+}
+
 async function loadActiveHandoffs(
   supabase: SupabaseClient,
   contexts: SofiaContext[],
@@ -325,6 +353,7 @@ async function persistBootContext(
   todos: TodoRow[],
   handoffs: HandoffRow[],
   entityIds: string[] = [],
+  omittedContradictedMemoryIds: string[] = [],
 ): Promise<BootContextResponse> {
   const includedMemoryIds = [
     ...memories.filter((memory) => memory.context === "shared"),
@@ -356,6 +385,7 @@ async function persistBootContext(
       metadata: {
         max_chars: BOOT_CONTEXT_MAX_CHARS,
         included_handoff_ids: includedHandoffIds,
+        omitted_contradicted_memory_ids: omittedContradictedMemoryIds,
       },
     })
     .select("id, generated_at")
@@ -377,6 +407,7 @@ async function persistBootContext(
     included_entity_ids: entityIds,
     included_todo_ids: includedTodoIds,
     included_handoff_ids: includedHandoffIds,
+    omitted_contradicted_memory_ids: omittedContradictedMemoryIds,
     token_count: tokenCount,
   };
 
@@ -425,6 +456,7 @@ async function persistBootContext(
     included_entity_ids: entityIds,
     included_todo_ids: includedTodoIds,
     included_handoff_ids: includedHandoffIds,
+    omitted_contradicted_memory_ids: omittedContradictedMemoryIds,
     token_count: tokenCount,
     source: "compiled_from_memories",
   };

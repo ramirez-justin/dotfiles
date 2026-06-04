@@ -440,6 +440,38 @@ boot context includes recent active handoffs for the requested context.
 Do not use task/session continuity as a dumping ground for transient chat logs.
 Archive/complete stale handoffs once the work is no longer relevant.
 
+## Phase 6 contradiction detection and memory QA
+
+Phase 6 makes memory consistency explicit. Unresolved conflicts are review work,
+not silent active-memory clutter.
+
+Schema/runtime surfaces:
+
+- `memory_contradiction_reviews` stores pending/resolved conflict review items.
+- `unresolved_memory_contradictions` reports active conflicting memory pairs.
+- `weak_provenance_memories` reports high-priority/boot-worthy active memories
+  with no provenance rows.
+- Boot-context compilation filters unresolved high-confidence contradictions so
+  both sides are not shown at the same time; omitted IDs are recorded in snapshot
+  metadata as `omitted_contradicted_memory_ids`.
+
+MCP tools exposed by `sofia-core`:
+
+- `create_contradiction_review` — queue an explicit contradiction/update/duplicate
+  review between two memory IDs.
+- `get_memory_qa_report` — report unresolved contradictions, weak provenance,
+  and stale high-priority memories.
+
+Operational pattern:
+
+1. Run `get_memory_qa_report` before trusting suspicious boot context or during
+   weekly SOFIA hygiene.
+2. For likely conflicts, create or inspect a `memory_contradiction_reviews` row.
+3. Resolve through existing reconciliation/review paths: supersede, update, merge,
+   archive duplicate, or reject incorrect candidate.
+4. Do not auto-resolve personal/property/financial/security conflicts; keep those
+   review-only.
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

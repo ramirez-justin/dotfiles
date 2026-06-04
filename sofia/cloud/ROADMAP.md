@@ -296,6 +296,8 @@
 
 ## Phase 6 — Contradiction detection and memory QA
 
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-verified, merged to `main`, and pushed.
+
 **Goal:** detect conflicting facts proactively and keep active memory internally consistent.
 
 ### Scope

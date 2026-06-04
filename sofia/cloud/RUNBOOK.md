@@ -472,6 +472,44 @@ Operational pattern:
 4. Do not auto-resolve personal/property/financial/security conflicts; keep those
    review-only.
 
+## Phase 7 operational dashboards and daily review loop
+
+Phase 7 turns SOFIA maintenance into a deterministic operator routine rather than
+ad hoc memory spelunking.
+
+Schema/runtime surfaces:
+
+- `memory_ops_health_summary` reports active/stale/needs-review/superseded memory
+  counts, boot-eligible active memory counts, stale high-priority memories, and
+  active high-priority memories without provenance.
+- `memory_ops_retrieval_usefulness_summary` reports used/helpful/confusing
+  retrieval counts by context.
+- `memory_ops_pending_review_summary` reports pending candidates by review
+  priority bucket.
+- `fetchDailyDigestSnapshot` gathers pending reviews, contradiction severity,
+  recent captures/redactions, stale high-priority memories, confusing retrievals,
+  due todos, and recent boot snapshots without calling an LLM.
+- `formatDailyDigest` renders deterministic text suitable for Telegram or manual
+  operator review.
+
+MCP tools exposed by `sofia-core`:
+
+- `get_daily_review_report` — return structured daily-review snapshot plus the
+  deterministic digest text.
+- Existing `/daily-digest` HTTP path still sends the Telegram digest using the
+  same snapshot/formatter.
+
+Operational pattern:
+
+1. Daily: run `get_daily_review_report` or the scheduled Telegram digest. Handle
+   high-priority candidates, pending contradictions, stale high-priority memories,
+   confusing retrievals, and due todos first.
+2. Weekly: inspect `memory_ops_health_summary`,
+   `memory_ops_retrieval_usefulness_summary`, and `memory_ops_pending_review_summary`
+   for pruning, provenance repair, and boot-context tuning.
+3. Treat the report as advisory. Destructive fixes still go through review,
+   archive, supersession, or lifecycle maintenance paths.
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

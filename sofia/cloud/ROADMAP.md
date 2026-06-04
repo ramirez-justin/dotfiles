@@ -342,6 +342,8 @@
 
 ## Phase 7 — Operational dashboards and daily review loop
 
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-smoked, and awaiting branch merge.
+
 **Goal:** make memory maintenance visible and routine.
 
 ### Scope

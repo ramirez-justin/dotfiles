@@ -7,6 +7,7 @@ type FakeState = {
   artifact?: Record<string, unknown> | null;
   memories?: Record<string, unknown>[];
   todos?: Record<string, unknown>[];
+  handoffs?: Record<string, unknown>[];
   memoryEntityRows?: Record<string, unknown>[];
   todoEntityRows?: Record<string, unknown>[];
   entity?: Record<string, unknown> | null;
@@ -87,6 +88,13 @@ function fakeSupabase(state: FakeState) {
               ? (state.todos ?? []).filter((todo) => idFilter?.includes(todo.id))
               : (state.todos ?? []);
             resolve({ data: todos, error: null });
+            return;
+          }
+          if (table === "session_handoffs") {
+            const handoffs = idFilter
+              ? (state.handoffs ?? []).filter((handoff) => idFilter?.includes(handoff.id))
+              : (state.handoffs ?? []);
+            resolve({ data: handoffs, error: null });
             return;
           }
           const memories = idFilter
@@ -394,4 +402,30 @@ Deno.test("compileBootContext omits expired and stale active memories defensivel
   assert.doesNotMatch(result.content, /Expired fact/);
   assert.doesNotMatch(result.content, /Stale fact/);
   assert.match(result.content, /Current rule/);
+});
+
+
+Deno.test("compileBootContext includes active session handoffs", async () => {
+  const client = fakeSupabase({
+    artifact: null,
+    handoffs: [
+      {
+        id: "handoff-1",
+        context: "work",
+        title: "Resume SOFIA Phase 5",
+        handoff_markdown: "Continue from deployed migration and passing tests.",
+        verification_status: "passed",
+        created_at: "2026-06-03T20:00:00Z",
+      },
+    ],
+  });
+
+  const result = await compileBootContext(client as never, {
+    context: "work",
+    force_refresh: true,
+  });
+
+  assert.match(result.content, /## Active Session Handoffs/);
+  assert.match(result.content, /Resume SOFIA Phase 5/);
+  assert.match(result.content, /Continue from deployed migration and passing tests/);
 });

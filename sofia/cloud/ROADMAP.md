@@ -211,7 +211,7 @@
 
 ## Phase 4.5 — Promotion policy tuning
 
-**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, and fast-forward merged locally to `main` (not pushed).
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, pushed to `main`, and current review queue cleared.
 
 **Goal:** reduce review-queue noise by safely auto-promoting provenance-backed work milestones and auto-archiving transient progress updates.
 
@@ -249,6 +249,8 @@
 ---
 
 ## Phase 5 — Task/session continuity
+
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-verified, merged to `main`, and pushed.
 
 **Goal:** let agents resume work across sessions from explicit task/session state, not vague memory search.
 

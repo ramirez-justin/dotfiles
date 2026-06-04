@@ -47,6 +47,20 @@ import {
 } from "./reconcile.ts";
 import { redactSecrets } from "./redact.ts";
 import { buildRetrievalPolicyReport } from "./retrieval_policy.ts";
+import {
+  attachTaskArtifact,
+  completeTaskRun,
+  getLatestHandoffs,
+  listActiveTaskRuns,
+  startTaskRun,
+} from "./sessions.ts";
+import type {
+  AttachTaskArtifactInput,
+  CompleteTaskRunInput,
+  GetLatestHandoffsInput,
+  ListActiveTaskRunsInput,
+  StartTaskRunInput,
+} from "./sessions.ts";
 import { routeCandidate } from "./router.ts";
 import type { CaptureEventInput, SofiaContext } from "./types.ts";
 
@@ -460,6 +474,117 @@ server.registerTool(
         `get_retrieval_policy_report failed: ${(error as Error).message}`,
         true,
       );
+    }
+  },
+);
+
+server.registerTool(
+  "start_task_run",
+  {
+    title: "Start SOFIA Task Run",
+    description: "Create an explicit agent session and in-progress task run for resumable work.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared"]).default("work"),
+      agent_name: z.string().default("agent"),
+      session_ref: z.string().optional(),
+      title: z.string().min(1),
+      objective: z.string().optional(),
+      entity_id: z.string().uuid().optional(),
+      entity: z.string().optional(),
+      metadata: z.record(z.unknown()).optional(),
+    },
+  },
+  async (input: StartTaskRunInput) => {
+    try {
+      return textResponse(formatJson(await startTaskRun(supabase, input)));
+    } catch (error) {
+      return textResponse(`start_task_run failed: ${(error as Error).message}`, true);
+    }
+  },
+);
+
+server.registerTool(
+  "attach_task_artifact",
+  {
+    title: "Attach SOFIA Task Artifact",
+    description: "Attach a commit, PR, migration, deployment, test output, doc, or note to a task run.",
+    inputSchema: {
+      task_run_id: z.string().uuid(),
+      artifact_type: z.enum(["commit", "pr", "issue", "migration", "deployment", "test_output", "log", "doc", "file", "url", "note"]),
+      title: z.string().min(1),
+      uri: z.string().optional(),
+      content: z.string().optional(),
+      metadata: z.record(z.unknown()).optional(),
+    },
+  },
+  async (input: AttachTaskArtifactInput) => {
+    try {
+      return textResponse(formatJson(await attachTaskArtifact(supabase, input)));
+    } catch (error) {
+      return textResponse(`attach_task_artifact failed: ${(error as Error).message}`, true);
+    }
+  },
+);
+
+server.registerTool(
+  "complete_task_run",
+  {
+    title: "Complete SOFIA Task Run",
+    description: "Complete, block, or cancel a task run and generate a resumable session handoff.",
+    inputSchema: {
+      task_run_id: z.string().uuid(),
+      status: z.enum(["completed", "blocked", "cancelled"]),
+      outcome_summary: z.string().min(1),
+      verification_summary: z.string().optional(),
+    },
+  },
+  async (input: CompleteTaskRunInput) => {
+    try {
+      return textResponse(formatJson(await completeTaskRun(supabase, input)));
+    } catch (error) {
+      return textResponse(`complete_task_run failed: ${(error as Error).message}`, true);
+    }
+  },
+);
+
+server.registerTool(
+  "get_latest_handoffs",
+  {
+    title: "Get SOFIA Latest Handoffs",
+    description: "Fetch recent active task/session handoffs, optionally scoped to an entity.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared"]).default("work"),
+      entity_id: z.string().uuid().optional(),
+      entity: z.string().optional(),
+      limit: z.number().int().min(1).max(20).default(5),
+    },
+  },
+  async (input: GetLatestHandoffsInput) => {
+    try {
+      return textResponse(formatJson(await getLatestHandoffs(supabase, input)));
+    } catch (error) {
+      return textResponse(`get_latest_handoffs failed: ${(error as Error).message}`, true);
+    }
+  },
+);
+
+server.registerTool(
+  "list_active_task_runs",
+  {
+    title: "List SOFIA Active Task Runs",
+    description: "List in-progress or blocked task runs for resumable agent work.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared", "both"]).default("both"),
+      entity_id: z.string().uuid().optional(),
+      entity: z.string().optional(),
+      limit: z.number().int().min(1).max(50).default(20),
+    },
+  },
+  async (input: ListActiveTaskRunsInput) => {
+    try {
+      return textResponse(formatJson(await listActiveTaskRuns(supabase, input)));
+    } catch (error) {
+      return textResponse(`list_active_task_runs failed: ${(error as Error).message}`, true);
     }
   },
 );

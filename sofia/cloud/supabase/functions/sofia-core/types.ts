@@ -124,6 +124,7 @@ export type BootContextResponse = {
   included_memory_ids?: string[];
   included_entity_ids?: string[];
   included_todo_ids?: string[];
+  included_handoff_ids?: string[];
   token_count?: number;
   source: "compiled_artifacts" | "compiled_from_memories";
 };

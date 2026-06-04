@@ -82,6 +82,15 @@ type TodoRow = {
   due_at?: string | null;
 };
 
+type HandoffRow = {
+  id: string;
+  context: SofiaContext;
+  title: string;
+  handoff_markdown: string;
+  verification_status?: string;
+  created_at?: string;
+};
+
 export async function compileBootContext(
   supabase: SupabaseClient,
   request: BootContextRequest,
@@ -105,7 +114,12 @@ export async function compileBootContext(
       ? await loadActiveTodosForEntity(supabase, contexts, scopedEntityId)
       : []
     : await loadActiveTodos(supabase, contexts);
-  const content = renderBootContext(request.context, memories, todos);
+  const handoffs = isScoped
+    ? scopedEntityId
+      ? await loadActiveHandoffs(supabase, contexts, scopedEntityId)
+      : []
+    : await loadActiveHandoffs(supabase, contexts);
+  const content = renderBootContext(request.context, memories, todos, handoffs);
   return await persistBootContext(
     supabase,
     request.context,
@@ -113,6 +127,7 @@ export async function compileBootContext(
     contexts,
     memories,
     todos,
+    handoffs,
     scopedEntityId ? [scopedEntityId] : [],
   );
 }
@@ -154,6 +169,8 @@ async function loadBootArtifact(
       (metadata.included_entity_ids as string[] | undefined) ?? undefined,
     included_todo_ids: (metadata.included_todo_ids as string[] | undefined) ??
       undefined,
+    included_handoff_ids:
+      (metadata.included_handoff_ids as string[] | undefined) ?? undefined,
     token_count: metadata.token_count as number | undefined,
     source: "compiled_artifacts",
   };
@@ -281,6 +298,24 @@ function sortBootTodos(todos: TodoRow[]): TodoRow[] {
   );
 }
 
+async function loadActiveHandoffs(
+  supabase: SupabaseClient,
+  contexts: SofiaContext[],
+  entityId?: string,
+): Promise<HandoffRow[]> {
+  let query = supabase
+    .from("session_handoffs")
+    .select("id, context, title, handoff_markdown, verification_status, created_at")
+    .in("context", contexts)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (entityId) query = query.eq("entity_id", entityId);
+  const { data, error } = await query;
+  if (error) throw new Error(`load session handoffs failed: ${error.message}`);
+  return (data ?? []) as HandoffRow[];
+}
+
 async function persistBootContext(
   supabase: SupabaseClient,
   context: SofiaContext,
@@ -288,6 +323,7 @@ async function persistBootContext(
   contexts: SofiaContext[],
   memories: MemoryRow[],
   todos: TodoRow[],
+  handoffs: HandoffRow[],
   entityIds: string[] = [],
 ): Promise<BootContextResponse> {
   const includedMemoryIds = [
@@ -295,6 +331,7 @@ async function persistBootContext(
     ...memories.filter((memory) => memory.context !== "shared"),
   ].map((memory) => memory.id);
   const includedTodoIds = todos.map((todo) => todo.id);
+  const includedHandoffIds = handoffs.map((handoff) => handoff.id);
   const tokenCount = estimateTokenCount(content);
   const sourceQuery = {
     table: "memories",
@@ -318,6 +355,7 @@ async function persistBootContext(
       source_query: sourceQuery,
       metadata: {
         max_chars: BOOT_CONTEXT_MAX_CHARS,
+        included_handoff_ids: includedHandoffIds,
       },
     })
     .select("id, generated_at")
@@ -338,6 +376,7 @@ async function persistBootContext(
     included_memory_ids: includedMemoryIds,
     included_entity_ids: entityIds,
     included_todo_ids: includedTodoIds,
+    included_handoff_ids: includedHandoffIds,
     token_count: tokenCount,
   };
 
@@ -385,6 +424,7 @@ async function persistBootContext(
     included_memory_ids: includedMemoryIds,
     included_entity_ids: entityIds,
     included_todo_ids: includedTodoIds,
+    included_handoff_ids: includedHandoffIds,
     token_count: tokenCount,
     source: "compiled_from_memories",
   };
@@ -398,6 +438,7 @@ function renderBootContext(
   context: SofiaContext,
   memories: MemoryRow[],
   todos: TodoRow[],
+  handoffs: HandoffRow[],
 ): string {
   const shared = memories.filter((memory) => memory.context === "shared");
   const contextual = memories.filter((memory) => memory.context === context);
@@ -413,6 +454,7 @@ function renderBootContext(
     "",
     SOUL_MARKDOWN,
     "",
+    renderHandoffSection(handoffs),
     renderSection("Shared Memory", shared),
   ];
   if (context !== "shared") {
@@ -470,6 +512,23 @@ function renderTodoSection(todos: TodoRow[]): string {
       return `- **${todo.title}** (${todo.status}, id: ${todo.id}; priority: ${
         todo.priority ?? 50
       }${due})`;
+    }),
+  ].join("\n");
+}
+
+function renderHandoffSection(handoffs: HandoffRow[]): string {
+  if (handoffs.length === 0) {
+    return "## Active Session Handoffs\n\n- No active handoffs found.";
+  }
+  return [
+    "## Active Session Handoffs",
+    "",
+    ...handoffs.map((handoff) => {
+      const verified = handoff.verification_status
+        ? `; verification: ${handoff.verification_status}`
+        : "";
+      const created = handoff.created_at ? `; created: ${handoff.created_at.slice(0, 10)}` : "";
+      return `- **${handoff.title}** (handoff id: ${handoff.id}${verified}${created}) — ${handoff.handoff_markdown}`;
     }),
   ].join("\n");
 }

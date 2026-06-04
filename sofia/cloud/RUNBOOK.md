@@ -404,6 +404,42 @@ project milestones and archive vague/transient/duplicate entries. Do not approve
 secret-adjacent DSN/API-key/security candidates unless Justin explicitly approves
 that specific item.
 
+## Phase 5 task/session continuity
+
+Phase 5 stores resumable agent work separately from durable memories. Use it for
+active implementation state, verification evidence, and handoffs that a later
+session should continue from.
+
+Schema:
+
+- `agent_sessions` — agent/session identity, context, and status.
+- `task_runs` — objective, status, entity/project scope, outcome, verification.
+- `task_artifacts` — commits, PRs, migrations, deployments, logs, docs, test output.
+- `session_handoffs` — generated active handoff markdown with verification status.
+
+MCP tools exposed by `sofia-core`:
+
+- `start_task_run`
+- `attach_task_artifact`
+- `complete_task_run`
+- `get_latest_handoffs`
+- `list_active_task_runs`
+
+Operational pattern:
+
+1. Start a task run when beginning durable, resumable work.
+2. Attach artifacts as work becomes externally verifiable: commit SHA, PR URL,
+   migration name, deploy result, test output, or docs path.
+3. Complete/block/cancel the task run with outcome and verification summaries.
+4. Fetch latest handoffs by context/entity when resuming a project.
+
+Boot context compilation includes active `session_handoffs` alongside memories and
+todos. Scoped boot contexts include only matching entity/project handoffs; global
+boot context includes recent active handoffs for the requested context.
+
+Do not use task/session continuity as a dumping ground for transient chat logs.
+Archive/complete stale handoffs once the work is no longer relevant.
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

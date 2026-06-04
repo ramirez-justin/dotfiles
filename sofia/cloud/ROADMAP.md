@@ -342,7 +342,7 @@
 
 ## Phase 7 — Operational dashboards and daily review loop
 
-**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-smoked, and awaiting branch merge.
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-smoked, merged via PR #1, and pushed to `main`.
 
 **Goal:** make memory maintenance visible and routine.
 
@@ -429,9 +429,9 @@ Recommended operating cadence:
 
 ## Immediate next phase recommendation
 
-Start with **Phase 7 — Operational dashboards and daily review loop**.
+Phase 7 is complete. The next best track is a focused **Phase 8 — Emoji reaction learning** spike/implementation, based on Hermes Agent issue #18408.
 
-Reason: Phases 1–6 established the agent-native memory graph, lifecycle automation, retrieval policy telemetry, task/session handoffs, and contradiction QA. The next unlock is making maintenance routine and visible: deterministic daily digest, operator health reports, contradiction/review counts, stale high-priority memories, confusing retrievals, and boot snapshot links.
+Reason: SOFIA now has the durability layer reaction learning needs: raw capture/event separation, provenance, candidates, lifecycle, retrieval telemetry, task/session continuity, contradiction QA, and deterministic daily review surfaces. The next unlock is converting lightweight Telegram emoji reactions into privacy-bounded feedback signals without turning every reaction into a durable memory.
 
 ## Post-Phase 7 candidate — Emoji reaction learning
 

@@ -45,6 +45,33 @@ Deno.test("formatDailyDigest renders deterministic evening digest", () => {
         token_count: 1234,
       },
     ],
+    recentNegativeReactions: [
+      {
+        id: "reaction-1",
+        context: "personal",
+        emoji: "👎",
+        category: "disapproval",
+        message_preview: "too verbose",
+        created_at: "2026-06-02T21:00:00Z",
+      },
+    ],
+    reactionPatterns: [
+      {
+        context: "personal",
+        context_key: "deploy_summary",
+        emoji: "👍",
+        sentiment: "positive",
+        category: "approval",
+        learning_signal: "positive_preference",
+        count: 3,
+        distinct_days: 2,
+        latest_at: "2026-06-02T22:00:00Z",
+        candidate_worthy: true,
+        suggested_action: "create_review_candidate",
+        rationale:
+          "Repeated reaction pattern crossed conservative review threshold.",
+      },
+    ],
     candidates: [
       {
         id: "candidate-1",
@@ -84,6 +111,10 @@ Deno.test("formatDailyDigest renders deterministic evening digest", () => {
       "Recent boot snapshots:",
       "- work snapshot snapshot-1 at 2026-06-02T22:00:00Z — 1234 tokens",
       "",
+      "Reaction learning:",
+      "- Negative reaction 👎/disapproval on personal message reaction-1 — too verbose",
+      "- Pattern ready for review: 👍 deploy_summary — 3 reactions across 2 days (personal)",
+      "",
       "Top review candidates:",
       "1. SOFIA should add Telegram digests — decision/personal",
       "2. Untitled — lesson/shared",
@@ -104,6 +135,8 @@ Deno.test("formatDailyDigest handles empty review queue", () => {
     confusingRetrievals: [],
     dueTodos: [],
     recentBootSnapshots: [],
+    recentNegativeReactions: [],
+    reactionPatterns: [],
     candidates: [],
   };
 

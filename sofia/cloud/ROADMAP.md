@@ -433,15 +433,41 @@ Phase 7 is complete. The next best track is a focused **Phase 8 — Emoji reacti
 
 Reason: SOFIA now has the durability layer reaction learning needs: raw capture/event separation, provenance, candidates, lifecycle, retrieval telemetry, task/session continuity, contradiction QA, and deterministic daily review surfaces. The next unlock is converting lightweight Telegram emoji reactions into privacy-bounded feedback signals without turning every reaction into a durable memory.
 
-## Post-Phase 7 candidate — Emoji reaction learning
+## Phase 8 — Emoji reaction learning
 
-Hermes Agent issue #18408 proposes Telegram emoji reaction learning: reactions on bot messages become opt-in implicit feedback for user preferences, response style, skill behavior, and quick emoji-based confirmations. SOFIA Cloud is a natural persistence/reconciliation layer for this because it already has raw captures, candidate extraction, durable memories, task/session handoffs, retrieval telemetry, provenance, and QA review surfaces.
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-smoked, and awaiting branch merge.
 
-Potential SOFIA implementation:
+**Goal:** make Telegram emoji reactions useful as privacy-bounded feedback telemetry without treating single reactions as durable memory.
 
-- Add append-only `reaction_events` for Telegram `message_reaction` updates with user, message, emoji, timestamp, session/task context, and redacted message preview.
-- Add `reaction_analyses` for classifier output: sentiment, confidence, category, what worked/failed, and suggested preference update.
-- Add `learned_preferences` or reuse memory candidates for stable patterns only after thresholds are met; single reactions stay telemetry, not durable memory.
-- Feed positive/negative patterns into retrieval policy, boot context, skill prompts, and Phase 7 digest/QA reports.
-- Keep the feature opt-in and privacy-bounded: DM/user-owned reactions only by default; group reactions ignored unless explicitly enabled.
-- Treat negative/ambiguous reactions as review/QA signals, not automatic destructive edits to SOFIA memory.
+Hermes Agent issue #18408 proposes Telegram emoji reaction learning: reactions on bot messages become opt-in implicit feedback for user preferences, response style, skill behavior, and quick emoji-based confirmations. SOFIA Cloud is a natural persistence/reconciliation layer for this because it already has raw captures, candidate extraction, durable memories, task/session handoffs, retrieval telemetry, provenance, QA review surfaces, and deterministic daily reports.
+
+### Scope
+
+1. Append-only reaction telemetry.
+   - `reaction_events` stores platform/message IDs, emoji, deterministic classification, confidence, redacted preview, source/session/task metadata, and context.
+   - Raw reactions stay telemetry by default.
+
+2. Deterministic reaction interpretation.
+   - 👍/❤️/🔥 = positive preference signal.
+   - 👎/❌/😕 = negative/confusing preference signal.
+   - ✅ = confirmation.
+   - 👀 = attention requested.
+   - Unknown emoji = neutral telemetry.
+
+3. Conservative pattern learning.
+   - `reaction_learning_patterns` aggregates 30-day repeated signals.
+   - Patterns become candidate-worthy only after repeated signals across multiple days.
+   - No automatic durable-memory promotion from reactions alone.
+
+4. Daily review integration.
+   - `get_reaction_learning_report` exposes recent negative signals and repeated patterns.
+   - `get_daily_review_report`/Telegram digest surfaces recent negative reactions and candidate-worthy patterns.
+
+### Acceptance criteria
+
+- V1 remains deterministic and does not call an LLM.
+- Message previews are redacted before storage.
+- Single reactions stay telemetry.
+- Group/public reaction ingestion stays opt-in at the caller/gateway layer.
+- Negative/ambiguous reactions are review/QA signals, not destructive edits.
+- Live MCP smoke proves `record_reaction_event` and `get_reaction_learning_report` work.

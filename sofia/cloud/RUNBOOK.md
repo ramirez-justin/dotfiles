@@ -510,6 +510,40 @@ Operational pattern:
 3. Treat the report as advisory. Destructive fixes still go through review,
    archive, supersession, or lifecycle maintenance paths.
 
+## Phase 8 emoji reaction learning
+
+Phase 8 captures Telegram emoji reactions as feedback telemetry. It does not make
+single reactions durable memory.
+
+Schema/runtime surfaces:
+
+- `reaction_events` is append-only reaction telemetry with deterministic emoji
+  classification, confidence, redacted message preview, source, session/task
+  links, and metadata.
+- `reaction_learning_patterns` aggregates repeated 30-day reaction signals and
+  marks patterns candidate-worthy only after conservative thresholds.
+- `reaction_recent_negative_signals` surfaces recent negative/confusing reactions
+  for daily review.
+- The daily digest includes recent negative reactions and repeated patterns ready
+  for review.
+
+MCP tools exposed by `sofia-core`:
+
+- `record_reaction_event` — append a privacy-bounded reaction event.
+- `get_reaction_learning_report` — inspect recent negative signals and repeated
+  patterns. Advisory only; no memory mutation.
+
+Operational pattern:
+
+1. Gateway/caller should send DM/user-owned reactions by default. Ignore group or
+   public-chat reactions unless Justin explicitly enables that source.
+2. Store only redacted previews. Never pass raw secrets or sensitive message
+   bodies as reaction metadata.
+3. Treat a single 👍/👎/✅/👀 as telemetry. Repeated multi-day patterns can become
+   review candidates or operator follow-up, but should not auto-promote.
+4. Negative/ambiguous reactions are QA signals. They can trigger review or skill
+   tuning, but never destructive memory edits by themselves.
+
 ## Cross-agent SOFIA consistency
 
 Pi and Hermes must point at the same SOFIA Cloud project and use env/1Password secret references, not raw keys. Run:

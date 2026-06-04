@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  type ReactionPatternSummary,
+  summarizeReactionPatterns,
+} from "./reactions.ts";
 
 export type DailyDigestCountBySeverity = Record<string, number>;
 
@@ -39,6 +43,15 @@ export type DailyDigestBootSnapshot = {
   token_count?: number | null;
 };
 
+export type DailyDigestReactionSignal = {
+  id: string;
+  context: string;
+  emoji: string;
+  category: string;
+  message_preview?: string | null;
+  created_at: string;
+};
+
 export type DailyDigestSnapshot = {
   pendingReviewCount: number;
   pendingReviewBySeverity: DailyDigestCountBySeverity;
@@ -49,6 +62,8 @@ export type DailyDigestSnapshot = {
   confusingRetrievals: DailyDigestConfusingRetrieval[];
   dueTodos: DailyDigestTodo[];
   recentBootSnapshots: DailyDigestBootSnapshot[];
+  recentNegativeReactions: DailyDigestReactionSignal[];
+  reactionPatterns: ReactionPatternSummary[];
   candidates: DailyDigestCandidate[];
 };
 
@@ -76,6 +91,8 @@ function hasQaSignals(snapshot: DailyDigestSnapshot): boolean {
   return snapshot.pendingReviewCount > 0 ||
     snapshot.staleHighPriorityMemories.length > 0 ||
     snapshot.confusingRetrievals.length > 0 ||
+    snapshot.recentNegativeReactions.length > 0 ||
+    snapshot.reactionPatterns.some((pattern) => pattern.candidate_worthy) ||
     Object.values(snapshot.pendingContradictionsBySeverity).some((count) =>
       count > 0
     );
@@ -170,6 +187,29 @@ export function formatDailyDigest(
         `- ${boot.context} snapshot ${
           shortId(boot.id)
         } at ${boot.generated_at} — ${tokens}`,
+      );
+    }
+    lines.push("");
+  }
+
+  const candidateReactionPatterns = snapshot.reactionPatterns.filter((
+    pattern,
+  ) => pattern.candidate_worthy);
+  if (
+    snapshot.recentNegativeReactions.length > 0 ||
+    candidateReactionPatterns.length > 0
+  ) {
+    lines.push("Reaction learning:");
+    for (const reaction of snapshot.recentNegativeReactions) {
+      lines.push(
+        `- Negative reaction ${reaction.emoji}/${reaction.category} on ${reaction.context} message ${
+          shortId(reaction.id)
+        } — ${safeInline(reaction.message_preview ?? "") || "no preview"}`,
+      );
+    }
+    for (const pattern of candidateReactionPatterns) {
+      lines.push(
+        `- Pattern ready for review: ${pattern.emoji} ${pattern.context_key} — ${pattern.count} reactions across ${pattern.distinct_days} days (${pattern.context})`,
       );
     }
     lines.push("");
@@ -332,6 +372,31 @@ export async function fetchDailyDigestSnapshot(
     throw new Error(`load recent boot snapshots failed: ${bootError.message}`);
   }
 
+  const { data: negativeReactionRows, error: negativeReactionError } =
+    await supabase
+      .from("reaction_recent_negative_signals")
+      .select("id, context, emoji, category, message_preview, created_at")
+      .limit(5);
+  if (negativeReactionError) {
+    throw new Error(
+      `load recent negative reactions failed: ${negativeReactionError.message}`,
+    );
+  }
+
+  const { data: reactionPatternRows, error: reactionPatternError } =
+    await supabase
+      .from("reaction_learning_patterns")
+      .select(
+        "context, context_key, emoji, sentiment, category, learning_signal, count, distinct_days, latest_at",
+      )
+      .order("count", { ascending: false })
+      .limit(10);
+  if (reactionPatternError) {
+    throw new Error(
+      `load reaction learning patterns failed: ${reactionPatternError.message}`,
+    );
+  }
+
   const pendingSeverityRows = candidateRows.map((row) => {
     const risk = String(row.risk_level ?? "medium");
     const worthiness = typeof row.worthiness_score === "number"
@@ -391,6 +456,37 @@ export async function fetchDailyDigestSnapshot(
         generated_at: row.generated_at as string,
         token_count: row.token_count as number | null,
       })),
+    recentNegativeReactions:
+      ((negativeReactionRows ?? []) as Array<Record<string, unknown>>).map(
+        (row) => ({
+          id: row.id as string,
+          context: row.context as string,
+          emoji: row.emoji as string,
+          category: row.category as string,
+          message_preview: row.message_preview as string | null,
+          created_at: row.created_at as string,
+        }),
+      ),
+    reactionPatterns: summarizeReactionPatterns(
+      ((reactionPatternRows ?? []) as Array<Record<string, unknown>>).map(
+        (row) => ({
+          context: row.context as string,
+          context_key: row.context_key as string,
+          emoji: row.emoji as string,
+          sentiment: row.sentiment as "positive" | "negative" | "neutral",
+          category: row.category as string,
+          learning_signal: row.learning_signal as
+            | "positive_preference"
+            | "negative_preference"
+            | "confirmation"
+            | "attention_requested"
+            | "neutral_telemetry",
+          count: Number(row.count ?? 0),
+          distinct_days: Number(row.distinct_days ?? 0),
+          latest_at: row.latest_at as string,
+        }),
+      ),
+    ),
     candidates: candidateRows.slice(0, 3).map((row) => ({
       id: row.id as string,
       title: titleFromCandidate(row),

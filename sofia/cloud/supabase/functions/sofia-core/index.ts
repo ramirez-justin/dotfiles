@@ -56,6 +56,12 @@ import {
   judgeReconciliation,
 } from "./reconcile.ts";
 import { redactSecrets } from "./redact.ts";
+import {
+  buildReactionLearningReport,
+  type ReactionLearningReportInput,
+  recordReactionEvent,
+  type RecordReactionEventInput,
+} from "./reactions.ts";
 import { buildRetrievalPolicyReport } from "./retrieval_policy.ts";
 import {
   attachTaskArtifact,
@@ -698,6 +704,65 @@ server.registerTool(
     } catch (error) {
       return textResponse(
         `get_memory_qa_report failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
+);
+
+server.registerTool(
+  "record_reaction_event",
+  {
+    title: "Record SOFIA Reaction Event",
+    description:
+      "Record an append-only Telegram emoji reaction as privacy-bounded feedback telemetry. Single reactions stay telemetry; repeated patterns may become review candidates later.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared"]).default("personal"),
+      platform: z.string().default("telegram"),
+      actor_id: z.string().optional(),
+      actor_handle: z.string().optional(),
+      chat_id: z.string().optional(),
+      message_id: z.string().min(1),
+      emoji: z.string().min(1),
+      message_preview: z.string().optional(),
+      source: z.string().default("mcp"),
+      source_ref: z.string().optional(),
+      session_id: z.string().uuid().optional(),
+      task_run_id: z.string().uuid().optional(),
+      metadata: z.record(z.unknown()).optional(),
+    },
+  },
+  async (input: RecordReactionEventInput) => {
+    try {
+      const row = await recordReactionEvent(supabase, input);
+      return textResponse(formatJson(row));
+    } catch (error) {
+      return textResponse(
+        `record_reaction_event failed: ${(error as Error).message}`,
+        true,
+      );
+    }
+  },
+);
+
+server.registerTool(
+  "get_reaction_learning_report",
+  {
+    title: "Get SOFIA Reaction Learning Report",
+    description:
+      "Return recent negative reaction signals and repeated reaction patterns. Advisory only; no automatic memory mutation.",
+    inputSchema: {
+      context: z.enum(["personal", "work", "shared", "both"]).default("both"),
+      limit: z.number().int().min(1).max(50).default(10),
+    },
+  },
+  async (input: ReactionLearningReportInput) => {
+    try {
+      const report = await buildReactionLearningReport(supabase, input);
+      return textResponse(formatJson(report));
+    } catch (error) {
+      return textResponse(
+        `get_reaction_learning_report failed: ${(error as Error).message}`,
         true,
       );
     }

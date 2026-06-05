@@ -2,9 +2,9 @@
 
 **Goal:** evolve SOFIA Cloud from a graph-capable memory system into a self-maintaining, evidence-backed agent memory/control plane.
 
-**Current baseline:** Phase 6 is deployed. SOFIA now has raw events, candidates, durable memories, first-class provenance, lifecycle/status fields, typed relations, retrieval policy fields, normalized entities, todos, retrieval telemetry, boot-context snapshots, stale/expired memory maintenance, safe supersession edges, task/session handoffs, contradiction QA, and Pi/Hermes cloud consistency checks.
+**Current baseline:** Phase 8 is deployed and merged. SOFIA now has raw events, candidates, durable memories, first-class provenance, lifecycle/status fields, typed relations, retrieval policy fields, normalized entities, todos, retrieval telemetry, boot-context snapshots, stale/expired memory maintenance, safe supersession edges, task/session handoffs, contradiction QA, deterministic operational review reports, Telegram daily digest support, and emoji reaction telemetry/pattern learning.
 
-**Tracking rule:** this roadmap is the source of truth for project direction. Concrete implementation tasks should live as SOFIA `todos` once the todo API grows task-management tools; until then, track active engineering work in this file and commit updates as work lands.
+**Tracking rule:** this roadmap is the durable project-direction artifact. Completed per-phase implementation plans are intentionally removed once their acceptance criteria land; operational details belong in `RUNBOOK.md`, and active engineering work should live in SOFIA todos/task runs when available.
 
 ---
 
@@ -406,36 +406,40 @@ Every phase must meet all of these before being called complete:
 Best near-term tracking:
 
 1. Keep this file as the durable roadmap and decision artifact.
-2. For each phase, create a short implementation plan before coding.
-3. Commit roadmap/plan updates with the code they guide.
+2. Use temporary implementation plans only while a phase is active; remove them after merge once `ROADMAP.md` and `RUNBOOK.md` carry the canonical outcome.
+3. Commit roadmap/runbook updates with the code they document.
 4. Capture major completed phases into SOFIA Cloud memory.
 5. Use SOFIA review candidates for durable lessons and project milestones.
 
 Best long-term tracking:
 
-1. Build Phase 5 session/task continuity.
+1. Use Phase 5 session/task continuity for resumable work instead of keeping active work in static docs.
 2. Store concrete work items in SOFIA `todos`.
 3. Link todos to entity/project, memory, task run, commit, migration, deployment, and boot snapshot IDs.
 4. Let boot context include only active relevant task handoffs.
-5. Use retrieval telemetry and feedback to decide which roadmap facts remain boot-worthy.
+5. Use retrieval telemetry, daily review reports, and reaction feedback to decide which roadmap facts remain boot-worthy.
 
 Recommended operating cadence:
 
-- **Before a phase:** write/approve a phase implementation plan.
+- **Before a phase:** write/approve a temporary implementation plan only when the scope is complex enough to need one.
 - **During a phase:** update one todo/task at a time, TDD-first.
-- **After a phase:** run full verification, deploy if needed, capture a concise SOFIA project-context event, and update this roadmap status.
+- **After a phase:** run full verification, deploy if needed, capture a concise SOFIA project-context event, update this roadmap/runbook, and delete completed temporary plans/specs.
 
 ---
 
-## Immediate next phase recommendation
+## Immediate next recommendation
 
-Phase 7 is complete. The next best track is a focused **Phase 8 — Emoji reaction learning** spike/implementation, based on Hermes Agent issue #18408.
+Phase 8 is complete. The next best move is to **dogfood Phases 7 and 8 for a short cycle** before adding another memory subsystem. Use the daily review report, Telegram digest, retrieval QA surfaces, and reaction-learning report to find real friction.
 
-Reason: SOFIA now has the durability layer reaction learning needs: raw capture/event separation, provenance, candidates, lifecycle, retrieval telemetry, task/session continuity, contradiction QA, and deterministic daily review surfaces. The next unlock is converting lightweight Telegram emoji reactions into privacy-bounded feedback signals without turning every reaction into a durable memory.
+Recommended follow-up candidates after dogfooding:
+
+1. Gateway integration for automatic Telegram `message_reaction` ingestion, keeping group/public chats opt-in.
+2. Phase 9 — preference-review workflow that turns repeated reaction patterns into explicit review candidates without auto-promoting.
+3. Lightweight operator dashboard UI over the deterministic SQL/MCP reports.
 
 ## Phase 8 — Emoji reaction learning
 
-**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-smoked, and awaiting branch merge.
+**Status:** implemented, tested, deployed to Supabase project `avgjtkgppeeihntsyjpy`, live-smoked, merged via PR #2, and pushed to `main`.
 
 **Goal:** make Telegram emoji reactions useful as privacy-bounded feedback telemetry without treating single reactions as durable memory.
 

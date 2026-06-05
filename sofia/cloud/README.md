@@ -135,10 +135,12 @@ state, formats a short message, and calls Telegram Bot API `sendMessage`.
 
 Digest contents:
 
-- pending memory review count
-- top 3 pending candidate titles
-- recent capture count for the last 24 hours
-- redaction count for the last 24 hours
+- pending memory review count by priority bucket
+- pending contradiction severity counts
+- recent capture/redaction counts for the last 24 hours
+- stale high-priority memories and confusing retrievals
+- due todos and recent boot-context snapshots
+- recent negative emoji reactions and repeated reaction patterns ready for review
 - scheduled function health line
 
 ### Telegram bot setup
@@ -227,6 +229,10 @@ flat notes store:
   what deserves boot-context inclusion versus ordinary search retrieval.
 - `boot_context_snapshots` stores immutable compiled boot-context snapshots with
   included memory/todo IDs and token counts for debuggability.
+- `reaction_events` stores append-only Telegram emoji reaction telemetry with
+  deterministic classification and redacted message previews.
+- `reaction_learning_patterns` reports repeated multi-day reaction signals for
+  review; single reactions remain telemetry, not durable memory.
 
 Retrieval policy lives on `memories` through `retrieval_priority`,
 `boot_context_eligible`, `activation_triggers`, and `expires_at`. The boot

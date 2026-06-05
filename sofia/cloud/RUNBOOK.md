@@ -484,11 +484,11 @@ Schema/runtime surfaces:
   active high-priority memories without provenance.
 - `memory_ops_retrieval_usefulness_summary` reports used/helpful/confusing
   retrieval counts by context.
-- `memory_ops_pending_review_summary` reports pending candidates by review
-  priority bucket.
+- `memory_ops_pending_review_summary` reports pending candidates by derived
+  review bucket using risk level and worthiness score.
 - `fetchDailyDigestSnapshot` gathers pending reviews, contradiction severity,
   recent captures/redactions, stale high-priority memories, confusing retrievals,
-  due todos, and recent boot snapshots without calling an LLM.
+  due todos, recent boot snapshots, and reaction-learning signals without calling an LLM.
 - `formatDailyDigest` renders deterministic text suitable for Telegram or manual
   operator review.
 
@@ -503,7 +503,7 @@ Operational pattern:
 
 1. Daily: run `get_daily_review_report` or the scheduled Telegram digest. Handle
    high-priority candidates, pending contradictions, stale high-priority memories,
-   confusing retrievals, and due todos first.
+   confusing retrievals, due todos, and recent negative reactions first.
 2. Weekly: inspect `memory_ops_health_summary`,
    `memory_ops_retrieval_usefulness_summary`, and `memory_ops_pending_review_summary`
    for pruning, provenance repair, and boot-context tuning.

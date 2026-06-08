@@ -5,6 +5,16 @@ export ZSH="$HOME/.oh-my-zsh"
 # Path to lvim installation
 export PATH="$HOME/.local/bin":$PATH
 
+# Homebrew zsh upgrades can leave the compiled/default fpath pointing at an
+# old Cellar path (for example .../Cellar/zsh/5.9/...) while helper functions
+# now live under the stable opt/share path. Load the stable function directory
+# before prompt/plugins so add-zsh-hook, is-at-least, compinit, etc. resolve.
+if [[ -d /opt/homebrew/share/zsh/functions ]]; then
+    fpath=(/opt/homebrew/share/zsh/functions $fpath)
+fi
+
+autoload -Uz add-zsh-hook is-at-least compinit bashcompinit colors zrecompile
+
 export LDFLAGS="-L/opt/homebrew/opt/ruby/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/ruby/include"
 export PKG_CONFIG_PATH="/opt/homebrew/opt/ruby/lib/pkgconfig"

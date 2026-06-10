@@ -48,9 +48,37 @@
         "!skills/UPSTREAM-CREDITS.md"
       ]
     },
-    "npm:pi-lens"
+    "npm:pi-lens",
+    "npm:pi-subagents"
   ],
   "env": {
     "POWERLINE_NERD_FONTS": 1
+  },
+  "subagents": {
+    "agentOverrides": {
+      "researcher": {
+        "thinking": "high",
+        "inheritProjectContext": true,
+        "inheritSkills": false,
+        "systemPrompt": "Read-only research. Cite evidence. Do not edit."
+      },
+      "reviewer": {
+        "thinking": "high",
+        "inheritProjectContext": true,
+        "inheritSkills": false,
+        "systemPrompt": "Review correctness and safety. Do not edit."
+      },
+      "planner": {
+        "thinking": "high",
+        "inheritProjectContext": true,
+        "inheritSkills": true,
+        "systemPrompt": "Plan approved requirements. Do not implement."
+      }
+    },
+    "parallel": {
+      "maxTasks": 8,
+      "concurrency": 4
+    },
+    "defaultSessionDir": "~/.pi/agent/sessions/subagent/"
   }
 }

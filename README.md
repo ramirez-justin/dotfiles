@@ -101,6 +101,14 @@ mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake
 
 # pi workflow shortcuts, backed by the Superpowers skills package:
 # /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
+
+# Pi Hermes-like personal workflows:
+# - Subagents: npm:pi-subagents with researcher, reviewer, planner,
+#   implementer, and verifier roles.
+# - Memory: ~/.pi/agent/memory/*.md, managed through the memory-management
+#   skill and explicit approval.
+# - Skill creation: use the skill-creation skill to draft local skills under
+#   pi/.pi/agent/skills/.
 mise run brew-dump       # regenerate Brewfile after installing new packages
 mise run nvim-update     # pull latest nvim config and commit the submodule pointer
 mise run submodule-update # update all submodules to latest

@@ -14,7 +14,18 @@ depends = [
 
 [tasks.brew-install]
 description = "Install all packages from Brewfile"
-run = "brew bundle --file={{config_root}}/Brewfile"
+run = """
+set -e
+
+# Homebrew's docker and docker-completion formulae both install the same
+# bash completion file. The Brewfile manages docker, so ensure its completion
+# can be linked before running brew bundle.
+if brew list --formula docker-completion >/dev/null 2>&1; then
+    brew unlink docker-completion >/dev/null 2>&1 || true
+fi
+
+brew bundle --file={{config_root}}/Brewfile
+"""
 
 [tasks.tools-install]
 description = "Install mise-managed tools"

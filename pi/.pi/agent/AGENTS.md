@@ -11,8 +11,9 @@ Personal preferences that apply across all projects.
 
 ## Project Instructions
 
-- At the start of work in a repository, check for and read applicable `CLAUDE.md`
-  and `CLAUDE.local.md` files in the repo root and relevant subdirectories before
+- At the start of work in a repository, check for and read applicable
+  `CLAUDE.md` and `CLAUDE.local.md` files in the repo root and relevant
+  subdirectories before
   making changes. Treat `CLAUDE.local.md` as local/private context and do not
   quote secrets from it. Any AGENTS.md and AGENT.local.md should be treated as
   synonymous with CLAUDE.md and CLAUDE.local.md.
@@ -24,20 +25,22 @@ Personal preferences that apply across all projects.
   files, or changing production/cloud resources.
 - Never merge a pull request, merge into `main`, or run merge commands without
   explicit user approval for that specific merge.
-- Do not reveal secrets in responses or command output. Prefer environment variables
-  and 1Password (`op`) references over copying secret values into files.
+- Do not reveal secrets in responses or command output. Prefer environment
+  variables and 1Password (`op`) references over copying secret values into
+  files.
 - Do not edit files outside the current repository/worktree unless the user
   explicitly asks.
 - Before installing packages, changing global config, or using networked CLIs
   against work systems, briefly state what will change.
-- Prefer dry runs/plans first for Terraform/Terragrunt/dbt migrations or anything
-  that mutates infrastructure/data.
+- Prefer dry runs/plans first for Terraform/Terragrunt/dbt migrations or
+  anything that mutates infrastructure/data.
 - When writing markdown files, keep lines under 80 characters.
 
 ## Workflow Skills
 
 Use pi skills when they clearly match the task, but keep them on-demand rather
-than mandatory for every message. Prefer explicit workflow prompts for heavier processes:
+than mandatory for every message. Prefer explicit workflow prompts for heavier
+processes:
 
 - `/brainstorm` for collaborative design before implementation
 - `/write-plan` for producing an implementation plan
@@ -53,7 +56,8 @@ that seems like a good candidate for a skill then suggest that we create one.
 
 ## Tool Preferences
 
-Prioritize LSP tools as the first choice for code intelligence tasks when available:
+Prioritize LSP tools as the first choice for code intelligence tasks when
+available:
 
 - `goToDefinition` - Finding where symbols are defined
 - `findReferences` - Finding all usages of a symbol
@@ -72,10 +76,12 @@ commands, add an idempotent script/task/check in dotfiles when practical.
 
 ## Documentation Awareness
 
-- When working with third-party libraries, frameworks, SDKs, or version-sensitive
-  APIs, prefer Context7 documentation lookup before relying on model memory.
+- When working with third-party libraries, frameworks, SDKs, or
+  version-sensitive APIs, prefer Context7 documentation lookup before relying
+  on model memory.
 - Use Context7 selectively when documentation freshness matters; do not call it
-  for simple local-code questions where repository files already answer the question.
+  for simple local-code questions where repository files already answer the
+  question.
 - If Context7 cannot resolve a library, ask for a more specific package/library
   name or fall back to local docs and repository files.
 
@@ -95,8 +101,8 @@ commands, add an idempotent script/task/check in dotfiles when practical.
 ## MCP-backed Workspace Tools
 
 This Pi setup uses `pi-mcp-adapter` for MCP. Do not assume Pi lacks MCP support;
-inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the adapter's
-`mcp` proxy/direct tools when relevant servers are configured.
+inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the
+adapter's `mcp` proxy/direct tools when relevant servers are configured.
 
 - Prefer official remote MCP servers over ad hoc scripts for supported workspace
   tools such as Linear and Notion.
@@ -108,16 +114,17 @@ inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the adapt
 
 We are migrating from Jira to Linear. For issue tracking going forward:
 
-- Prefer Linear over Jira for searching, creating, updating, and commenting on issues.
-- Use the Linear skill/API when the user asks about tickets, issues, assigned work,
-  or project tracking.
+- Prefer Linear over Jira for searching, creating, updating, and commenting on
+  issues.
+- Use the Linear skill/API when the user asks about tickets, issues, assigned
+  work, or project tracking.
 - Do not create or update Jira tickets unless the user explicitly asks for Jira.
 - Prefer Linear MCP via `pi-mcp-adapter` for Linear interactions when available.
 
 ## Notion Preferences
 
-- Prefer Notion MCP via `pi-mcp-adapter` for Notion search, read, create, update,
-  append, and comment operations when available.
+- Prefer Notion MCP via `pi-mcp-adapter` for Notion search, read, create,
+  update, append, and comment operations when available.
 - Verify page, database, data source, and view identifiers with read-only MCP
   calls before mutating Notion.
 
@@ -144,3 +151,14 @@ attribution unless the user explicitly asks otherwise.
 When asked to review a pull request, verify the diff and relevant files before
 giving conclusions. Prefer concrete findings with file/line references over
 generic review commentary.
+
+## Durable Memory
+
+Reviewable memory files live in `~/.pi/agent/memory/`, backed by this
+repository's `pi/.pi/agent/memory/` directory.
+
+- Read `memory/USER.md` when durable user preferences may affect the task.
+- Read `memory/WORKFLOWS.md` when choosing a repeatable workflow.
+- Read `memory/PROJECTS.md` when stable project facts may affect the task.
+- Never write memory without proposing a diff and receiving approval.
+- Never store secrets, credentials, tokens, or transient session details.

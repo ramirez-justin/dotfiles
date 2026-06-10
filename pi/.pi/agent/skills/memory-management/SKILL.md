@@ -12,27 +12,34 @@ Use this skill to manage durable memory in Justin's dotfiles-backed Pi setup.
 
 ## Memory Files
 
-- `pi/.pi/agent/memory/USER.md` for durable user preferences.
-- `pi/.pi/agent/memory/WORKFLOWS.md` for repeatable workflow conventions.
-- `pi/.pi/agent/memory/PROJECTS.md` for stable project facts and caveats.
+Keep each memory file intentionally small and scoped:
+
+- `pi/.pi/agent/memory/USER.md` contains durable user preferences only.
+- `pi/.pi/agent/memory/WORKFLOWS.md` contains reusable workflows only.
+- `pi/.pi/agent/memory/PROJECTS.md` contains stable project facts only.
 
 ## Process
 
 1. Classify the candidate memory as user preference, workflow, project fact, or
    not worth storing.
 2. Reject secrets, credentials, private keys, tokens, transient session details,
-   and unverified assumptions.
+   already represented facts, overly session-specific notes, and unverified
+   assumptions.
 3. Read the target memory file before editing.
 4. Audit the file for duplicate, stale, overly specific, or low-value entries.
-5. Prefer updating, merging, or pruning existing entries over appending.
-6. Apply the smallest useful edit directly; memory is Pi-owned and does not
+5. Prefer updating, merging, deduplicating, or pruning existing entries over
+   appending.
+6. If the file is getting long, make a cleanup edit before adding more memory.
+7. Apply the smallest useful edit directly; memory is Pi-owned and does not
    require per-change user approval.
-7. Show the resulting file path and summarize what changed.
+8. Show the diff or concise change summary, the reason for the change, and the
+   resulting file path.
 
 ## Size Control
 
-Keep memory compact enough to audit quickly. If a memory file starts to feel
-long, clean it before adding more:
+Keep memory compact enough to audit quickly. Never silently grow memory. If a
+memory file starts to feel long, make or propose a cleanup diff before adding
+more:
 
 - Merge overlapping entries.
 - Remove stale or low-value details.
@@ -57,5 +64,6 @@ Do not store:
 - Temporary task state.
 - Raw command output.
 - Guesses about the user or workplace.
-- Duplicates of existing memory.
+- Duplicates or facts already represented by existing memory.
 - Details so narrow they are unlikely to change future behavior.
+- Unverified assumptions.

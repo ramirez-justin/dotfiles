@@ -160,5 +160,8 @@ repository's `pi/.pi/agent/memory/` directory.
 - Read `memory/USER.md` when durable user preferences may affect the task.
 - Read `memory/WORKFLOWS.md` when choosing a repeatable workflow.
 - Read `memory/PROJECTS.md` when stable project facts may affect the task.
-- Never write memory without proposing a diff and receiving approval.
+- Memory is Pi-owned; update it directly when a durable fact should persist.
+- Audit old memory before adding new entries. Prefer updating, merging, or
+  pruning over appending.
+- Keep memory compact, stable, and useful for future behavior.
 - Never store secrets, credentials, tokens, or transient session details.

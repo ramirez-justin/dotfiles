@@ -1,9 +1,9 @@
 ---
 name: memory-management
 description: >-
-  Propose, review, and apply durable Pi memory updates. Use when the user asks
-  to remember something, update memory, forget stale facts, or preserve a
-  reusable preference or workflow across sessions.
+  Audit, prune, and apply durable Pi memory updates. Use when the user asks to
+  remember something, update memory, forget stale facts, or preserve a reusable
+  preference or workflow across sessions.
 ---
 
 # Memory Management
@@ -22,11 +22,22 @@ Use this skill to manage durable memory in Justin's dotfiles-backed Pi setup.
    not worth storing.
 2. Reject secrets, credentials, private keys, tokens, transient session details,
    and unverified assumptions.
-3. Read the target memory file before proposing a change.
-4. Present the exact diff you plan to apply.
-5. Wait for explicit user approval before editing.
-6. Apply the smallest useful edit.
-7. Show the resulting file path and summarize the stored memory.
+3. Read the target memory file before editing.
+4. Audit the file for duplicate, stale, overly specific, or low-value entries.
+5. Prefer updating, merging, or pruning existing entries over appending.
+6. Apply the smallest useful edit directly; memory is Pi-owned and does not
+   require per-change user approval.
+7. Show the resulting file path and summarize what changed.
+
+## Size Control
+
+Keep memory compact enough to audit quickly. If a memory file starts to feel
+long, clean it before adding more:
+
+- Merge overlapping entries.
+- Remove stale or low-value details.
+- Keep examples only when they change future behavior.
+- Prefer one durable rule over several narrow anecdotes.
 
 ## Good Memory
 
@@ -46,4 +57,5 @@ Do not store:
 - Temporary task state.
 - Raw command output.
 - Guesses about the user or workplace.
-- Anything the user has not approved.
+- Duplicates of existing memory.
+- Details so narrow they are unlikely to change future behavior.

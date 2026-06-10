@@ -6,6 +6,8 @@ Durable workflow conventions for Justin's Pi sessions.
 
 - Do not store secrets or transient command output.
 - Keep entries short, actionable, and easy to review in git diffs.
+- Audit existing entries before appending new workflow memory.
+- Prefer merging, pruning, or replacing stale entries over growing the file.
 - Prefer adding automation when a manual command must be remembered.
 
 ## Conventions

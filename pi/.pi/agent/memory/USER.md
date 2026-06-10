@@ -7,7 +7,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Do not store secrets, tokens, private keys, passphrases, or raw credentials.
 - Do not store transient session details or one-off mistakes.
 - Prefer stable preferences that should affect future sessions.
-- Propose changes as diffs and wait for approval before writing.
+- Memory is Pi-owned and does not require approval before updating.
+- Audit existing memory before adding entries; prune stale or duplicate facts.
 
 ## Preferences
 
@@ -15,3 +16,5 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Prefer minimum code that solves the problem.
 - Prefer explicit success criteria and verified outcomes.
 - Prefer Linear over Jira for new issue-tracking work unless Jira is requested.
+- Do not present PR URLs unless the PR has actually been created and verified.
+  If only a GitHub “create PR” URL exists, label it clearly or omit it.

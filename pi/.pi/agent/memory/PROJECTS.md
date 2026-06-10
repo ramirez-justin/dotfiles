@@ -6,7 +6,9 @@ Stable project facts and caveats that may help future Pi sessions.
 
 - Do not store secrets, internal credentials, or copied private config.
 - Store only facts that are likely to remain useful across sessions.
+- Audit existing project facts before appending new ones.
 - Remove or update stale facts when projects change.
+- Prefer compact summaries over long project histories.
 
 ## Dotfiles
 

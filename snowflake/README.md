@@ -16,7 +16,17 @@ Recommended local connections:
 
 ## Setup
 
-Install the CLI from the Brewfile, then copy the example and adjust local paths:
+Install/update Snowflake AI Kit and Cortex Code with the dotfiles task:
+
+```bash
+mise run snowflake-ai-kit-install
+```
+
+That task clones or updates `Snowflake-Labs/snowflake-ai-kit`, runs its
+installer, verifies `cortex`, and tests the default Snowflake connection.
+
+For first-time connection setup, install the CLI from the Brewfile, then copy
+the example and adjust local paths:
 
 ```bash
 mkdir -p ~/.snowflake

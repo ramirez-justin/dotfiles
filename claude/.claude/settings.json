@@ -14,6 +14,9 @@
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
   },
+  "permissions": {
+    "defaultMode": "auto"
+  },
   "model": "opus",
   "hooks": {
     "Stop": [
@@ -59,7 +62,8 @@
     "fivetran@productivity-plugins": true,
     "playwright@claude-plugins-official": true,
     "terraform-lsp@terraform-lsp-claude-code": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "snowflake-cortex-code@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "context-mode": {
@@ -72,8 +76,5 @@
   "effortLevel": "medium",
   "theme": "dark-daltonized",
   "autoCompactEnabled": false,
-  "skipAutoPermissionPrompt": true,
-  "permissions": {
-    "defaultMode": "auto"
-  }
+  "skipAutoPermissionPrompt": true
 }

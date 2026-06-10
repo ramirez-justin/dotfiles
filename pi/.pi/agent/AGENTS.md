@@ -67,6 +67,9 @@ or for file types without LSP support.
 
 CLI tools should be prioritized whenever possible, but not required.
 
+Prefer automation over manual setup steps. When a process requires remembering
+commands, add an idempotent script/task/check in dotfiles when practical.
+
 ## Documentation Awareness
 
 - When working with third-party libraries, frameworks, SDKs, or version-sensitive

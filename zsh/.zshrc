@@ -248,3 +248,6 @@ alias dots="cd ~/Repositories/dotfiles"
 
 # Machine-specific config and secrets (not tracked in dotfiles)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# Cortex CLI completion (disable via /settings in cortex)
+[[ -s ~/.zsh/completions/cortex.zsh ]] && source ~/.zsh/completions/cortex.zsh

@@ -103,6 +103,60 @@ run = "git -C {{config_root}} pull --rebase && mise run link && mise run pi-upda
 description = "Update Pi packages/extensions"
 run = "mise exec -- pi update --extensions"
 
+[tasks.snowflake-ai-kit-install]
+description = "Install or update Snowflake AI Kit and verify the default Snowflake connection"
+run = """
+set -euo pipefail
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+repo="https://github.com/Snowflake-Labs/snowflake-ai-kit.git"
+dest="${SNOWFLAKE_AI_KIT_ROOT:-$HOME/.local/share/snowflake-ai-kit}"
+
+need() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        echo "Missing required command: $1" >&2
+        echo "Install it, then rerun: mise run snowflake-ai-kit-install" >&2
+        exit 1
+    fi
+}
+
+need git
+need bash
+mkdir -p "$(dirname "$dest")"
+
+if [ ! -d "$dest/.git" ]; then
+    if [ -e "$dest" ]; then
+        echo "Refusing to overwrite non-git path: $dest" >&2
+        echo "Move it aside or set SNOWFLAKE_AI_KIT_ROOT to a git checkout." >&2
+        exit 1
+    fi
+    echo "Cloning Snowflake AI Kit into $dest..."
+    git clone "$repo" "$dest"
+else
+    echo "Updating Snowflake AI Kit in $dest..."
+    git -C "$dest" pull --ff-only
+fi
+
+echo "Running Snowflake AI Kit installer..."
+bash "$dest/install.sh"
+hash -r
+
+echo "Verifying cortex CLI..."
+command -v cortex
+cortex --version
+
+echo "Verifying Snowflake CLI default connection..."
+if ! command -v snow >/dev/null 2>&1; then
+    echo "Snowflake CLI 'snow' is not on PATH after install." >&2
+    echo "Open a new shell or add Homebrew to PATH, then rerun this task." >&2
+    exit 1
+fi
+snow connection test -c default
+
+echo "Snowflake AI Kit is ready."
+"""
+
 [tasks.brew-dump]
 description = "Regenerate Brewfile (review and curate after running)"
 run = "brew bundle dump --force --file={{config_root}}/Brewfile"

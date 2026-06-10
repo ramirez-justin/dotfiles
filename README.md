@@ -97,6 +97,8 @@ mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.j
 # mise run inject-secrets
 # Linear is injected from 1Password item: Employee/linear_api_key/API key.
 
+mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
+
 # pi workflow shortcuts, backed by the Superpowers skills package:
 # /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
 mise run brew-dump       # regenerate Brewfile after installing new packages

@@ -30,6 +30,15 @@ type AuditResult = {
 	removedDuplicates: number;
 };
 
+type MemoryUpdateNoticeInput = ApplyMemoryUpdateResult & {
+	target: MemoryTarget;
+};
+
+type MemoryUpdateNotice = {
+	uiText: string;
+	modelMessage?: string;
+};
+
 const MAX_MEMORY_CHARS: Record<MemoryTarget, number> = {
 	"USER.md": 4_000,
 	"WORKFLOWS.md": 4_000,
@@ -74,6 +83,19 @@ function truncate(text: string, max = 180): string {
 	const cleaned = text.replace(/\s+/g, " ").trim();
 	if (cleaned.length <= max) return cleaned;
 	return `${cleaned.slice(0, max - 1).trim()}…`;
+}
+
+function isTaskContext(text: string): boolean {
+	const lower = text.toLowerCase();
+	return (
+		/\b(current branch|this branch|branch has|current pr|pull request)\b/.test(
+			lower,
+		) ||
+		/\b(job|script|file|service|svc|airflow|redis|token|proxy)\b/.test(
+			lower,
+		) ||
+		/\b(needs? to|get a token|connect to|being used to run)\b/.test(lower)
+	);
 }
 
 export function classifyMemoryTarget(text: string): MemoryTarget {
@@ -139,6 +161,9 @@ export function detectMemoryCandidate(
 	text: string,
 ): MemoryCandidate | undefined {
 	if (!text || text.length > 4_000) return undefined;
+	if (isTaskContext(text) && !/\b(prefer|always|remember|do not|don'?t)\b/i.test(text)) {
+		return undefined;
+	}
 	const lower = text.toLowerCase();
 	const hasTrigger =
 		/\b(remember|forget|update memory)\b/.test(lower) ||
@@ -197,6 +222,9 @@ export function shouldRejectMemory(
 	}
 	if (/\b(i guess|maybe|might|probably|not sure|unverified)\b/i.test(content)) {
 		return "unverified assumption";
+	}
+	if (isTaskContext(content) && !/\b(prefer|always|remember|do not|don'?t)\b/i.test(content)) {
+		return "transient task context";
 	}
 
 	const normalizedContent = normalize(stripBullet(content));
@@ -345,6 +373,16 @@ function auditAllMemoryFiles(): string {
 	return summaries.join("\n");
 }
 
+export function buildMemoryUpdateNotice(
+	result: MemoryUpdateNoticeInput,
+): MemoryUpdateNotice {
+	return {
+		uiText: result.changed
+			? `Memory updated: ${result.target} (${result.reason})`
+			: `Memory unchanged: ${result.summary}`,
+	};
+}
+
 export default function memoryGovernor(pi: ExtensionAPI) {
 	pi.on("input", async (event, ctx) => {
 		if (event.source === "extension") return { action: "continue" };
@@ -352,26 +390,9 @@ export default function memoryGovernor(pi: ExtensionAPI) {
 		if (!candidate) return { action: "continue" };
 
 		const result = processCandidate(candidate);
+		const notice = buildMemoryUpdateNotice(result);
 		if (ctx.hasUI) {
-			ctx.ui.notify(
-				result.changed
-					? `Memory updated: ${result.target} (${result.reason})`
-					: `Memory unchanged: ${result.summary}`,
-				result.changed ? "info" : "warning",
-			);
-		}
-		if (result.changed) {
-			pi.sendMessage(
-				{
-					customType: "memory-governor-update",
-					display: true,
-					content:
-						`Memory governor updated ${result.target}.\n` +
-						`Reason: ${result.reason}.\n` +
-						`Change: ${result.summary}.`,
-				},
-				{ deliverAs: "nextTurn" },
-			);
+			ctx.ui.notify(notice.uiText, result.changed ? "info" : "warning");
 		}
 		return { action: "continue" };
 	});

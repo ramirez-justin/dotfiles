@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	applyMemoryUpdate,
 	auditMemoryText,
+	buildMemoryUpdateNotice,
 	classifyMemoryTarget,
 	detectMemoryCandidate,
 	shouldRejectMemory,
@@ -50,6 +51,14 @@ describe("memory-governor detection", () => {
 			"PROJECTS.md",
 		);
 	});
+
+	test("does not capture branch-specific task prompts as memory", () => {
+		const candidate = detectMemoryCandidate(
+			"The current branch has a bunch of changes and it seems like Joseph is struggling a bit. Basically when staging airflow is being used to run the jobs/logitix-event-catalog-redis.py job, it needs to get a token from the proxy service in order to connect to the .svc. redis location.",
+		);
+
+		expect(candidate).toBeUndefined();
+	});
 });
 
 describe("memory-governor safety", () => {
@@ -83,6 +92,21 @@ describe("memory-governor safety", () => {
 		expect(
 			audited.text.match(/Use \/finish before claiming work is complete\./g),
 		)?.toHaveLength(1);
+	});
+});
+
+describe("memory-governor notifications", () => {
+	test("memory updates notify the UI without injecting next-turn model context", () => {
+		const notice = buildMemoryUpdateNotice({
+			changed: true,
+			reason: "behavioral correction",
+			summary: "added memory",
+			target: "USER.md",
+			text: baseUserMemory,
+		});
+
+		expect(notice.uiText).toContain("Memory updated: USER.md");
+		expect(notice.modelMessage).toBeUndefined();
 	});
 });
 

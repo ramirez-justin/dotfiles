@@ -25,4 +25,3 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   intermediate scaffolding or process overhead.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
-- Do not understand why we can't go direct to redis-internal-1.svc.staging.gteng.co via the proxy service.

@@ -18,3 +18,15 @@ Stable project facts and caveats that may help future Pi sessions.
 - Pi package settings live in `pi/.pi/agent/settings.json`.
 - For gametime Pi memory, use SOFIA-inspired markdown files rather than
   database or cloud memory infrastructure.
+
+## Snowflake Objects
+
+- Keep `CLAUDE.md` and `AGENTS.md` synchronized in this repo.
+- Keep tool versions aligned across `uv.lock`, CI commands, and pre-commit
+  hooks; Ruff version drift can make local hooks and CI disagree.
+- For repo CLIs, validate path arguments before filesystem traversal so missing
+  paths or file-vs-directory mistakes fail cleanly.
+- Snowflake read-only SQL guards should reject multi-statement SQL, not only
+  validate the first verb; preserve semicolons inside string literals.
+- Use fully qualified Python module paths in runbooks, for example
+  `notebooks.tools.deploy_notebook`, so commands work from the repo root.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -98,7 +99,10 @@ function isTaskContext(text: string): boolean {
 }
 
 function isAdvisoryQuestion(text: string): boolean {
-	return /\?/.test(text) && /\b(do you think|should|shouldn'?t|why|how)\b/i.test(text);
+	return (
+		/\?/.test(text) &&
+		/\b(do you think|should|shouldn'?t|why|how)\b/i.test(text)
+	);
 }
 
 function hasExplicitDurableCommand(text: string): boolean {

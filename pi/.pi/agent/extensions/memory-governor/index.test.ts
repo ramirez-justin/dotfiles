@@ -52,12 +52,31 @@ describe("memory-governor detection", () => {
 		);
 	});
 
-	test("does not capture branch-specific task prompts as memory", () => {
+	test("does not capture task descriptions as memory", () => {
 		const candidate = detectMemoryCandidate(
-			"The current branch has a bunch of changes and it seems like Joseph is struggling a bit. Basically when staging airflow is being used to run the jobs/logitix-event-catalog-redis.py job, it needs to get a token from the proxy service in order to connect to the .svc. redis location.",
+			"The current branch has several changes. When staging runs jobs/example.py, it needs a token from another service before connecting to an internal service location.",
 		);
 
 		expect(candidate).toBeUndefined();
+	});
+
+	test("does not auto-write advisory questions as raw memory", () => {
+		const candidate = detectMemoryCandidate(
+			"Should this one-off regression become a broader rule? I want file-backed memory for this project, not a database.",
+		);
+
+		expect(candidate).toBeUndefined();
+	});
+
+	test("captures explicit durable rules without copying task prompts", () => {
+		const candidate = detectMemoryCandidate(
+			"Remember: For gametime Pi memory, use markdown files instead of a database.",
+		);
+
+		expect(candidate?.target).toBe("PROJECTS.md");
+		expect(candidate?.content).toBe(
+			"For gametime Pi memory, use markdown files instead of a database.",
+		);
 	});
 });
 

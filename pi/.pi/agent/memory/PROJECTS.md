@@ -16,3 +16,5 @@ Stable project facts and caveats that may help future Pi sessions.
 - The `pi/` topic maps to `~/.pi/agent`.
 - `mise.toml` is the task runner entry point for setup and verification.
 - Pi package settings live in `pi/.pi/agent/settings.json`.
+- For gametime Pi memory, use SOFIA-inspired markdown files rather than
+  database or cloud memory infrastructure.

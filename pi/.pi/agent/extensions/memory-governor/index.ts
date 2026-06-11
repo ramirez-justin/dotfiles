@@ -91,11 +91,18 @@ function isTaskContext(text: string): boolean {
 		/\b(current branch|this branch|branch has|current pr|pull request)\b/.test(
 			lower,
 		) ||
-		/\b(job|script|file|service|svc|airflow|redis|token|proxy)\b/.test(
-			lower,
-		) ||
-		/\b(needs? to|get a token|connect to|being used to run)\b/.test(lower)
+		/\b(job|script|file|service|svc|airflow|redis|token|proxy)\b/.test(lower) ||
+		/\b(needs? to|get a token|connect to|being used to run)\b/.test(lower) ||
+		/\b\w+[/.][\w/.-]+\b/.test(lower)
 	);
+}
+
+function isAdvisoryQuestion(text: string): boolean {
+	return /\?/.test(text) && /\b(do you think|should|shouldn'?t|why|how)\b/i.test(text);
+}
+
+function hasExplicitDurableCommand(text: string): boolean {
+	return /^\s*(remember|prefer|do not|don'?t|always|for\b|when\b)/i.test(text);
 }
 
 export function classifyMemoryTarget(text: string): MemoryTarget {
@@ -108,7 +115,7 @@ export function classifyMemoryTarget(text: string): MemoryTarget {
 		return "WORKFLOWS.md";
 	}
 	if (
-		/\b(this repo|repository|project|dotfiles|mise|stow|in this repo)\b/.test(
+		/\b(this repo|repository|project|dotfiles|mise|stow|in this repo|gametime|pi memory|memory governor|markdown files|database)\b/.test(
 			lower,
 		)
 	) {
@@ -120,6 +127,9 @@ export function classifyMemoryTarget(text: string): MemoryTarget {
 function extractPreference(text: string): string | undefined {
 	const cleaned = text.replace(/\s+/g, " ").trim();
 	const lower = cleaned.toLowerCase();
+
+	const rememberMatch = cleaned.match(/^remember:?\s+(.{3,220})/i);
+	if (rememberMatch) return sentence(rememberMatch[1]);
 
 	if (lower.includes("when to update memory")) {
 		return "Proactively consider when to update memory after behavioral corrections, workflow preferences, repeated-frustration feedback, or stable project caveats.";
@@ -161,7 +171,10 @@ export function detectMemoryCandidate(
 	text: string,
 ): MemoryCandidate | undefined {
 	if (!text || text.length > 4_000) return undefined;
-	if (isTaskContext(text) && !/\b(prefer|always|remember|do not|don'?t)\b/i.test(text)) {
+	if (isAdvisoryQuestion(text) && !hasExplicitDurableCommand(text)) {
+		return undefined;
+	}
+	if (isTaskContext(text) && !hasExplicitDurableCommand(text)) {
 		return undefined;
 	}
 	const lower = text.toLowerCase();
@@ -223,7 +236,10 @@ export function shouldRejectMemory(
 	if (/\b(i guess|maybe|might|probably|not sure|unverified)\b/i.test(content)) {
 		return "unverified assumption";
 	}
-	if (isTaskContext(content) && !/\b(prefer|always|remember|do not|don'?t)\b/i.test(content)) {
+	if (isAdvisoryQuestion(content) && !hasExplicitDurableCommand(content)) {
+		return "advisory question";
+	}
+	if (isTaskContext(content) && !hasExplicitDurableCommand(content)) {
 		return "transient task context";
 	}
 

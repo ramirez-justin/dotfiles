@@ -18,3 +18,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Prefer Linear over Jira for new issue-tracking work unless Jira is requested.
 - Do not present PR URLs unless the PR has actually been created and verified.
   If only a GitHub “create PR” URL exists, label it clearly or omit it.
+- Proactively consider memory updates when Justin gives behavioral corrections,
+  workflow preferences, repeated-frustration feedback, or stable project
+  caveats. Do not wait only for explicit “remember this” requests.
+- Prefer choosing the desired end-state and building it directly over adding
+  intermediate scaffolding or process overhead.

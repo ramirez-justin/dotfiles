@@ -94,6 +94,22 @@ Payload schema:
 - Multi-line range: add `"start_line": N, "start_side": "RIGHT"`.
 - Return `.html_url` from the response so the human can open the review.
 
+### 5. Learn from review outcomes
+
+When Justin asks Pi to learn from PR review feedback or comments, use the
+`memory-management` skill's "Learning From Review Feedback" section. Do not
+create a separate memory system for PR reviews.
+
+Promote only durable lessons, such as:
+
+- recurring review findings that should change future behavior
+- stable repo-specific review caveats
+- reusable verification steps
+- process preferences about how to respond to review comments
+
+Do not promote raw review text, one-off implementation details, unverified
+reviewer opinions, secrets, or branch-specific state.
+
 ## Rationalizations to reject
 
 | Excuse | Reality |

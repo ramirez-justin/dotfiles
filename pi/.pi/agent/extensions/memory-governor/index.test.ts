@@ -68,6 +68,14 @@ describe("memory-governor detection", () => {
 		expect(candidate).toBeUndefined();
 	});
 
+	test("does not capture deictic task instructions as durable memory", () => {
+		const candidate = detectMemoryCandidate(
+			"Do not commit that plan. We are going to throw it away when done.",
+		);
+
+		expect(candidate).toBeUndefined();
+	});
+
 	test("captures explicit durable rules without copying task prompts", () => {
 		const candidate = detectMemoryCandidate(
 			"Remember: For gametime Pi memory, use markdown files instead of a database.",

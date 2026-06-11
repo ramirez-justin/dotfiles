@@ -105,6 +105,15 @@ function isAdvisoryQuestion(text: string): boolean {
 	);
 }
 
+function isEphemeralInstruction(text: string): boolean {
+	return (
+		/\b(this|that|these|those)\s+(plan|branch|change|changes|file|diff|session)\b/i.test(
+			text,
+		) ||
+		/\b(when done|for now|just this|throw it away|trash it)\b/i.test(text)
+	);
+}
+
 function hasExplicitDurableCommand(text: string): boolean {
 	return /^\s*(remember|prefer|do not|don'?t|always|for\b|when\b)/i.test(text);
 }
@@ -175,6 +184,9 @@ export function detectMemoryCandidate(
 	text: string,
 ): MemoryCandidate | undefined {
 	if (!text || text.length > 4_000) return undefined;
+	if (isEphemeralInstruction(text)) {
+		return undefined;
+	}
 	if (isAdvisoryQuestion(text) && !hasExplicitDurableCommand(text)) {
 		return undefined;
 	}
@@ -239,6 +251,9 @@ export function shouldRejectMemory(
 	}
 	if (/\b(i guess|maybe|might|probably|not sure|unverified)\b/i.test(content)) {
 		return "unverified assumption";
+	}
+	if (isEphemeralInstruction(content)) {
+		return "ephemeral instruction";
 	}
 	if (isAdvisoryQuestion(content) && !hasExplicitDurableCommand(content)) {
 		return "advisory question";

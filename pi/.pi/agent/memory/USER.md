@@ -25,3 +25,4 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   intermediate scaffolding or process overhead.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
+- Do not worry about running plans or applys because for tf snowflake, they take a long time.

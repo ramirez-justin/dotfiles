@@ -8,5 +8,14 @@ const BOOP_SOUND =
 export default function (pi: ExtensionAPI) {
 	pi.on("agent_end", async () => {
 		execFile("afplay", [BOOP_SOUND], { windowsHide: true }, () => {});
+		execFile(
+			"osascript",
+			[
+				"-e",
+				'display notification "Pi has stopped and is ready." with title "Pi"',
+			],
+			{ windowsHide: true },
+			() => {},
+		);
 	});
 }

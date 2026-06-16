@@ -12,6 +12,16 @@ depends = [
   "inject-secrets",
 ]
 
+[tasks.trust-third-party-brew-taps]
+description = "Opt-in: trust third-party Homebrew taps required by Brewfile"
+run = """
+set -e
+brew trust dbt-labs/dbt-cli
+brew trust go-task/tap
+brew trust hashicorp/tap
+brew trust snowflakedb/snowflake-cli
+"""
+
 [tasks.brew-install]
 description = "Install all packages from Brewfile"
 run = """

@@ -47,3 +47,6 @@ Stable project facts and caveats that may help future Pi sessions.
   at DAG parse time.
 - New Snowflake external tables backed by S3 should usually include matching
   entries in `adhoc-ops-toolkit/s3-event-notifications` so auto-refresh works.
+- In `gametime-data`, Assembled `/forecasts` requires `start_time` and
+  `end_time` epoch values aligned to the requested `interval`; half-hour Airflow
+  schedules need explicit alignment before calling the API.

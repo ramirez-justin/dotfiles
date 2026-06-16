@@ -20,3 +20,6 @@ Durable workflow conventions for Justin's Pi sessions.
 - If Cortex cannot access the needed Snowflake account, Snowflake CLI key-pair
   access via 1Password may be used as a fallback. Never print or persist
   private keys, passphrases, tokens, or decrypted credential material.
+- Justin's `aws-me` AWS session helper is a zsh alias; from Pi shell tools,
+  invoke it through interactive zsh, for example
+  `zsh -ic 'aws-me -- <command>'`.

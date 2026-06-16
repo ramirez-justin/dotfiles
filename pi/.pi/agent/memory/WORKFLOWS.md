@@ -17,3 +17,6 @@ Durable workflow conventions for Justin's Pi sessions.
 - Use `/execute-plan` or subagent-driven execution for approved plans.
 - Use `/debug` before fixing unexpected behavior or test failures.
 - Use `/finish` before claiming implementation work is complete.
+- If Cortex cannot access the needed Snowflake account, Snowflake CLI key-pair
+  access via 1Password may be used as a fallback. Never print or persist
+  private keys, passphrases, tokens, or decrypted credential material.

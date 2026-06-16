@@ -30,3 +30,20 @@ Stable project facts and caveats that may help future Pi sessions.
   validate the first verb; preserve semicolons inside string literals.
 - Use fully qualified Python module paths in runbooks, for example
   `notebooks.tools.deploy_notebook`, so commands work from the repo root.
+- Notebook validation should fail closed: require valid UTF-8 for files scanned
+  for secrets, cover common private-key headers, and reject personal dev schema
+  references such as `DEV_DB.<user_name>` in production notebook projects.
+- Avoid hard-coded season/date windows in notebooks when a calendar source or
+  runtime parameter can define the valid window.
+
+## Gametime Data Review Lessons
+
+- For Airflow scheduled windows, derive partition/logical-date semantics from
+  `data_interval_start` and use `data_interval_end` only as the upper bound.
+- Avoid mutating `sys.modules` in tests to stub normal project dependencies;
+  it can leak across the pytest session.
+- When DAGs and extractors need the same dataset list, share it from a
+  lightweight module instead of duplicating lists or importing heavy task code
+  at DAG parse time.
+- New Snowflake external tables backed by S3 should usually include matching
+  entries in `adhoc-ops-toolkit/s3-event-notifications` so auto-refresh works.

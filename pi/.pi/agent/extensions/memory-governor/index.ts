@@ -109,8 +109,7 @@ function isEphemeralInstruction(text: string): boolean {
 	return (
 		/\b(this|that|these|those)\s+(plan|branch|change|changes|file|diff|session)\b/i.test(
 			text,
-		) ||
-		/\b(when done|for now|just this|throw it away|trash it)\b/i.test(text)
+		) || /\b(when done|for now|just this|throw it away|trash it)\b/i.test(text)
 	);
 }
 

@@ -18,6 +18,7 @@ Stable project facts and caveats that may help future Pi sessions.
 - Pi package settings live in `pi/.pi/agent/settings.json`.
 - For gametime Pi memory, use SOFIA-inspired markdown files rather than
   database or cloud memory infrastructure.
+- Do not manage this repo. draft a message to mlplatform.
 
 ## Snowflake Objects
 
@@ -38,6 +39,10 @@ Stable project facts and caveats that may help future Pi sessions.
 
 ## Gametime Data Review Lessons
 
+- In `gametime-data`, Astro staging and production deploy workflows both call
+  `.github/workflows/astro-deploy-to-env.yml`; changes there affect production
+  deploys as well as staging. Keep the workflow's `actions/setup-python`
+  version in sync when updating the Airflow Python version.
 - For Airflow scheduled windows, derive partition/logical-date semantics from
   `data_interval_start` and use `data_interval_end` only as the upper bound.
 - Avoid mutating `sys.modules` in tests to stub normal project dependencies;

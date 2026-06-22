@@ -25,4 +25,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   intermediate scaffolding or process overhead.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
-- Do not worry about running plans or applys because for tf snowflake, they take a long time.
+- Do not worry about running plans or applys because for tf snowflake, they
+  take a long time.
+- Do not use uv dbt, use the installed dbt.
+- Do not think the data is correct.
+- Do not know where you are getting that limitation from but I do not think it is true.

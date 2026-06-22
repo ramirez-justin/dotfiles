@@ -2,6 +2,9 @@
 python = "3.12"
 bun = "latest"
 
+[settings]
+minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
+
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"
 depends = [

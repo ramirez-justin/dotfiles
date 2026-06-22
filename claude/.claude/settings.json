@@ -29,16 +29,7 @@
         ]
       }
     ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"/Users/justin/.local/share/mise/installs/node/20.20.2/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
-          }
-        ]
-      }
-    ]
+    "SessionStart": []
   },
   "statusLine": {
     "type": "command",

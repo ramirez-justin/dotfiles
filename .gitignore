@@ -1,4 +1,7 @@
 .pi-lens/
+.pi/claude-code/
+.pi/claude-code-test/
+.ruff_cache/
 __pycache__/
 *.py[cod]
 

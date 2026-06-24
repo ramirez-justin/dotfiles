@@ -4,8 +4,11 @@
   },
   "mcpServers": {
     "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
+      "command": "sh",
+      "args": [
+        "-lc",
+        "CONTEXT7_API_KEY=$(op read 'op://Employee/Context7 Secret Key/API Key') exec npx -y @upstash/context7-mcp"
+      ],
       "lifecycle": "lazy",
       "directTools": true
     },

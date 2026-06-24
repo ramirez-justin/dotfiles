@@ -22,7 +22,8 @@ Stable project facts and caveats that may help future Pi sessions.
 
 ## Snowflake Objects
 
-- Keep `CLAUDE.md` and `AGENTS.md` synchronized in this repo.
+- In `snowflake-objects`, keep `CLAUDE.md` as canonical repo guidance;
+  `AGENTS.md` should only point agents to `CLAUDE.md`.
 - Keep tool versions aligned across `uv.lock`, CI commands, and pre-commit
   hooks; Ruff version drift can make local hooks and CI disagree.
 - For repo CLIs, validate path arguments before filesystem traversal so missing
@@ -34,8 +35,27 @@ Stable project facts and caveats that may help future Pi sessions.
 - Notebook validation should fail closed: require valid UTF-8 for files scanned
   for secrets, cover common private-key headers, and reject personal dev schema
   references such as `DEV_DB.<user_name>` in production notebook projects.
+- Production source objects for notebook projects belong in `dbt-analytics`
+  under the `predictive_analytics` schema/directory; do not add repo-local SQL
+  for notebook CI to deploy production views.
+- Notebook output defaults should be role-aware: `ANALYST_FULL` writes to the
+  shared dev schema, `DATA_TRANSFORMATION` writes to production, and explicit
+  `--output-*` arguments override role defaults.
 - Avoid hard-coded season/date windows in notebooks when a calendar source or
   runtime parameter can define the valid window.
+
+## dbt-analytics
+
+- Build downstream dbt models from `stg_*` models whenever the source data is
+  available there. Staging models are the cleaned, ready-to-use interface;
+  avoid reaching around them to raw sources or legacy core models for fields
+  that staging already exposes.
+- Data API models should preserve staging-only lineage. For event-to-performer
+  mapping, prefer `stg_mongo__events` and extract primary/secondary performer
+  IDs there instead of depending on legacy core `mongo__events`.
+- Branch rules can require commit status contexts that differ from GitHub check
+  run names. In `dbt-analytics`, the `dbt QA` workflow forwards required
+  `dbt QA / ...` commit statuses for branch protection.
 
 ## Gametime Data Review Lessons
 

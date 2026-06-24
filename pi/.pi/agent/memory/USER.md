@@ -30,3 +30,6 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Do not use uv dbt, use the installed dbt.
 - Do not think the data is correct.
 - Do not know where you are getting that limitation from but I do not think it is true.
+- Do not they have to validate in snowsight?
+- Always use stg_* models to build from because they are cleaned and ready to use.
+- Do not know why.

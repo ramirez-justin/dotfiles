@@ -44,6 +44,13 @@ snowsql -a gametime-prod -u JUSTIN_RAMIREZ \
 SnowSQL may prompt for the encrypted private key passphrase. Do not ask the user
 to paste the passphrase into chat.
 
+## Subagent use
+
+Do not use subagents by default for Snowflake queries or mutations. Keep
+database access, result handling, SQL previews, approvals, and mutating commands
+in the parent session. Use read-only subagents only for planning, research, or
+review of proposed SQL.
+
 ## Query workflow
 
 For read-only troubleshooting, run focused queries with `snowsql -c ssh

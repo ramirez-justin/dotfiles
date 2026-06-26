@@ -41,6 +41,13 @@ snow connection test -c default
 Do not print secrets, private keys, passphrases, decrypted values, or raw
 credential files.
 
+## Subagent use
+
+Do not use subagents by default for Cortex Code requests, especially write
+envelopes. Keep envelope choice, SQL/object mutation previews, approvals, and
+Cortex tool calls in the parent session. Use read-only subagents only for
+planning, research, or review of proposed requests.
+
 ## Preferred Pi tool
 
 Prefer the `cortex_run` tool when it is available.

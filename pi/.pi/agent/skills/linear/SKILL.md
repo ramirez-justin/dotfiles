@@ -37,6 +37,12 @@ Typical operations:
 - Read comments: `linear_list_comments`
 - Create/update comment: `linear_save_comment`
 
+## Subagent use
+
+Do not use subagents by default for Linear mutations. Keep payload previews,
+approvals, and mutating MCP calls in the parent session. A read-only reviewer is
+acceptable for large drafted payloads before approval.
+
 ## Mutation approval workflow
 
 Creating, updating, and commenting are allowed, but only after explicit user approval.

@@ -33,3 +33,6 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Do not they have to validate in snowsight?
 - Always use stg_* models to build from because they are cleaned and ready to use.
 - Do not know why.
+- Do not know if that is still valid since we removed the problem stream.
+- Do not understand the Customer-discovery extension.
+- For the question you asked I think we should use a Global small sample for every Data API write. As far as the PRs you recommended. We should use the existing status' for baseline….

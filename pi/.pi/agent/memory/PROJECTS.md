@@ -19,6 +19,7 @@ Stable project facts and caveats that may help future Pi sessions.
 - For gametime Pi memory, use SOFIA-inspired markdown files rather than
   database or cloud memory infrastructure.
 - Do not manage this repo. draft a message to mlplatform.
+- Do we have examples in this project of macros used for incremental models that allow us to select certain date ranges at run time by passing a variable.
 
 ## Snowflake Objects
 

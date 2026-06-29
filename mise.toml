@@ -124,8 +124,29 @@ description = "Pull latest dotfiles, re-link, and update Pi packages"
 run = "git -C {{config_root}} pull --rebase && mise run link && mise run pi-update"
 
 [tasks.pi-update]
-description = "Update Pi packages/extensions"
-run = "mise exec -- pi update --extensions"
+description = "Update Pi packages/extensions and repair safe npm audit findings"
+run = """
+set -euo pipefail
+
+pi_npm_root="$HOME/.pi/agent/npm"
+
+mise exec -- pi update --extensions
+
+if [ ! -f "$pi_npm_root/package.json" ]; then
+    echo "Pi npm extension root not found at $pi_npm_root; skipping npm audit repair."
+    exit 0
+fi
+
+if mise exec -- npm audit --prefix "$pi_npm_root" --omit=peer --audit-level=high; then
+    echo "Pi extension npm audit passed."
+    exit 0
+fi
+
+echo "Attempting safe npm audit repair for Pi extensions..."
+mise exec -- npm audit fix --prefix "$pi_npm_root" --omit=peer
+
+mise exec -- npm audit --prefix "$pi_npm_root" --omit=peer --audit-level=high
+"""
 
 [tasks.snowflake-ai-kit-install]
 description = "Install or update Snowflake AI Kit and verify the default Snowflake connection"

@@ -10,6 +10,7 @@ type MemoryCandidate = {
 	content: string;
 	reason: string;
 	target: MemoryTarget;
+	autoWrite: boolean;
 };
 
 type ApplyMemoryUpdateInput = {
@@ -98,10 +99,17 @@ function isTaskContext(text: string): boolean {
 	);
 }
 
-function isAdvisoryQuestion(text: string): boolean {
+function isLowQualityMemoryContent(text: string): boolean {
+	const cleaned = text.replace(/\s+/g, " ").trim();
 	return (
-		/\?/.test(text) &&
-		/\b(do you think|should|shouldn'?t|why|how)\b/i.test(text)
+		/\?/.test(cleaned) ||
+		/^\s*(?:i|we)\s+(?:don'?t|do not)\s+(?:know|think|understand|see|believe)\b/i.test(
+			cleaned,
+		) ||
+		/^\s*(?:do we|can we|could we|why|how|what)\b/i.test(cleaned) ||
+		/\b(?:the question you asked|as far as|i think we should|i don'?t know|i don'?t think|i do not know|i do not think|i do not understand)\b/i.test(
+			cleaned,
+		)
 	);
 }
 
@@ -115,6 +123,16 @@ function isEphemeralInstruction(text: string): boolean {
 
 function hasExplicitDurableCommand(text: string): boolean {
 	return /^\s*(remember|prefer|do not|don'?t|always|for\b|when\b)/i.test(text);
+}
+
+function hasExplicitRememberCommand(text: string): boolean {
+	return /^\s*remember:?\s+\S/i.test(text);
+}
+
+export function shouldAutoWriteMemoryCandidate(
+	candidate: MemoryCandidate,
+): boolean {
+	return candidate.autoWrite === true;
 }
 
 export function classifyMemoryTarget(text: string): MemoryTarget {
@@ -140,8 +158,15 @@ function extractPreference(text: string): string | undefined {
 	const cleaned = text.replace(/\s+/g, " ").trim();
 	const lower = cleaned.toLowerCase();
 
+	if (isLowQualityMemoryContent(cleaned)) return undefined;
+
 	const rememberMatch = cleaned.match(/^remember:?\s+(.{3,220})/i);
-	if (rememberMatch) return sentence(rememberMatch[1]);
+	if (rememberMatch) {
+		const remembered = rememberMatch[1].trim();
+		return isLowQualityMemoryContent(remembered)
+			? undefined
+			: sentence(remembered);
+	}
 
 	if (lower.includes("when to update memory")) {
 		return "Proactively consider when to update memory after behavioral corrections, workflow preferences, repeated-frustration feedback, or stable project caveats.";
@@ -186,7 +211,7 @@ export function detectMemoryCandidate(
 	if (isEphemeralInstruction(text)) {
 		return undefined;
 	}
-	if (isAdvisoryQuestion(text) && !hasExplicitDurableCommand(text)) {
+	if (/\?/.test(text) && !hasExplicitDurableCommand(text)) {
 		return undefined;
 	}
 	if (isTaskContext(text) && !hasExplicitDurableCommand(text)) {
@@ -221,6 +246,7 @@ export function detectMemoryCandidate(
 		content,
 		reason,
 		target: classifyMemoryTarget(text),
+		autoWrite: hasExplicitRememberCommand(text),
 	};
 }
 
@@ -254,8 +280,8 @@ export function shouldRejectMemory(
 	if (isEphemeralInstruction(content)) {
 		return "ephemeral instruction";
 	}
-	if (isAdvisoryQuestion(content) && !hasExplicitDurableCommand(content)) {
-		return "advisory question";
+	if (isLowQualityMemoryContent(content)) {
+		return "raw question or conversational fragment";
 	}
 	if (isTaskContext(content) && !hasExplicitDurableCommand(content)) {
 		return "transient task context";
@@ -417,11 +443,36 @@ export function buildMemoryUpdateNotice(
 	};
 }
 
+function buildMemoryCandidateMessage(candidate: MemoryCandidate): string {
+	return [
+		"Memory candidate detected; do not write it verbatim.",
+		`Target: ${candidate.target}`,
+		`Reason: ${candidate.reason}`,
+		`Candidate: ${candidate.content}`,
+		"Use the memory-management skill to distill, audit, and write only durable memory.",
+	].join("\n");
+}
+
 export default function memoryGovernor(pi: ExtensionAPI) {
 	pi.on("input", async (event, ctx) => {
 		if (event.source === "extension") return { action: "continue" };
 		const candidate = detectMemoryCandidate(event.text);
 		if (!candidate) return { action: "continue" };
+
+		if (!shouldAutoWriteMemoryCandidate(candidate)) {
+			if (ctx.hasUI) {
+				ctx.ui.notify(
+					`Memory candidate needs distillation: ${candidate.target}`,
+					"warning",
+				);
+			}
+			pi.sendMessage({
+				customType: "memory-governor-candidate",
+				display: true,
+				content: buildMemoryCandidateMessage(candidate),
+			});
+			return { action: "continue" };
+		}
 
 		const result = processCandidate(candidate);
 		const notice = buildMemoryUpdateNotice(result);

@@ -25,14 +25,7 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   intermediate scaffolding or process overhead.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
-- Do not worry about running plans or applys because for tf snowflake, they
-  take a long time.
-- Do not use uv dbt, use the installed dbt.
-- Do not think the data is correct.
-- Do not know where you are getting that limitation from but I do not think it is true.
-- Do not they have to validate in snowsight?
-- Always use stg_* models to build from because they are cleaned and ready to use.
-- Do not know why.
-- Do not know if that is still valid since we removed the problem stream.
-- Do not understand the Customer-discovery extension.
-- For the question you asked I think we should use a Global small sample for every Data API write. As far as the PRs you recommended. We should use the existing status' for baseline….
+- For Terraform/Snowflake work, do not avoid plan or apply commands solely
+  because they may take a long time.
+- Use the installed dbt command, not uv dbt.
+- Treat source data correctness as unverified unless it has been validated.

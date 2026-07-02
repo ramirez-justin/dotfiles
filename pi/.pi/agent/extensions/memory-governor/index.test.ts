@@ -5,8 +5,9 @@ import {
 	buildMemoryUpdateNotice,
 	classifyMemoryTarget,
 	detectMemoryCandidate,
+	shouldAutoWriteMemoryCandidate,
 	shouldRejectMemory,
-} from "./index";
+} from "./index.ts";
 
 const baseUserMemory = `# User Memory
 
@@ -85,6 +86,57 @@ describe("memory-governor detection", () => {
 		expect(candidate?.content).toBe(
 			"For gametime Pi memory, use markdown files instead of a database.",
 		);
+	});
+
+	test("does not turn first-person uncertainty into imperative memory", () => {
+		expect(detectMemoryCandidate("I do not know why.")).toBeUndefined();
+		expect(
+			detectMemoryCandidate("I don't think the data is correct."),
+		).toBeUndefined();
+		expect(
+			detectMemoryCandidate(
+				"I do not understand the customer discovery extension.",
+			),
+		).toBeUndefined();
+	});
+
+	test("does not store raw questions as durable memory", () => {
+		expect(
+			detectMemoryCandidate(
+				"Do we have examples in this project of macros used for incremental models?",
+			),
+		).toBeUndefined();
+		expect(
+			detectMemoryCandidate(
+				"For the question you asked I think we should use a global sample.",
+			),
+		).toBeUndefined();
+	});
+});
+
+describe("memory-governor candidate gate", () => {
+	test("auto-writes only explicit remember commands", () => {
+		const explicit = detectMemoryCandidate(
+			"Remember: Prefer concise responses unless the task requires detail.",
+		);
+		const correction = detectMemoryCandidate(
+			"It seems like you don't know when to update memory.",
+		);
+
+		if (!explicit) throw new Error("expected explicit memory candidate");
+		if (!correction) throw new Error("expected correction memory candidate");
+		expect(shouldAutoWriteMemoryCandidate(explicit)).toBe(true);
+		expect(shouldAutoWriteMemoryCandidate(correction)).toBe(false);
+	});
+
+	test("does not auto-write inferred workflow rules", () => {
+		const candidate = detectMemoryCandidate(
+			"For PR reviews, use line-specific comments.",
+		);
+
+		if (!candidate) throw new Error("expected workflow memory candidate");
+		expect(candidate.reason).toBe("workflow rule");
+		expect(shouldAutoWriteMemoryCandidate(candidate)).toBe(false);
 	});
 });
 

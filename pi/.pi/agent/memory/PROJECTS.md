@@ -55,6 +55,10 @@ Stable project facts and caveats that may help future Pi sessions.
 - Branch rules can require commit status contexts that differ from GitHub check
   run names. In `dbt-analytics`, the `dbt QA` workflow forwards required
   `dbt QA / ...` commit statuses for branch protection.
+- In `dbt-analytics`, expensive staging models over external tables or window
+  functions should bound non-production builds while preserving production
+  behavior, because CI uses sampled/modified-state builds and can time out on
+  unbounded first runs.
 
 ## Gametime Data Review Lessons
 

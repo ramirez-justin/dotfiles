@@ -29,7 +29,16 @@
         ]
       }
     ],
-    "SessionStart": []
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/justin/.local/share/mise/installs/node/22.19.0/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
     "type": "command",
@@ -65,6 +74,7 @@
     }
   },
   "effortLevel": "medium",
+  "tui": "fullscreen",
   "theme": "dark-daltonized",
   "autoCompactEnabled": false,
   "skipAutoPermissionPrompt": true

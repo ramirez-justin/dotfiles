@@ -27,5 +27,9 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   rule is the real requirement.
 - For Terraform/Snowflake work, do not avoid plan or apply commands solely
   because they may take a long time.
-- Use the installed dbt command, not uv dbt.
+- Use the installed dbt command, not uv dbt. In dbt Cloud projects,
+  commands like `dbt parse` run through dbt Cloud, so do not skip them due to
+  missing local `profiles.yml` or `dbt_packages/` alone.
 - Treat source data correctness as unverified unless it has been validated.
+- Do not assume local tools are installed; check availability before suggesting
+  or using them.

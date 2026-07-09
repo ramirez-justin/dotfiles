@@ -40,6 +40,13 @@ Stable project facts and caveats that may help future Pi sessions.
 - Notebook output defaults should be role-aware: `ANALYST_FULL` writes to the
   shared dev schema, `DATA_TRANSFORMATION` writes to production, and explicit
   `--output-*` arguments override role defaults.
+- Airflow notebook runs use `EXECUTE NOTEBOOK PROJECT` with metadata-declared
+  runtime, compute pool, query warehouse, and role; they do not reuse a user's
+  interactive Snowsight notebook service.
+- In `snowflake-objects`, notebook `notebook.yml` Airflow metadata is the source
+  of truth for `gametime-data/airflow/dags/config/snowflake_notebooks.yml`;
+  merging `snowflake-objects` main can auto-push that generated manifest to
+  `gametime-data`, so plan cross-repo PR ordering to avoid duplicate diffs.
 - Avoid hard-coded season/date windows in notebooks when a calendar source or
   runtime parameter can define the valid window.
 

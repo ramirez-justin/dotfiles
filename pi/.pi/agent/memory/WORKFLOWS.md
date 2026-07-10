@@ -22,10 +22,11 @@ Durable workflow conventions for Justin's Pi sessions.
   assumptions need challenge.
 - Use `/finish` before claiming implementation work is complete. For
   non-trivial changes, consider `verifier` for independent evidence.
-- Use read-only subagents lightly: `reviewer` for non-trivial code review
-  second opinions, `scout` or `planner` for broad planning, and `researcher`
-  when external/current docs materially matter. The parent remains accountable
-  for final decisions, mutations, and user-facing claims.
+- Use `@tintinweb/pi-subagents` native agents when delegation helps: `scout`
+  or `Explore` on Luna for quick context, `Plan`/`planner`, `reviewer`,
+  `oracle`, or `researcher` on Terra for hard reasoning, and exactly one
+  `worker`/`implementer` on Sol for approved writes. The parent remains
+  accountable for final decisions, mutations, and user-facing claims.
 - Do not use subagents by default for Linear, Notion, Snowflake, or Cortex
   mutations. Keep preview-before-mutation approval in the parent session.
 - If Cortex cannot access the needed Snowflake account, Snowflake CLI key-pair

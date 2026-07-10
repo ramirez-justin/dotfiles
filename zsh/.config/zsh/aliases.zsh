@@ -168,6 +168,7 @@ alias readme="glow README.md"
 alias changes="glow CHANGELOG.md"
 
 # tmux
+alias calsetup="$HOME/.config/tmux/scripts/cal-setup.sh"
 alias tpi="tmux run-shell $HOME/.tmux/plugins/tpm/bindings/install_plugins"
 alias tpu="tmux run-shell $HOME/.tmux/plugins/tpm/bindings/update_plugins"
 alias tpU="tmux run-shell $HOME/.tmux/plugins/tpm/bindings/clean_plugins"

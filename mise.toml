@@ -67,6 +67,8 @@ check "stow available" command -v stow
 check "mise available" command -v mise
 check "mise tools installed" mise current
 check "node available via mise" mise exec -- node -v
+check "no standalone npm latest tool" sh -c "if grep -R -F '\"npm:npm\" = \"latest\"' {{config_root}}/mise/.config/mise/config.toml; then exit 1; fi"
+check "node selectors avoid patch pins" sh -c "if grep -R -E 'node(@|/)[0-9]+[.][0-9]+[.][0-9]+' {{config_root}}/mise/.config/mise/config.toml {{config_root}}/pi/.pi/agent/settings.json {{config_root}}/claude/.claude/settings.json; then exit 1; fi"
 check "pi available" command -v pi
 check "pi starts offline" mise exec -- pi --offline --list-models
 check "git submodules initialized" git submodule status --recursive

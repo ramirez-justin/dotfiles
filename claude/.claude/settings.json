@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/Users/justin/.local/share/mise/installs/node/22.19.0/bin/node\" \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
+            "command": "/opt/homebrew/bin/mise exec node@22 -- node \"/Users/justin/.claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
       }

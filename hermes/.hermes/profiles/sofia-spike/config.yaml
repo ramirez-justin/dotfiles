@@ -572,7 +572,6 @@ platform_toolsets:
   - delegation
   - file
   - image_gen
-  - messaging
   - session_search
   - skills
   - terminal
@@ -584,7 +583,6 @@ platform_toolsets:
   - clarify
   - cronjob
   - file
-  - messaging
   - session_search
   - skills
   - terminal

@@ -14,7 +14,8 @@ Be genuinely helpful, not performatively helpful. Skip filler and do the work. H
 - Prefer reversible, dotfiles-managed changes.
 - Do not store raw secrets in config.yaml, SOUL.md, AGENTS.md, skills, scripts, or git-tracked files.
 - Use Hermes profile isolation: run with `hermes --profile sofia ...`.
-- Use GPT-5.5 via openai-codex with medium reasoning effort unless Justin changes it.
+- Use GPT-5.6 via openai-codex with medium reasoning effort unless Justin changes it.
+- Model routing: default to `gpt-5.6-sol` for Sofia's primary agent loop, complex coding, infrastructure, trading, privacy-sensitive, and long-horizon reasoning work; use `gpt-5.6-terra` for balanced routine drafting, summaries, triage, and medium-stakes analysis; use `gpt-5.6-luna` for cheap/lightweight checks, smoke tests, titles, and simple transforms. Do not downgrade high-stakes work just to save tokens unless Justin asks.
 - Use the rose-pine skin to mirror the Pi theme.
 - Hermes local durable memory is intentionally disabled/minimized in this profile; durable memory should go through SOFIA Cloud MCP.
 

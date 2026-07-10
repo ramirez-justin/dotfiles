@@ -154,58 +154,58 @@ link_doc "{{config_root}}/pi/.pi/agent/AGENTS.md" "$HOME/.hermes/AGENTS.md"
 """
 
 [tasks."hermes:sofia:link"]
-description = "Link the isolated Hermes SOFIA spike profile without folding secret directories"
-run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/link-profile.sh"
+description = "Link the isolated Hermes SOFIA profile without folding secret directories"
+run = "bash {{config_root}}/hermes/.hermes/profiles/sofia/scripts/link-profile.sh"
 
 [tasks."hermes:sofia:run"]
-description = "Start Hermes with the isolated SOFIA spike profile and required SOFIA boot context"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia"
+description = "Start Hermes with the isolated SOFIA profile and required SOFIA boot context"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia"
 
 [tasks."hermes:sofia:inject-secrets"]
 description = "Write local-only Hermes SOFIA profile secrets from environment/1Password"
-run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/inject-secrets.sh"
+run = "bash {{config_root}}/hermes/.hermes/profiles/sofia/scripts/inject-secrets.sh"
 
 [tasks."hermes:sofia:boot-context"]
 description = "Fetch SOFIA Cloud boot context using the isolated Hermes profile .env"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/sofia-boot-context"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/sofia-boot-context"
 
 [tasks."hermes:sofia:guard"]
 description = "Fail if Hermes profile secrets/state are tracked or staged"
-run = "bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/check-sensitive-state.sh"
+run = "bash {{config_root}}/hermes/.hermes/profiles/sofia/scripts/check-sensitive-state.sh"
 
 [tasks."hermes:sofia:gateway:plist"]
 description = "Write the SOFIA-hydrated Hermes gateway launchd plist without starting it"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway plist"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia-gateway plist"
 
 [tasks."hermes:sofia:gateway:install"]
 description = "Install and start the SOFIA-hydrated Hermes gateway launchd service"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway install"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia-gateway install"
 
 [tasks."hermes:sofia:gateway:status"]
-description = "Show gateway status for the SOFIA spike profile"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway status"
+description = "Show gateway status for the SOFIA profile"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia-gateway status"
 
 [tasks."hermes:sofia:gateway:restart"]
 description = "Restart the SOFIA-hydrated Hermes gateway launchd service"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway restart"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia-gateway restart"
 
 [tasks."hermes:sofia:gateway:stop"]
 description = "Stop the SOFIA-hydrated Hermes gateway launchd service"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway stop"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia-gateway stop"
 
 [tasks."hermes:sofia:gateway:doctor"]
 description = "Validate SOFIA gateway boot context, plist, config, and Telegram env keys"
-run = "bash $HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway doctor"
+run = "bash $HOME/.hermes/profiles/sofia/scripts/hermes-sofia-gateway doctor"
 
 [tasks."hermes:sofia:doctor"]
-description = "Validate the Hermes SOFIA spike profile config and MCP server wiring"
+description = "Validate the Hermes SOFIA profile config and MCP server wiring"
 run = """
 set -e
-bash {{config_root}}/hermes/.hermes/profiles/sofia-spike/scripts/check-sensitive-state.sh
-hermes --profile sofia-spike config check
-hermes --profile sofia-spike mcp list
-hermes --profile sofia-spike mcp test sofia-cloud
-hermes --profile sofia-spike mcp test context7
+bash {{config_root}}/hermes/.hermes/profiles/sofia/scripts/check-sensitive-state.sh
+hermes --profile sofia config check
+hermes --profile sofia mcp list
+hermes --profile sofia mcp test sofia-cloud
+hermes --profile sofia mcp test context7
 """
 
 [tasks."sofia-cloud:agent-consistency"]

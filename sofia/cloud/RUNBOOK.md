@@ -238,7 +238,7 @@ Run lifecycle maintenance after deployments or when stale/expired memory behavio
 ```bash
 # via MCP tool: run_lifecycle_maintenance
 # or live smoke through Hermes once MCP tools are reloaded:
-hermes --profile sofia-spike mcp test sofia-cloud
+hermes --profile sofia mcp test sofia-cloud
 ```
 
 The Phase 2 lifecycle path:
@@ -559,4 +559,4 @@ For a live boot-context fetch through the linked Hermes helper:
 SOFIA_AGENT_CONSISTENCY_LIVE=1 mise run sofia-cloud:agent-consistency
 ```
 
-This check verifies the Supabase project ref, Pi `mcp.json`, Hermes `sofia-spike` MCP config, local-memory disabled state, lifecycle tool exposure, and optional live SOFIA Cloud boot-context markers.
+This check verifies the Supabase project ref, Pi `mcp.json`, Hermes `sofia` MCP config, local-memory disabled state, lifecycle tool exposure, and optional live SOFIA Cloud boot-context markers.

@@ -1,4 +1,4 @@
-# Hermes SOFIA Spike Global Instructions
+# Hermes SOFIA Global Instructions
 
 This file adapts Justin's Pi global instructions for Hermes. It is intentionally secret-free and should stay compatible with Pi's workflow expectations.
 
@@ -43,7 +43,7 @@ and secret-safe troubleshooting.
 
 Normal launches should use `mise run hermes:sofia:run`, which loads SOFIA boot
 context into `HERMES_EPHEMERAL_SYSTEM_PROMPT` before Hermes starts. If a session
-was started directly with `hermes --profile sofia-spike` and no SOFIA boot
+was started directly with `hermes --profile sofia` and no SOFIA boot
 context is visible in the system prompt, call SOFIA Cloud MCP `get_boot_context`
 immediately. If boot context cannot be loaded, stop and report the failure
 instead of falling back to Hermes local memory.

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-profile_name="${HERMES_SOFIA_PROFILE:-sofia-spike}"
-profile_dir="${HERMES_HOME:-$HOME/.hermes/profiles/$profile_name}"
+profile_name="${HERMES_SOFIA_PROFILE:-sofia}"
+profile_dir="${HERMES_SOFIA_HOME:-$HOME/.hermes/profiles/$profile_name}"
+export HERMES_HOME="$profile_dir"
 context_name="${SOFIA_CONTEXT:-personal}"
 boot_context_script="$profile_dir/scripts/sofia-boot-context"
 

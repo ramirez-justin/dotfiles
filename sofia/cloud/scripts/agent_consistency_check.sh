@@ -4,8 +4,8 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 project_ref_file="$repo_root/sofia/cloud/supabase/.temp/project-ref"
 pi_mcp="$repo_root/pi/.pi/agent/mcp.json"
-hermes_config="$repo_root/hermes/.hermes/profiles/sofia-spike/config.yaml"
-hermes_boot="$HOME/.hermes/profiles/sofia-spike/scripts/sofia-boot-context"
+hermes_config="$repo_root/hermes/.hermes/profiles/sofia/config.yaml"
+hermes_boot="$HOME/.hermes/profiles/sofia/scripts/sofia-boot-context"
 expected_ref=""
 if [[ -f "$project_ref_file" ]]; then
   expected_ref="$(tr -d '[:space:]' < "$project_ref_file")"

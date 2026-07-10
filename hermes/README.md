@@ -1,6 +1,6 @@
-# Hermes SOFIA Spike Profile
+# Hermes SOFIA Profile
 
-This dotfiles topic creates an isolated Hermes profile named `sofia-spike` that mirrors the parts of Pi Justin liked while keeping Pi as fallback.
+This dotfiles topic creates an isolated Hermes profile named `sofia` that mirrors the parts of Pi Justin liked while keeping Pi as fallback.
 
 ## What this profile provides
 
@@ -33,16 +33,16 @@ mise run hermes:sofia:inject-secrets
 mise run hermes:sofia:run
 ```
 
-Use `sofia` for normal starts. It fetches SOFIA boot context before launching Hermes and injects it into the session system prompt. Direct `hermes --profile sofia-spike` still has a static fallback instruction requiring the agent to call SOFIA `get_boot_context` before substantive work, but the wrapper is the preferred path because it gives Hermes context on turn 1.
+Use `sofia` for normal starts. It fetches SOFIA boot context before launching Hermes and injects it into the session system prompt. Direct `hermes --profile sofia` still has a static fallback instruction requiring the agent to call SOFIA `get_boot_context` before substantive work, but the wrapper is the preferred path because it gives Hermes context on turn 1.
 
-The link task uses `stow --no-folding` and pre-creates the target profile directory. That is deliberate: generated `.env` must live in `~/.hermes/profiles/sofia-spike/.env`, not inside the git repo through a folded directory symlink.
+The link task uses `stow --no-folding` and pre-creates the target profile directory. That is deliberate: generated `.env` must live in `~/.hermes/profiles/sofia/.env`, not inside the git repo through a folded directory symlink.
 
 ## Secret handling
 
 Tracked files contain placeholders only. Runtime secrets are written to:
 
 ```text
-~/.hermes/profiles/sofia-spike/.env
+~/.hermes/profiles/sofia/.env
 ```
 
 The injection task reads existing environment variables first, then 1Password refs:
@@ -58,7 +58,7 @@ Unattended/headless caveat: `op read` may require local approval. If Hermes need
 3. use platform OAuth/auth stores where Hermes supports them;
 4. avoid unattended jobs that require fresh `op` approval.
 
-"Attended setup" means Justin is physically present or otherwise able to unlock/approve 1Password once. The inject script reads `op://...` refs at that moment and writes the resulting values into `~/.hermes/profiles/sofia-spike/.env` with mode `0600` (`rw-------`). Later Hermes runs read that local file directly and do not need a fresh 1Password approval unless the file is deleted or secrets rotate.
+"Attended setup" means Justin is physically present or otherwise able to unlock/approve 1Password once. The inject script reads `op://...` refs at that moment and writes the resulting values into `~/.hermes/profiles/sofia/.env` with mode `0600` (`rw-------`). Later Hermes runs read that local file directly and do not need a fresh 1Password approval unless the file is deleted or secrets rotate.
 
 ## Commit safety
 
@@ -72,7 +72,7 @@ Run this before committing profile changes:
 
 ```bash
 mise run hermes:sofia:guard
-git status --ignored --short hermes/.hermes/profiles/sofia-spike
+git status --ignored --short hermes/.hermes/profiles/sofia
 ```
 
 ## SOFIA boot context
@@ -89,19 +89,19 @@ Equivalent mise task:
 mise run hermes:sofia:run
 ```
 
-That task runs `scripts/hermes-sofia`, which fetches boot context and exports it through `HERMES_EPHEMERAL_SYSTEM_PROMPT` before `hermes --profile sofia-spike` starts. It fails closed if SOFIA cannot be reached. For an emergency local-only bypass, set `HERMES_SOFIA_BOOT_REQUIRED=0`, but do not use that for normal work.
+That task runs `scripts/hermes-sofia`, which fetches boot context and exports it through `HERMES_EPHEMERAL_SYSTEM_PROMPT` before `hermes --profile sofia` starts. It fails closed if SOFIA cannot be reached. For an emergency local-only bypass, set `HERMES_SOFIA_BOOT_REQUIRED=0`, but do not use that for normal work.
 
 Fetch boot context directly:
 
 ```bash
-~/.hermes/profiles/sofia-spike/scripts/sofia-boot-context personal
+~/.hermes/profiles/sofia/scripts/sofia-boot-context personal
 ```
 
 Or in Hermes, use the SOFIA MCP tools once the profile is active.
 
 ## SOFIA gateway / Telegram
 
-Telegram gateway sessions need the same SOFIA boot context as local CLI sessions. Use the dedicated gateway wrapper rather than plain `hermes --profile sofia-spike gateway install`:
+Telegram gateway sessions need the same SOFIA boot context as local CLI sessions. Use the dedicated gateway wrapper rather than plain `hermes --profile sofia gateway install`:
 
 ```bash
 mise run hermes:sofia:link
@@ -111,16 +111,16 @@ mise run hermes:sofia:gateway:plist      # write plist only; does not start
 mise run hermes:sofia:gateway:install    # install + start launchd service
 ```
 
-The generated launchd service is `ai.hermes.gateway-sofia-spike` and runs:
+The generated launchd service is `ai.hermes.gateway-sofia` and runs:
 
 ```text
-/Users/justinramirez/.hermes/profiles/sofia-spike/scripts/hermes-sofia gateway run --replace
+/Users/justinramirez/.hermes/profiles/sofia/scripts/hermes-sofia gateway run --replace
 ```
 
 That means Telegram/gateway sessions inherit `HERMES_EPHEMERAL_SYSTEM_PROMPT` from the SOFIA boot-context fetch before the gateway process starts. The plist lives at:
 
 ```text
-~/Library/LaunchAgents/ai.hermes.gateway-sofia-spike.plist
+~/Library/LaunchAgents/ai.hermes.gateway-sofia.plist
 ```
 
 Useful follow-ups:
@@ -131,18 +131,18 @@ mise run hermes:sofia:gateway:restart
 mise run hermes:sofia:gateway:stop
 ```
 
-`hermes:sofia:inject-secrets` will copy already-materialized Telegram values from local-only `~/.hermes/.env` into local-only `~/.hermes/profiles/sofia-spike/.env` when explicit env vars or `*_OP_REF` values are not supplied. This avoids symlinking the default Hermes `.env` while still allowing the spike profile to receive Telegram messages.
+`hermes:sofia:inject-secrets` will copy already-materialized Telegram values from local-only `~/.hermes/.env` into local-only `~/.hermes/profiles/sofia/.env` when explicit env vars or `*_OP_REF` values are not supplied. This avoids symlinking the default Hermes `.env` while still allowing the profile to receive Telegram messages.
 
-Do not run the default Hermes gateway and `ai.hermes.gateway-sofia-spike` against the same Telegram bot token at the same time. Stop the default gateway first, then install/start the SOFIA gateway for the live Telegram ergonomics test.
+Do not run the default Hermes gateway and `ai.hermes.gateway-sofia` against the same Telegram bot token at the same time. Stop the default gateway first, then install/start the SOFIA gateway for the live Telegram ergonomics test.
 
 ## MCP verification checklist
 
 After linking/injecting secrets:
 
 ```bash
-hermes --profile sofia-spike mcp list
-hermes --profile sofia-spike mcp test sofia-cloud
-hermes --profile sofia-spike mcp test context7
+hermes --profile sofia mcp list
+hermes --profile sofia mcp test sofia-cloud
+hermes --profile sofia mcp test context7
 ```
 
 Then start a session and verify:
@@ -150,12 +150,12 @@ Then start a session and verify:
 - search SOFIA memory for a harmless known term;
 - list recent items;
 - fetch `boot_context.md` via `get_artifact` or the boot-context script;
-- capture a disposable spike event only if you are comfortable creating a review candidate;
+- capture a disposable test event only if you are comfortable creating a review candidate;
 - review candidates and archive/delete the disposable test if needed.
 
 ## Pi parity notes
 
-Pi setting | Hermes spike equivalent
+Pi setting | Hermes equivalent
 --- | ---
 `defaultProvider: openai-codex` | `model.provider: openai-codex`
 `defaultModel: gpt-5.5` | `model.default: gpt-5.5`

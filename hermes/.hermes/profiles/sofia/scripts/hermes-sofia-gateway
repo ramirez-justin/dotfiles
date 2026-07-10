@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-profile_name="sofia-spike"
+profile_name="sofia"
+legacy_profile_name="sofia-spike"
 profile_dir="$HOME/.hermes/profiles/$profile_name"
 wrapper="$profile_dir/scripts/hermes-sofia"
 label="ai.hermes.gateway-$profile_name"
+legacy_label="ai.hermes.gateway-$legacy_profile_name"
 plist_path="$HOME/Library/LaunchAgents/$label.plist"
+legacy_plist_path="$HOME/Library/LaunchAgents/$legacy_label.plist"
 log_dir="$profile_dir/logs"
 domain="gui/$(id -u)"
 
@@ -21,8 +24,8 @@ Commands:
   start       Start/kickstart the installed launchd service
   stop        Stop the launchd service without removing the plist
   restart     Restart/kickstart the launchd service
-  status      Show Hermes gateway status for the sofia-spike profile
-  logs        Tail the sofia-spike gateway logs
+  status      Show Hermes gateway status for the sofia profile
+  logs        Tail the sofia gateway logs
   doctor      Validate wrapper, boot context, plist syntax, and Telegram env keys
 EOF
 }
@@ -70,6 +73,17 @@ PY
 
 bootout_if_loaded() {
   launchctl bootout "$domain/$label" >/dev/null 2>&1 || true
+}
+
+bootout_legacy_if_loaded() {
+  if launchctl print "$domain/$legacy_label" >/dev/null 2>&1; then
+    launchctl bootout "$domain/$legacy_label" >/dev/null 2>&1 || true
+    echo "Stopped legacy launchd service $legacy_label"
+  fi
+  if [[ -f "$legacy_plist_path" ]]; then
+    rm -f "$legacy_plist_path"
+    echo "Removed legacy launchd plist $legacy_plist_path"
+  fi
 }
 
 wait_until_unloaded() {
@@ -131,6 +145,7 @@ case "${1:-}" in
     ;;
   install)
     write_plist
+    bootout_legacy_if_loaded
     bootout_if_loaded
     wait_until_unloaded
     bootstrap_service
@@ -145,6 +160,7 @@ case "${1:-}" in
     ;;
   start)
     [[ -f "$plist_path" ]] || write_plist
+    bootout_legacy_if_loaded
     kickstart_service
     echo "Started $label"
     /bin/bash "$0" status
@@ -155,6 +171,7 @@ case "${1:-}" in
     ;;
   restart)
     [[ -f "$plist_path" ]] || write_plist
+    bootout_legacy_if_loaded
     kickstart_service
     echo "Restarted $label"
     /bin/bash "$0" status

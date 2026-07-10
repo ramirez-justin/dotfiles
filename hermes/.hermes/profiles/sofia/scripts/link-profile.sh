@@ -2,9 +2,18 @@
 set -euo pipefail
 
 repo_root="${DOTFILES_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../" && pwd)}"
-profile_dir="$HOME/.hermes/profiles/sofia-spike"
+profile_dir="$HOME/.hermes/profiles/sofia"
+legacy_profile_dir="$HOME/.hermes/profiles/sofia-spike"
 
 mkdir -p "$profile_dir" "$profile_dir/skins" "$profile_dir/scripts"
+
+# Preserve local-only secrets during the historical sofia-spike -> sofia rename.
+# Do not overwrite a freshly injected sofia .env.
+if [[ ! -f "$profile_dir/.env" && -f "$legacy_profile_dir/.env" ]]; then
+  cp -p "$legacy_profile_dir/.env" "$profile_dir/.env"
+  chmod 600 "$profile_dir/.env"
+  echo "Copied existing local-only profile .env from $legacy_profile_dir to $profile_dir"
+fi
 
 # --no-folding is important: it prevents Stow from symlinking the whole
 # profile directory, which would make a generated .env land inside the repo.
@@ -13,7 +22,7 @@ stow --dir="$repo_root" --target="$HOME" --restow --no-folding hermes
 # Install a local pre-commit guard for this repo when possible. Git hooks are
 # intentionally not tracked, so the hook delegates to the tracked script.
 hook_path="$repo_root/.git/hooks/pre-commit"
-guard_script="$repo_root/hermes/.hermes/profiles/sofia-spike/scripts/check-sensitive-state.sh"
+guard_script="$repo_root/hermes/.hermes/profiles/sofia/scripts/check-sensitive-state.sh"
 if [ -d "$repo_root/.git/hooks" ]; then
   if [ ! -e "$hook_path" ]; then
     cat > "$hook_path" <<EOF
@@ -29,6 +38,6 @@ EOF
   fi
 fi
 
-echo "Linked Hermes SOFIA spike profile into $profile_dir"
+echo "Linked Hermes SOFIA profile into $profile_dir"
 echo "Next: mise run hermes:sofia:inject-secrets"
-echo "Run:  hermes --profile sofia-spike"
+echo "Run:  hermes --profile sofia"

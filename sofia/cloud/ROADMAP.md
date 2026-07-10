@@ -77,7 +77,7 @@
 
 4. Verify Hermes and Pi both use SOFIA Cloud correctly.
    - Confirm Pi startup/runtime fetches boot context from SOFIA Cloud and does not silently fall back to local Obsidian `_agent` files.
-   - Confirm the Hermes `sofia-spike` profile fetches SOFIA Cloud boot context before session start and fails closed if cloud context is unavailable.
+   - Confirm the Hermes `sofia` profile fetches SOFIA Cloud boot context before session start and fails closed if cloud context is unavailable.
    - Confirm Hermes MCP wiring can call SOFIA Cloud tools (`get_boot_context`, `search_memory`, `capture_event`, and review tools) through the intended profile.
    - Confirm Hermes gateway/Telegram runs under the SOFIA profile with the SOFIA environment loaded, not the default profile.
    - Confirm Pi MCP config and Hermes profile config point at the same deployed `sofia-core` endpoint and use secret references/environment variables rather than raw secrets.
@@ -94,7 +94,7 @@
 - Pi verification passes: `source ~/.pi/agent/env.zsh` followed by a SOFIA Cloud health/boot-context check succeeds without printing secrets.
 - Pi MCP config verification passes: `~/.pi/agent/mcp.json` contains the `sofia-cloud` server, points at the deployed Supabase Edge Function, and uses `${SOFIA_MCP_ACCESS_KEY}` or equivalent secret injection.
 - Hermes CLI verification passes: `mise run hermes:sofia:boot-context` returns SOFIA Cloud boot context with `snapshot_id`/`token_count`.
-- Hermes MCP verification passes: `mise run hermes:sofia:doctor` or equivalent `hermes --profile sofia-spike mcp test sofia-cloud` succeeds.
+- Hermes MCP verification passes: `mise run hermes:sofia:doctor` or equivalent `hermes --profile sofia mcp test sofia-cloud` succeeds.
 - Hermes gateway verification passes: `mise run hermes:sofia:gateway:doctor` and `mise run hermes:sofia:gateway:status` show the SOFIA-hydrated gateway running under the intended profile.
 - Cross-agent consistency check passes: Pi and Hermes both retrieve boot context from the same SOFIA Cloud project/ref and compiled artifact source, with no local-vault runtime fallback.
 
@@ -108,7 +108,7 @@
 - `sofia/cloud/supabase/functions/sofia-core/reconcile_test.ts`
 - `sofia/cloud/RUNBOOK.md`
 - `hermes/RUNBOOK.md`
-- `hermes/.hermes/profiles/sofia-spike/scripts/`
+- `hermes/.hermes/profiles/sofia/scripts/`
 - `pi/.pi/agent/mcp.json`
 - `pi/.pi/agent/env.zsh`
 

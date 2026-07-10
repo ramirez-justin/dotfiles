@@ -3,7 +3,7 @@
 # Use `sofia-local` for the legacy local SOFIA second-brain CLI.
 set -euo pipefail
 
-wrapper="${HERMES_SOFIA_WRAPPER:-$HOME/.hermes/profiles/sofia-spike/scripts/hermes-sofia}"
+wrapper="${HERMES_SOFIA_WRAPPER:-$HOME/.hermes/profiles/sofia/scripts/hermes-sofia}"
 
 if [[ ! -x "$wrapper" ]]; then
   echo "sofia: Hermes SOFIA wrapper is missing or not executable: $wrapper" >&2

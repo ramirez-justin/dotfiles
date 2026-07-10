@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-profile_dir="${HERMES_HOME:-$HOME/.hermes/profiles/sofia-spike}"
+profile_dir="${HERMES_HOME:-$HOME/.hermes/profiles/sofia}"
 if [[ -f "$profile_dir/.env" ]]; then
   set -a
   # shellcheck disable=SC1091

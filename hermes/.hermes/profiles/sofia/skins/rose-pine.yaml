@@ -49,7 +49,7 @@ spinner:
     - ["✧", "✧"]
 branding:
   agent_name: "Sofia / Hermes"
-  welcome: "Sofia on Hermes — SOFIA spike profile. Pi remains fallback."
+  welcome: "Sofia on Hermes — SOFIA profile. Pi remains fallback."
   goodbye: "Goodbye — stay thorny. 🌹"
   response_label: " 🌹 Sofia "
   prompt_symbol: "❯"

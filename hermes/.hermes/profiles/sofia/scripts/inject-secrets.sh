@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-profile_dir="$HOME/.hermes/profiles/sofia-spike"
+profile_dir="$HOME/.hermes/profiles/sofia"
 env_file="$profile_dir/.env"
 mkdir -p "$profile_dir"
 
@@ -48,7 +48,7 @@ read_secret() {
   elif [[ -n "$ref_value" ]]; then
     op read "$ref_value"
   else
-    # Convenience for the spike: copy already-materialized local-only gateway
+    # Convenience for the profile: copy already-materialized local-only gateway
     # secrets from the default Hermes profile into the isolated SOFIA profile.
     # This avoids symlinking ~/.hermes/.env while still letting Telegram use
     # the same attended-secret setup Justin already has.

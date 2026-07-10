@@ -1,10 +1,10 @@
 # Hermes SOFIA Runbook
 
-This runbook is for the `sofia-spike` Hermes profile. Use these commands when you want Hermes sessions, Telegram gateway sessions, and SOFIA Cloud memory to stay wired together.
+This runbook is for the `sofia` Hermes profile. Use these commands when you want Hermes sessions, Telegram gateway sessions, and SOFIA Cloud memory to stay wired together.
 
 ## Golden rule
 
-Use the SOFIA wrappers, not plain `hermes --profile sofia-spike`, for normal work.
+Use the SOFIA wrappers, not plain `hermes --profile sofia`, for normal work.
 
 The wrappers fetch SOFIA boot context before Hermes starts and inject it into `HERMES_EPHEMERAL_SYSTEM_PROMPT`, so Hermes has SOFIA memory context on turn 1.
 
@@ -19,7 +19,7 @@ sofia
 The tracked `~/.local/bin/sofia` wrapper executes:
 
 ```bash
-~/.hermes/profiles/sofia-spike/scripts/hermes-sofia
+~/.hermes/profiles/sofia/scripts/hermes-sofia
 ```
 
 Equivalent mise command:
@@ -40,7 +40,7 @@ sofia --skills sofia-cloud-memory
 Avoid this for normal work:
 
 ```bash
-hermes --profile sofia-spike
+hermes --profile sofia
 ```
 
 Direct profile launches have a static fallback instruction to fetch SOFIA context, but they do not get boot context before the first model call.
@@ -58,8 +58,8 @@ mise run hermes:sofia:doctor
 
 What these do:
 
-- `link` installs the tracked profile files into `~/.hermes/profiles/sofia-spike` without folding the whole profile directory into a symlink.
-- `inject-secrets` writes local-only secrets to `~/.hermes/profiles/sofia-spike/.env` with restrictive permissions.
+- `link` installs the tracked profile files into `~/.hermes/profiles/sofia` without folding the whole profile directory into a symlink.
+- `inject-secrets` writes local-only secrets to `~/.hermes/profiles/sofia/.env` with restrictive permissions.
 - `doctor` validates the profile config and SOFIA MCP wiring.
 
 ## Gateway / Telegram setup
@@ -79,19 +79,19 @@ mise run hermes:sofia:gateway:install
 The launchd service is:
 
 ```text
-ai.hermes.gateway-sofia-spike
+ai.hermes.gateway-sofia
 ```
 
 The generated plist is:
 
 ```text
-~/Library/LaunchAgents/ai.hermes.gateway-sofia-spike.plist
+~/Library/LaunchAgents/ai.hermes.gateway-sofia.plist
 ```
 
 It runs:
 
 ```text
-~/.hermes/profiles/sofia-spike/scripts/hermes-sofia gateway run --replace
+~/.hermes/profiles/sofia/scripts/hermes-sofia gateway run --replace
 ```
 
 Do not run the default Hermes gateway and the SOFIA gateway against the same Telegram bot token at the same time.
@@ -125,7 +125,7 @@ mise run hermes:sofia:gateway:plist
 Tail logs:
 
 ```bash
-~/.hermes/profiles/sofia-spike/scripts/hermes-sofia-gateway logs
+~/.hermes/profiles/sofia/scripts/hermes-sofia-gateway logs
 ```
 
 ## Health checks
@@ -140,21 +140,21 @@ mise run hermes:sofia:guard
 MCP checks:
 
 ```bash
-hermes --profile sofia-spike mcp list
-hermes --profile sofia-spike mcp test sofia-cloud
-hermes --profile sofia-spike mcp test context7
+hermes --profile sofia mcp list
+hermes --profile sofia mcp test sofia-cloud
+hermes --profile sofia mcp test context7
 ```
 
 Boot context check:
 
 ```bash
-~/.hermes/profiles/sofia-spike/scripts/sofia-boot-context personal
+~/.hermes/profiles/sofia/scripts/sofia-boot-context personal
 ```
 
 Hermes status for the SOFIA profile:
 
 ```bash
-HERMES_HOME="$HOME/.hermes/profiles/sofia-spike" hermes --profile sofia-spike status --all
+HERMES_HOME="$HOME/.hermes/profiles/sofia" hermes --profile sofia status --all
 ```
 
 ## Troubleshooting
@@ -268,7 +268,7 @@ SOFIA_AGENT_CONSISTENCY_LIVE=1 mise run sofia-cloud:agent-consistency
 Healthy output confirms:
 
 - Pi `~/.pi/agent/mcp.json` uses the deployed `sofia-core` URL and `${SOFIA_MCP_ACCESS_KEY}`.
-- Hermes `sofia-spike` uses `${SOFIA_CLOUD_URL}` and `${SOFIA_MCP_ACCESS_KEY}`.
+- Hermes `sofia` uses `${SOFIA_CLOUD_URL}` and `${SOFIA_MCP_ACCESS_KEY}`.
 - Hermes local durable memory remains disabled.
 - The SOFIA MCP include list exposes boot context and lifecycle tools.
 - Optional live mode returns SOFIA Cloud compiled boot context with the Postgres-canonical marker.

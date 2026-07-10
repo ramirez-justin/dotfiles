@@ -34,6 +34,15 @@ source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 # for Claude Code / pi
 export ENABLE_LSP_TOOLS=1
 [[ -f "$HOME/.pi/agent/env.zsh" ]] && source "$HOME/.pi/agent/env.zsh"
+
+# Refresh Pi's runtime env immediately before launch. This covers terminals that
+# started before 1Password CLI was unlocked, where SOFIA_MCP_ACCESS_KEY was empty
+# when ~/.pi/agent/env.zsh first ran.
+pi() {
+    [[ -f "$HOME/.pi/agent/env.zsh" ]] && source "$HOME/.pi/agent/env.zsh"
+    command pi "$@"
+}
+
 if [[ "$CLAUDECODE" != "1" ]]; then
     eval "$(zoxide init --cmd cd zsh)"
 fi

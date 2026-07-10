@@ -3,7 +3,7 @@
 node = "24"
 python = "3.12"
 "npm:@4ier/notion-cli" = "latest"
-"npm:@earendil-works/pi-coding-agent" = "latest"
+"npm:@earendil-works/pi-coding-agent" = { version = "latest", minimum_release_age = "0" }
 "npm:bash-language-server" = "latest"
 "npm:dockerfile-language-server-nodejs" = "latest"
 "npm:neovim" = "latest"

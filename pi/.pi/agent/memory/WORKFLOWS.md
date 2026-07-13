@@ -14,19 +14,19 @@ Durable workflow conventions for Justin's Pi sessions.
 
 - Use `/brainstorm` before creative feature or behavior changes.
 - Use `/write-plan` for multi-step implementation planning.
-- Use `/execute-plan` or subagent-driven execution for approved plans.
-  When delegating implementation, keep exactly one writer and use
-  `implementer` or `worker` only after scope or plan approval.
-- Use `/debug` before fixing unexpected behavior or test failures.
-  Use `scout` for broad unfamiliar systems and `oracle` only when stuck or
+- Use `/execute-plan` or subagent-driven execution for approved plans. If
+  delegating edits, use exactly one `implementer` or `worker` after approval;
+  the parent must not edit concurrently and must review the actual diff.
+- Use `/debug` before fixing unexpected behavior or test failures. Launch
+  `Explore` for broad unfamiliar systems and `oracle` only when stuck or when
   assumptions need challenge.
-- Use `/finish` before claiming implementation work is complete. For
-  non-trivial changes, consider `verifier` for independent evidence.
-- Use `@tintinweb/pi-subagents` native agents when delegation helps: `scout`
-  or `Explore` on Luna for quick context, `Plan`/`planner`, `reviewer`,
-  `oracle`, or `researcher` on Terra for hard reasoning, and exactly one
-  `worker`/`implementer` on Sol for approved writes. The parent remains
-  accountable for final decisions, mutations, and user-facing claims.
+- Use `/finish` before claiming implementation work is complete. Launch
+  `verifier` for independent evidence on meaningful changes.
+- Use `@tintinweb/pi-subagents` when delegation adds value: `Explore` on Luna
+  for quick context; `Plan`, `reviewer`, `oracle`, or `researcher` on Terra for
+  hard reasoning; and one `worker`/`implementer` on Sol for approved writes.
+  Keep small, clear tasks in the Sol parent. The parent remains accountable for
+  scope, decisions, mutations, and user-facing claims.
 - Do not use subagents by default for Linear, Notion, Snowflake, or Cortex
   mutations. Keep preview-before-mutation approval in the parent session.
 - If Cortex cannot access the needed Snowflake account, Snowflake CLI key-pair

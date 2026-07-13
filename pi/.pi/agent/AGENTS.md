@@ -54,6 +54,25 @@ When a skill is used, briefly say which skill you are using and why. If we are
 deviating from an existing skill then suggest updates. If we are doing something
 that seems like a good candidate for a skill then suggest that we create one.
 
+## Subagent Routing
+
+Use `@tintinweb/pi-subagents` when delegation materially improves the work:
+
+- Launch `Explore` on Luna before planning or debugging a broad, unfamiliar
+  subsystem.
+- Launch `Plan`, `reviewer`, `oracle`, or `researcher` on Terra for difficult
+  planning, independent review, assumption checks, or current research.
+- Launch exactly one `worker` or `implementer` on Sol for approved delegated
+  edits. Do not edit the same worktree concurrently in the parent.
+- Launch `verifier` on Luna for independent validation of meaningful changes
+  before claiming completion.
+- Keep direct work in the Sol parent for small, clear tasks where delegation
+  would add more overhead than value.
+
+The parent remains accountable for scope, decisions, reviewing actual changes,
+and user-facing claims. Do not delegate Linear, Notion, Snowflake, or Cortex
+mutations by default; keep preview-before-mutation approval in the parent.
+
 ## Tool Preferences
 
 Prioritize LSP tools as the first choice for code intelligence tasks when

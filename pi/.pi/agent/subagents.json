@@ -1,0 +1,10 @@
+{
+  "maxConcurrent": 4,
+  "defaultJoinMode": "smart",
+  "schedulingEnabled": false,
+  "scopeModels": false,
+  "disableDefaultAgents": false,
+  "toolDescriptionMode": "compact",
+  "fleetView": true,
+  "widgetMode": "background"
+}

@@ -4,7 +4,8 @@ description: >-
 argument-hint: "[what to verify]"
 ---
 Use the `verification-before-completion` skill. Do not say this is complete
-until the relevant checks have actually run and passed. For non-trivial changes,
-consider `verifier` for independent read-only validation:
+until the relevant checks have actually run and passed. For meaningful code or
+workflow changes, launch `verifier` for independent read-only validation before
+claiming completion:
 
 $ARGUMENTS

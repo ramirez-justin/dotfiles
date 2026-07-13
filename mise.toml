@@ -11,9 +11,9 @@ depends = [
   "brew-install",
   "tools-install",
   "install-omz",
-  "link",
   "inject-secrets",
 ]
+run = "mise run link"
 
 [tasks.trust-third-party-brew-taps]
 description = "Opt-in: trust third-party Homebrew taps required by Brewfile"
@@ -113,9 +113,15 @@ echo "oh-my-zsh ready"
 """
 
 [tasks.link]
-description = "Stow all topics into $HOME"
-depends = ["brew-install"]
-run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo snowflake"
+description = "Stow all topics into $HOME without installing packages"
+run = """
+set -e
+if ! command -v stow >/dev/null 2>&1; then
+    echo "GNU Stow is required; run 'mise run brew-install' during bootstrap." >&2
+    exit 1
+fi
+stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo snowflake
+"""
 
 [tasks.unlink]
 description = "Remove all stow symlinks"

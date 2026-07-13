@@ -14,6 +14,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 
 - Prefer concise responses unless the task requires detail.
 - Prefer minimum code that solves the problem.
+- Use Neovim rather than VS Code. Do not install or manage VS Code or its
+  extensions unless explicitly requested.
 - Prefer explicit success criteria and verified outcomes.
 - Prefer Linear over Jira for new issue-tracking work unless Jira is requested.
 - Do not present PR URLs unless the PR has actually been created and verified.
@@ -31,5 +33,7 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   commands like `dbt parse` run through dbt Cloud, so do not skip them due to
   missing local `profiles.yml` or `dbt_packages/` alone.
 - Treat source data correctness as unverified unless it has been validated.
+- Validate automated PR review feedback before applying it; avoid iterative
+  churn from bots unless the suggestion is technically justified.
 - Do not assume local tools are installed; check availability before suggesting
   or using them.

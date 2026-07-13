@@ -88,7 +88,7 @@ git merge main
 ## Daily Commands
 
 ```bash
-mise run link            # re-stow all topics (safe to run anytime)
+mise run link            # re-stow all topics without package changes
 mise run update          # git pull --rebase + re-link
 mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.json and ~/.pi/agent/env.local.zsh
 

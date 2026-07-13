@@ -91,8 +91,6 @@ cask "font-fira-code-nerd-font"
 cask "font-maple-mono"
 cask "mongodb-compass"
 cask "session-manager-plugin"
-vscode "anysphere.remote-ssh"
-vscode "vscodevim.vim"
 cargo "lazycli"
 uv "pipenv-uv-migrate"
 uv "sqlfluff", with: ["chardet<6", "dbt-snowflake", "sqlfluff-templater-dbt"]

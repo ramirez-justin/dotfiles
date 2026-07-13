@@ -58,14 +58,15 @@ that seems like a good candidate for a skill then suggest that we create one.
 
 Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 
-- Launch `Explore` on Luna before planning or debugging a broad, unfamiliar
-  subsystem.
-- Launch `Plan`, `reviewer`, `oracle`, or `researcher` on Terra for difficult
-  planning, independent review, assumption checks, or current research.
+- Launch `Explore` on Luna with max reasoning before planning or debugging a
+  broad, unfamiliar subsystem.
+- Launch `Plan`, `reviewer`, `oracle`, or `researcher` on Terra with max
+  reasoning for difficult planning, independent review, assumption checks, or
+  current research.
 - Launch exactly one `worker` or `implementer` on Sol for approved delegated
   edits. Do not edit the same worktree concurrently in the parent.
-- Launch `verifier` on Luna for independent validation of meaningful changes
-  before claiming completion.
+- Launch `verifier` on Luna with max reasoning for independent validation of
+  meaningful changes before claiming completion.
 - Keep direct work in the Sol parent for small, clear tasks where delegation
   would add more overhead than value.
 

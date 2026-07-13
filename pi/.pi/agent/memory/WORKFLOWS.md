@@ -22,11 +22,12 @@ Durable workflow conventions for Justin's Pi sessions.
   assumptions need challenge.
 - Use `/finish` before claiming implementation work is complete. Launch
   `verifier` for independent evidence on meaningful changes.
-- Use `@tintinweb/pi-subagents` when delegation adds value: `Explore` on Luna
-  for quick context; `Plan`, `reviewer`, `oracle`, or `researcher` on Terra for
-  hard reasoning; and one `worker`/`implementer` on Sol for approved writes.
-  Keep small, clear tasks in the Sol parent. The parent remains accountable for
-  scope, decisions, mutations, and user-facing claims.
+- Use `@tintinweb/pi-subagents` when delegation adds value: run Luna and Terra
+  agents with max reasoning, and keep Sol at medium. Use `Explore` for quick
+  context; `Plan`, `reviewer`, `oracle`, or `researcher` for hard reasoning;
+  and one `worker`/`implementer` for approved writes. Keep small, clear tasks
+  in the Sol parent. The parent remains accountable for scope, decisions,
+  mutations, and user-facing claims.
 - Do not use subagents by default for Linear, Notion, Snowflake, or Cortex
   mutations. Keep preview-before-mutation approval in the parent session.
 - If Cortex cannot access the needed Snowflake account, Snowflake CLI key-pair

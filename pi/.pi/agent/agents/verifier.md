@@ -3,7 +3,7 @@ description: Cheap evidence-focused validation agent.
 display_name: Verifier (Luna)
 tools: read, grep, find, bash
 model: openai-codex/gpt-5.6-luna
-thinking: low
+thinking: max
 max_turns: 16
 prompt_mode: append
 ---

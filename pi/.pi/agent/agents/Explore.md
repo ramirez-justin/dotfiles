@@ -3,7 +3,7 @@ description: Fast read-only codebase reconnaissance.
 display_name: Explore (Luna)
 tools: read, grep, find, bash
 model: openai-codex/gpt-5.6-luna
-thinking: low
+thinking: max
 max_turns: 12
 prompt_mode: append
 ---

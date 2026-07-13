@@ -3,7 +3,7 @@ description: High-reasoning decision and assumption reviewer.
 display_name: Oracle (Terra)
 tools: read, grep, find, bash
 model: openai-codex/gpt-5.6-terra
-thinking: xhigh
+thinking: max
 max_turns: 20
 prompt_mode: append
 ---

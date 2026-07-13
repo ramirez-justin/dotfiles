@@ -44,6 +44,33 @@ brew bundle --file={{config_root}}/Brewfile
 description = "Install mise-managed tools"
 run = "mise install"
 
+[tasks.check-agent-tiers]
+description = "Verify Luna/Terra use max reasoning and Sol uses medium"
+run = """
+set -e
+agents={{config_root}}/pi/.pi/agent/agents
+checked=0
+for file in "$agents"/*.md; do
+    model=$(awk -F': ' '$1 == "model" { print $2; exit }' "$file")
+    thinking=$(awk -F': ' '$1 == "thinking" { print $2; exit }' "$file")
+    case "$model" in
+        *gpt-5.6-luna|*gpt-5.6-terra) expected=max ;;
+        *gpt-5.6-sol) expected=medium ;;
+        *) continue ;;
+    esac
+    checked=$((checked + 1))
+    if [ "$thinking" != "$expected" ]; then
+        echo "$file: expected thinking $expected for $model, got $thinking" >&2
+        exit 1
+    fi
+done
+if [ "$checked" -eq 0 ]; then
+    echo "No GPT-5.6 tiered agents found in $agents" >&2
+    exit 1
+fi
+echo "Pi agent model tiers verified ($checked agents)"
+"""
+
 [tasks.doctor]
 description = "Verify dotfiles, shell tools, Pi, and local machine health"
 run = """
@@ -69,6 +96,7 @@ check "mise tools installed" mise current
 check "node available via mise" mise exec -- node -v
 check "no standalone npm latest tool" sh -c "if grep -R -F '\"npm:npm\" = \"latest\"' {{config_root}}/mise/.config/mise/config.toml; then exit 1; fi"
 check "node selectors avoid patch pins" sh -c "if grep -R -E 'node(@|/)[0-9]+[.][0-9]+[.][0-9]+' {{config_root}}/mise/.config/mise/config.toml {{config_root}}/pi/.pi/agent/settings.json {{config_root}}/claude/.claude/settings.json; then exit 1; fi"
+check "Pi agent model tiers" mise run check-agent-tiers
 check "pi available" command -v pi
 check "pi starts offline" mise exec -- pi --offline --list-models
 check "git submodules initialized" git submodule status --recursive

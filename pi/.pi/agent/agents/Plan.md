@@ -3,7 +3,7 @@ description: High-reasoning implementation planning.
 display_name: Plan (Terra)
 tools: read, grep, find, bash
 model: openai-codex/gpt-5.6-terra
-thinking: high
+thinking: max
 max_turns: 24
 prompt_mode: append
 ---

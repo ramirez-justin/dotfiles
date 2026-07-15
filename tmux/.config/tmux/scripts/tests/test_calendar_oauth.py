@@ -78,7 +78,7 @@ class OAuthSecurityTests(unittest.TestCase):
         finally:
             server.server_close()
 
-    def test_incomplete_connection_obeys_overall_deadline(self):
+    def test_slow_connection_cannot_extend_overall_deadline(self):
         server = calendar_oauth.create_callback_server("expected")
         outcome = []
 
@@ -89,13 +89,22 @@ class OAuthSecurityTests(unittest.TestCase):
                 outcome.append("timed-out")
 
         waiter = threading.Thread(target=wait_for_callback)
+        started = time.monotonic()
         waiter.start()
-        with socket.create_connection(server.server_address):
-            time.sleep(0.3)
-        waiter.join(timeout=1)
+        with socket.create_connection(server.server_address) as connection:
+            drip_deadline = time.monotonic() + 0.6
+            while waiter.is_alive() and time.monotonic() < drip_deadline:
+                try:
+                    connection.sendall(b"G")
+                except OSError:
+                    break
+                time.sleep(0.05)
+        waiter.join(timeout=0.5)
+        elapsed = time.monotonic() - started
         server.server_close()
 
         self.assertFalse(waiter.is_alive())
+        self.assertLess(elapsed, 0.45)
         self.assertEqual(outcome, ["timed-out"])
 
 

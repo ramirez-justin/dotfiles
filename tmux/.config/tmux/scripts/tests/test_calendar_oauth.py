@@ -3,6 +3,9 @@ import hashlib
 import importlib.util
 from importlib.machinery import ModuleSpec
 from pathlib import Path
+import socket
+import threading
+import time
 from typing import cast
 import unittest
 
@@ -74,6 +77,26 @@ class OAuthSecurityTests(unittest.TestCase):
             self.assertGreater(server.server_address[1], 0)
         finally:
             server.server_close()
+
+    def test_incomplete_connection_obeys_overall_deadline(self):
+        server = calendar_oauth.create_callback_server("expected")
+        outcome = []
+
+        def wait_for_callback():
+            try:
+                calendar_oauth.wait_for_callback(server, 0.2)
+            except TimeoutError:
+                outcome.append("timed-out")
+
+        waiter = threading.Thread(target=wait_for_callback)
+        waiter.start()
+        with socket.create_connection(server.server_address):
+            time.sleep(0.3)
+        waiter.join(timeout=1)
+        server.server_close()
+
+        self.assertFalse(waiter.is_alive())
+        self.assertEqual(outcome, ["timed-out"])
 
 
 if __name__ == "__main__":

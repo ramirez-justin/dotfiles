@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck source=../calendar-helpers.sh
+# shellcheck disable=SC1091
 source "$SCRIPT_DIR/calendar-helpers.sh"
 
 TEST_DIR=$(mktemp -d)
@@ -23,7 +23,10 @@ second line"
 calendar_show_popup "$payload"
 
 [[ ! -e "$marker" ]]
-! grep -F "$payload" "$TMUX_CAPTURE"
+if grep -F "$payload" "$TMUX_CAPTURE"; then
+    echo "popup payload leaked into tmux arguments" >&2
+    exit 1
+fi
 popup_setting=$(grep '^CALENDAR_POPUP_FILE=' "$TMUX_CAPTURE")
 popup_file=${popup_setting#CALENDAR_POPUP_FILE=}
 [[ -f "$popup_file" ]]

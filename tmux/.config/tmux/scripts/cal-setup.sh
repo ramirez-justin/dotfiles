@@ -70,15 +70,14 @@ fi
 echo "Authorization code received. Exchanging for tokens..."
 
 if ! TOKEN_RESPONSE=$(
-    curl --silent --show-error --fail-with-body \
-        -X POST "https://oauth2.googleapis.com/token" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "code=${AUTH_CODE}" \
-        -d "client_id=${CLIENT_ID}" \
-        -d "client_secret=${CLIENT_SECRET}" \
-        -d "redirect_uri=${REDIRECT_URI}" \
-        -d "code_verifier=${CODE_VERIFIER}" \
-        -d "grant_type=authorization_code"
+    calendar_post_form \
+        "https://oauth2.googleapis.com/token" \
+        code "$AUTH_CODE" \
+        client_id "$CLIENT_ID" \
+        client_secret "$CLIENT_SECRET" \
+        redirect_uri "$REDIRECT_URI" \
+        code_verifier "$CODE_VERIFIER" \
+        grant_type authorization_code
 ); then
     echo "Failed to exchange the calendar authorization code." >&2
     exit 1

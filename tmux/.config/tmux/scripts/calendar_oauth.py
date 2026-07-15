@@ -7,6 +7,7 @@ import http.server
 import json
 import secrets
 import sys
+import time
 import urllib.parse
 import webbrowser
 from typing import cast
@@ -51,6 +52,12 @@ class OAuthCallbackServer(http.server.HTTPServer):
     expected_state: str
     authorization_code: str | None
     callback_error: str | None
+    request_timeout: float
+
+    def get_request(self):
+        request, address = super().get_request()
+        request.settimeout(self.request_timeout)
+        return request, address
 
 
 class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
@@ -85,7 +92,28 @@ def create_callback_server(expected_state: str) -> OAuthCallbackServer:
     server.expected_state = expected_state
     server.authorization_code = None
     server.callback_error = None
+    server.request_timeout = 1.0
     return server
+
+
+def wait_for_callback(
+    server: OAuthCallbackServer, timeout: float
+) -> str:
+    deadline = time.monotonic() + timeout
+    server.request_timeout = min(1.0, max(0.05, timeout))
+
+    while not server.authorization_code and not server.callback_error:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("authorization callback timed out")
+        server.timeout = remaining
+        server.handle_request()
+
+    if server.callback_error:
+        raise RuntimeError(server.callback_error)
+    if not server.authorization_code:
+        raise TimeoutError("authorization callback timed out")
+    return server.authorization_code
 
 
 def build_authorization_url(
@@ -129,18 +157,12 @@ def authorize(client_id: str, scope: str, timeout: int) -> dict[str, str]:
                 f"{authorization_url}",
                 file=sys.stderr,
             )
-        server.timeout = timeout
-        server.handle_request()
+        authorization_code = wait_for_callback(server, timeout)
     finally:
         server.server_close()
 
-    if server.callback_error:
-        raise RuntimeError(server.callback_error)
-    if not server.authorization_code:
-        raise TimeoutError("authorization callback timed out")
-
     return {
-        "code": server.authorization_code,
+        "code": authorization_code,
         "redirect_uri": redirect_uri,
         "code_verifier": verifier,
     }

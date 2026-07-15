@@ -1,6 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+umask 077
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/calendar-helpers.sh"
 CREDENTIALS_FILE="$SCRIPT_DIR/.credentials.json"
 
 ALERT_IF_IN_NEXT_MINUTES=20
@@ -25,12 +28,17 @@ CLIENT_SECRET=$(jq -r '.client_secret' "$CREDENTIALS_FILE")
 # Refresh token if expired
 NOW=$(date +%s)
 if [[ "$NOW" -ge "$EXPIRY" ]]; then
-	TOKEN_RESPONSE=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
-		-H "Content-Type: application/x-www-form-urlencoded" \
-		-d "client_id=${CLIENT_ID}" \
-		-d "client_secret=${CLIENT_SECRET}" \
-		-d "refresh_token=${REFRESH_TOKEN}" \
-		-d "grant_type=refresh_token")
+	if ! TOKEN_RESPONSE=$(
+		calendar_post_form \
+			"https://oauth2.googleapis.com/token" \
+			client_id "$CLIENT_ID" \
+			client_secret "$CLIENT_SECRET" \
+			refresh_token "$REFRESH_TOKEN" \
+			grant_type refresh_token
+	); then
+		echo "$NERD_FONT_AUTH"
+		exit 0
+	fi
 
 	NEW_ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')
 	EXPIRES_IN=$(echo "$TOKEN_RESPONSE" | jq -r '.expires_in // empty')
@@ -43,11 +51,16 @@ if [[ "$NOW" -ge "$EXPIRY" ]]; then
 	ACCESS_TOKEN="$NEW_ACCESS_TOKEN"
 	NEW_EXPIRY=$((NOW + EXPIRES_IN))
 
-	# Update credentials file
-	jq --arg at "$ACCESS_TOKEN" --argjson exp "$NEW_EXPIRY" \
-		'.access_token = $at | .expiry = $exp' "$CREDENTIALS_FILE" >"${CREDENTIALS_FILE}.tmp" &&
-		mv "${CREDENTIALS_FILE}.tmp" "$CREDENTIALS_FILE"
-	chmod 600 "$CREDENTIALS_FILE"
+	# Update credentials file atomically.
+	UPDATED_CREDENTIALS=$(
+		jq --arg at "$ACCESS_TOKEN" --argjson exp "$NEW_EXPIRY" \
+			'.access_token = $at | .expiry = $exp' "$CREDENTIALS_FILE"
+	)
+	if ! printf '%s\n' "$UPDATED_CREDENTIALS" |
+		calendar_atomic_json_write "$CREDENTIALS_FILE"; then
+		echo "$NERD_FONT_AUTH"
+		exit 0
+	fi
 fi
 
 # Query Google Calendar API for next event across all calendars
@@ -74,9 +87,8 @@ EARLIEST_START=""
 
 for CAL_ID in "${CALENDAR_IDS[@]}"; do
 	ENCODED_CAL_ID=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$CAL_ID'))")
-	RESPONSE=$(curl -s \
-		-H "Authorization: Bearer $ACCESS_TOKEN" \
-		"https://www.googleapis.com/calendar/v3/calendars/${ENCODED_CAL_ID}/events?timeMin=${ENCODED_TIME_MIN}&timeMax=${ENCODED_TIME_MAX}&maxResults=5&orderBy=startTime&singleEvents=true")
+	CALENDAR_URL="https://www.googleapis.com/calendar/v3/calendars/${ENCODED_CAL_ID}/events?timeMin=${ENCODED_TIME_MIN}&timeMax=${ENCODED_TIME_MAX}&maxResults=5&orderBy=startTime&singleEvents=true"
+	RESPONSE=$(calendar_get_with_bearer "$ACCESS_TOKEN" "$CALENDAR_URL")
 
 	# Find the first timed (non-all-day) event
 	EVENT_ITEM=$(echo "$RESPONSE" | jq -r '[.items[] | select(.start.dateTime != null)] | first // empty' 2>/dev/null)
@@ -109,12 +121,15 @@ fi
 EVENT_TITLE=$(echo "$EVENT" | jq -r '.summary // "No title"')
 
 # Parse event start time (handles timezone offsets correctly)
-read -r EVENT_EPOCH EVENT_TIME <<< $(python3 -c "
-from datetime import datetime, timezone
+read -r EVENT_EPOCH EVENT_TIME < <(
+	python3 - "$EVENT_START" <<'PY'
+from datetime import datetime
 import sys
-dt = datetime.fromisoformat('$EVENT_START')
-print(int(dt.timestamp()), dt.astimezone().strftime('%H:%M'))
-")
+
+dt = datetime.fromisoformat(sys.argv[1])
+print(int(dt.timestamp()), dt.astimezone().strftime("%H:%M"))
+PY
+)
 
 # Calculate minutes until meeting
 DIFF=$((EVENT_EPOCH - NOW))
@@ -125,7 +140,7 @@ if [[ "$DIFF" -gt "$ALERT_POPUP_BEFORE_SECONDS" && "$DIFF" -lt $((ALERT_POPUP_BE
 	EVENT_DESCRIPTION=$(echo "$EVENT" | jq -r '.description // "No description"' | head -5)
 	EVENT_ATTENDEES=$(echo "$EVENT" | jq -r '.attendees[]?.email // empty' 2>/dev/null | head -10)
 	POPUP_TEXT="Meeting: $EVENT_TITLE\nTime: $EVENT_TIME\n\nAttendees:\n$EVENT_ATTENDEES\n\nNotes:\n$EVENT_DESCRIPTION"
-	tmux display-popup -w50% -h50% -T "Upcoming Meeting" -E "echo '$POPUP_TEXT' | less" &>/dev/null &
+	calendar_show_popup "$POPUP_TEXT" &>/dev/null &
 fi
 
 # Print status

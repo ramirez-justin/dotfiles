@@ -39,7 +39,7 @@ output=$("$SCRIPT_DIR/cal-setup.sh" 2>&1)
 [[ "$output" != *"auth-code"* ]]
 [[ "$output" != *"access"* ]]
 [[ "$output" != *"refresh"* ]]
-grep -Fx 'code_verifier=verifier' "$CURL_CAPTURE"
+grep -Fx 'code_verifier=verifier' "$CURL_CAPTURE" >/dev/null
 [[ "$(stat -f %Lp "$credentials_file")" == "600" ]]
 jq -e '.access_token == "access" and .refresh_token == "refresh"' \
     "$credentials_file" >/dev/null

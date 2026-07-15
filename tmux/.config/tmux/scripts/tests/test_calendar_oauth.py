@@ -1,15 +1,21 @@
 import base64
 import hashlib
 import importlib.util
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from typing import cast
 import unittest
 
 
 MODULE_PATH = Path(__file__).parents[1] / "calendar_oauth.py"
-spec = importlib.util.spec_from_file_location("calendar_oauth", MODULE_PATH)
+spec = cast(
+    ModuleSpec,
+    importlib.util.spec_from_file_location("calendar_oauth", MODULE_PATH),
+)
 calendar_oauth = importlib.util.module_from_spec(spec)
-assert spec.loader is not None
-spec.loader.exec_module(calendar_oauth)
+loader = spec.loader
+assert loader is not None
+loader.exec_module(calendar_oauth)
 
 
 class OAuthSecurityTests(unittest.TestCase):

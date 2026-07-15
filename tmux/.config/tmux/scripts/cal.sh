@@ -1,6 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+umask 077
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/calendar-helpers.sh"
 CREDENTIALS_FILE="$SCRIPT_DIR/.credentials.json"
 
 ALERT_IF_IN_NEXT_MINUTES=20
@@ -43,11 +46,13 @@ if [[ "$NOW" -ge "$EXPIRY" ]]; then
 	ACCESS_TOKEN="$NEW_ACCESS_TOKEN"
 	NEW_EXPIRY=$((NOW + EXPIRES_IN))
 
-	# Update credentials file
-	jq --arg at "$ACCESS_TOKEN" --argjson exp "$NEW_EXPIRY" \
-		'.access_token = $at | .expiry = $exp' "$CREDENTIALS_FILE" >"${CREDENTIALS_FILE}.tmp" &&
-		mv "${CREDENTIALS_FILE}.tmp" "$CREDENTIALS_FILE"
-	chmod 600 "$CREDENTIALS_FILE"
+	# Update credentials file atomically.
+	UPDATED_CREDENTIALS=$(
+		jq --arg at "$ACCESS_TOKEN" --argjson exp "$NEW_EXPIRY" \
+			'.access_token = $at | .expiry = $exp' "$CREDENTIALS_FILE"
+	)
+	printf '%s\n' "$UPDATED_CREDENTIALS" |
+		calendar_atomic_json_write "$CREDENTIALS_FILE"
 fi
 
 # Query Google Calendar API for next event across all calendars
@@ -109,12 +114,15 @@ fi
 EVENT_TITLE=$(echo "$EVENT" | jq -r '.summary // "No title"')
 
 # Parse event start time (handles timezone offsets correctly)
-read -r EVENT_EPOCH EVENT_TIME <<< $(python3 -c "
-from datetime import datetime, timezone
+read -r EVENT_EPOCH EVENT_TIME < <(
+	python3 - "$EVENT_START" <<'PY'
+from datetime import datetime
 import sys
-dt = datetime.fromisoformat('$EVENT_START')
-print(int(dt.timestamp()), dt.astimezone().strftime('%H:%M'))
-")
+
+dt = datetime.fromisoformat(sys.argv[1])
+print(int(dt.timestamp()), dt.astimezone().strftime("%H:%M"))
+PY
+)
 
 # Calculate minutes until meeting
 DIFF=$((EVENT_EPOCH - NOW))
@@ -125,7 +133,7 @@ if [[ "$DIFF" -gt "$ALERT_POPUP_BEFORE_SECONDS" && "$DIFF" -lt $((ALERT_POPUP_BE
 	EVENT_DESCRIPTION=$(echo "$EVENT" | jq -r '.description // "No description"' | head -5)
 	EVENT_ATTENDEES=$(echo "$EVENT" | jq -r '.attendees[]?.email // empty' 2>/dev/null | head -10)
 	POPUP_TEXT="Meeting: $EVENT_TITLE\nTime: $EVENT_TIME\n\nAttendees:\n$EVENT_ATTENDEES\n\nNotes:\n$EVENT_DESCRIPTION"
-	tmux display-popup -w50% -h50% -T "Upcoming Meeting" -E "echo '$POPUP_TEXT' | less" &>/dev/null &
+	calendar_show_popup "$POPUP_TEXT" &>/dev/null &
 fi
 
 # Print status

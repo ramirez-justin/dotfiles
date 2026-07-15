@@ -6,7 +6,10 @@ import hashlib
 import http.server
 import json
 import secrets
+import socket
+import socketserver
 import sys
+import threading
 import time
 import urllib.parse
 import webbrowser
@@ -48,16 +51,47 @@ def validate_callback(target: str, expected_state: str) -> str:
     return codes[0]
 
 
-class OAuthCallbackServer(http.server.HTTPServer):
+class OAuthCallbackServer(
+    socketserver.ThreadingMixIn, http.server.HTTPServer
+):
+    daemon_threads = True
+    block_on_close = False
     expected_state: str
     authorization_code: str | None
     callback_error: str | None
     request_timeout: float
+    active_requests: set[socket.socket]
+    request_lock: threading.Lock
 
     def get_request(self):
         request, address = super().get_request()
         request.settimeout(self.request_timeout)
         return request, address
+
+    def process_request(self, request, client_address) -> None:
+        request_socket = cast(socket.socket, request)
+        with self.request_lock:
+            self.active_requests.add(request_socket)
+        super().process_request(request, client_address)
+
+    def close_request(self, request) -> None:
+        request_socket = cast(socket.socket, request)
+        with self.request_lock:
+            self.active_requests.discard(request_socket)
+        super().close_request(request)
+
+    def close_active_requests(self) -> None:
+        with self.request_lock:
+            requests = list(self.active_requests)
+        for request in requests:
+            try:
+                request.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            request.close()
+
+    def handle_error(self, request, client_address) -> None:
+        return
 
 
 class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
@@ -93,6 +127,8 @@ def create_callback_server(expected_state: str) -> OAuthCallbackServer:
     server.authorization_code = None
     server.callback_error = None
     server.request_timeout = 1.0
+    server.active_requests = set()
+    server.request_lock = threading.Lock()
     return server
 
 
@@ -105,8 +141,9 @@ def wait_for_callback(
     while not server.authorization_code and not server.callback_error:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
+            server.close_active_requests()
             raise TimeoutError("authorization callback timed out")
-        server.timeout = remaining
+        server.timeout = min(remaining, 0.1)
         server.handle_request()
 
     if server.callback_error:
@@ -159,6 +196,7 @@ def authorize(client_id: str, scope: str, timeout: int) -> dict[str, str]:
             )
         authorization_code = wait_for_callback(server, timeout)
     finally:
+        server.close_active_requests()
         server.server_close()
 
     return {

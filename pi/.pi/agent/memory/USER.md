@@ -13,6 +13,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 ## Preferences
 
 - Prefer concise responses unless the task requires detail.
+- Prefer reviewing designs and plans interactively in chat rather than being
+  asked to review a file separately.
 - Prefer minimum code that solves the problem.
 - Use Neovim rather than VS Code. Do not install or manage VS Code or its
   extensions unless explicitly requested.
@@ -27,8 +29,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   intermediate scaffolding or process overhead.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
-- For Terraform/Snowflake work, do not avoid plan or apply commands solely
-  because they may take a long time.
+- Do not run Terraform or Terragrunt plan/apply commands for Snowflake; they
+  time out in Pi. Leave those commands for Justin to run.
 - Use the installed dbt command, not uv dbt. In dbt Cloud projects,
   commands like `dbt parse` run through dbt Cloud, so do not skip them due to
   missing local `profiles.yml` or `dbt_packages/` alone.

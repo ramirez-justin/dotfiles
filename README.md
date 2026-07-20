@@ -71,7 +71,7 @@ chalk login
 
 > On subsequent runs, `mise run bootstrap` updates managed packages, including
 > the Chalk CLI. It requires 1Password to be authenticated. Chalk login state
-> remains in `~/.config/chalk.yml`.
+> remains in `~/.chalk.yml`.
 
 ## Branches
 
@@ -137,8 +137,8 @@ mise run chalk-install
 ```
 
 If Pi reports that Chalk is not authenticated, rerun `chalk login`, restart Pi,
-and reconnect the `chalk` MCP server. Credentials remain in
-`~/.config/chalk.yml` and must not be copied into this repository.
+and reconnect the `chalk` MCP server. Credentials remain in `~/.chalk.yml` and
+must not be copied into this repository.
 
 ## Machine-Specific Secrets
 

@@ -11,6 +11,7 @@ depends = [
   "brew-install",
   "tools-install",
   "install-omz",
+  "chalk-install",
   "inject-secrets",
 ]
 run = "mise run link"
@@ -43,6 +44,18 @@ brew bundle --file={{config_root}}/Brewfile
 [tasks.tools-install]
 description = "Install mise-managed tools"
 run = "mise install"
+
+[tasks.chalk-install]
+description = "Install or update the Chalk CLI"
+depends = ["brew-install"]
+run = """
+set -euo pipefail
+export CHALK_INSTALL="${CHALK_INSTALL:-$HOME/.chalk}"
+export PATH="$CHALK_INSTALL/bin:$PATH"
+version="${CHALK_VERSION:-latest}"
+curl -fsSL https://api.chalk.ai/install.sh | sh -s -- "$version"
+chalk version
+"""
 
 [tasks.check-agent-tiers]
 description = "Verify Luna/Terra use max reasoning and Sol uses medium"
@@ -93,6 +106,7 @@ check "brew bundle" brew bundle check --file={{config_root}}/Brewfile
 check "stow available" command -v stow
 check "mise available" command -v mise
 check "mise tools installed" mise current
+check "chalk available" command -v chalk
 check "node available via mise" mise exec -- node -v
 check "no standalone npm latest tool" sh -c "if grep -R -F '\"npm:npm\" = \"latest\"' {{config_root}}/mise/.config/mise/config.toml; then exit 1; fi"
 check "node selectors avoid patch pins" sh -c "if grep -R -E 'node(@|/)[0-9]+[.][0-9]+[.][0-9]+' {{config_root}}/mise/.config/mise/config.toml {{config_root}}/pi/.pi/agent/settings.json {{config_root}}/claude/.claude/settings.json; then exit 1; fi"

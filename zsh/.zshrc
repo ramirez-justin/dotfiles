@@ -7,6 +7,10 @@ export ZSH="$HOME/.oh-my-zsh"
 # Path to lvim installation
 export PATH="$HOME/.local/bin":$PATH
 
+# Chalk CLI
+export CHALK_INSTALL="$HOME/.chalk"
+export PATH="$CHALK_INSTALL/bin:$PATH"
+
 export LDFLAGS="-L/opt/homebrew/opt/ruby/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/ruby/include"
 export PKG_CONFIG_PATH="/opt/homebrew/opt/ruby/lib/pkgconfig"

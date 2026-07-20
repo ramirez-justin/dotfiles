@@ -51,23 +51,27 @@ git clone --recurse-submodules git@github.com:ramirez-justin/dotfiles.git ~/Repo
 cd ~/Repositories/dotfiles
 git checkout gametime  # work machine — skip for personal
 
-# 4. Install packages (includes 1password-cli)
+# 4. Install packages needed for authentication, including 1Password CLI
 mise run brew-install
 
 # 5. Authenticate 1Password CLI (open 1Password desktop app first)
 op account add
 
-# 6. Inject secrets and link
-mise run inject-secrets
-mise run link
+# 6. Run the managed bootstrap, including Chalk CLI installation
+mise run bootstrap
 
-# 7. Open a new shell, then create ~/.zshrc.local with machine-specific secrets
-# 8. Copy snowflake/.snowflake/connections.toml.example to
+# 7. Authenticate Chalk through the browser with the work Google account
+chalk login
+
+# 8. Open a new shell, then create ~/.zshrc.local with machine-specific secrets
+# 9. Copy snowflake/.snowflake/connections.toml.example to
 #    ~/.snowflake/connections.toml and verify with:
 #    snow connection test -c default
 ```
 
-> On subsequent runs `mise run bootstrap` does steps 4–6 in one command (requires 1Password already authenticated).
+> On subsequent runs, `mise run bootstrap` updates managed packages, including
+> the Chalk CLI. It requires 1Password to be authenticated. Chalk login state
+> remains in `~/.config/chalk.yml`.
 
 ## Branches
 
@@ -98,6 +102,7 @@ mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.j
 # Linear is injected from 1Password item: Employee/linear_api_key/API key.
 
 mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
+mise run chalk-install  # install/update Chalk CLI without full bootstrap
 
 # pi workflow shortcuts, backed by the Superpowers skills package:
 # /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
@@ -115,6 +120,25 @@ mise run submodule-update # update all submodules to latest
 
 dots                     # cd ~/Repositories/dotfiles
 ```
+
+## Chalk and Pi
+
+Pi reaches Chalk through the hosted MCP server using personal credentials from
+the Chalk CLI. Authenticate once after installation:
+
+```bash
+chalk login
+```
+
+If Pi reports that Chalk is not installed, run:
+
+```bash
+mise run chalk-install
+```
+
+If Pi reports that Chalk is not authenticated, rerun `chalk login`, restart Pi,
+and reconnect the `chalk` MCP server. Credentials remain in
+`~/.config/chalk.yml` and must not be copied into this repository.
 
 ## Machine-Specific Secrets
 

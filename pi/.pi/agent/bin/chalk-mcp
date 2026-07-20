@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+
+chalk_bin="${CHALK_INSTALL:-$HOME/.chalk}/bin/chalk"
+if [ ! -x "$chalk_bin" ]; then
+    echo "Chalk CLI is not installed; run mise run chalk-install." >&2
+    exit 1
+fi
+
+if ! chalk_config=$(
+    "$chalk_bin" config --format json 2>/dev/null
+); then
+    echo "Chalk CLI is not authenticated; run chalk login." >&2
+    exit 1
+fi
+
+config_value() {
+    field=$1
+    value=$(printf '%s' "$chalk_config" | jq -er \
+        --arg field "$field" \
+        '.[$field] | select(type == "string" and length > 0)' \
+        2>/dev/null) || {
+        echo "Chalk config is missing $field; run chalk login." >&2
+        exit 1
+    }
+    printf '%s' "$value"
+}
+
+CHALK_CLIENT_ID=$(config_value clientId)
+CHALK_CLIENT_SECRET=$(config_value clientSecret)
+CHALK_API_SERVER=$(config_value apiServer)
+CHALK_API_SERVER=${CHALK_API_SERVER%/}
+export CHALK_CLIENT_ID CHALK_CLIENT_SECRET
+
+# mcp-remote expands these placeholders from the exported environment.
+# shellcheck disable=SC2016
+exec npx -y mcp-remote@0.1.38 \
+    "$CHALK_API_SERVER/v1/mcp/sse" \
+    --header 'X-Chalk-Client-Id: ${CHALK_CLIENT_ID}' \
+    --header 'X-Chalk-Client-Secret: ${CHALK_CLIENT_SECRET}'

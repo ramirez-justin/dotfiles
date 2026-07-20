@@ -27,6 +27,14 @@
       "auth": "oauth",
       "lifecycle": "lazy"
     },
+    "chalk": {
+      "command": "sh",
+      "args": [
+        "-lc",
+        "exec \"$HOME/.pi/agent/bin/chalk-mcp\""
+      ],
+      "lifecycle": "lazy"
+    },
     "jira": {
       "command": "uvx",
       "args": ["mcp-atlassian", "--transport", "stdio"],

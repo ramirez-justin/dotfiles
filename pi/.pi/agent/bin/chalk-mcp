@@ -8,7 +8,7 @@ if [ ! -x "$chalk_bin" ]; then
 fi
 
 if ! chalk_config=$(
-    "$chalk_bin" config --format json 2>/dev/null
+    "$chalk_bin" config --json 2>/dev/null
 ); then
     echo "Chalk CLI is not authenticated; run chalk login." >&2
     exit 1
@@ -18,7 +18,7 @@ config_value() {
     field=$1
     value=$(printf '%s' "$chalk_config" | jq -er \
         --arg field "$field" \
-        '.[$field] | select(type == "string" and length > 0)' \
+        '.[$field] | if type == "object" then .value else . end | select(type == "string" and length > 0)' \
         2>/dev/null) || {
         echo "Chalk config is missing $field; run chalk login." >&2
         exit 1

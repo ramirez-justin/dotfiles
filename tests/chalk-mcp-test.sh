@@ -31,18 +31,24 @@ run_expect_failure \
 mkdir -p "$tmp/chalk/bin"
 cat >"$tmp/chalk/bin/chalk" <<'SH'
 #!/bin/sh
+if [ "$*" != "config --json" ]; then
+    echo "unexpected Chalk config arguments: $*" >&2
+    exit 2
+fi
 case "${FAKE_CHALK_MODE:-ok}" in
     unauthenticated)
         exit 1
         ;;
     missing-secret)
         printf '%s\n' \
-            '{"clientId":"personal-id","apiServer":"https://api.chalk.ai"}'
+            '{"clientId":{"value":"personal-id"},'\
+'"apiServer":{"value":"https://api.chalk.ai"}}'
         ;;
     ok)
         printf '%s\n' \
-            '{"clientId":"personal-id","clientSecret":"personal-secret",'\
-'"apiServer":"https://api.chalk.ai/"}'
+            '{"clientId":{"value":"personal-id"},'\
+'"clientSecret":{"value":"personal-secret"},'\
+'"apiServer":{"value":"https://api.chalk.ai/"}}'
         ;;
 esac
 SH

@@ -43,6 +43,18 @@ Stable project facts and caveats that may help future Pi sessions.
 - Airflow notebook runs use `EXECUTE NOTEBOOK PROJECT` with metadata-declared
   runtime, compute pool, query warehouse, and role; they do not reuse a user's
   interactive Snowsight notebook service.
+- Omit a notebook project's `requirements_file` when its selected Snowflake
+  runtime already bundles every dependency. Check the official Container
+  Runtime release inventory first and use `pip list` for the exact patch image;
+  unnecessary installation can fail before the first headless cell.
+- Headless Notebook Project kernels can remain in `/filesystem`. Resolve
+  project-local imports from `JUPYTER_WORK_DIR` and
+  `SNOWFLAKE_MAIN_FILE_PATH`, using `Path.cwd()` only as an interactive
+  fallback.
+- Generated `NB_NON_INTERACTIVE_*` service logs are transient, best-effort
+  failure diagnostics. Durable notebook telemetry belongs in Snowflake's event
+  table, and notebook code cannot record failures that occur before its first
+  cell.
 - In `snowflake-objects`, notebook `notebook.yml` Airflow metadata is the source
   of truth for `gametime-data/airflow/dags/config/snowflake_notebooks.yml`;
   merging `snowflake-objects` main can auto-push that generated manifest to
@@ -82,6 +94,10 @@ Stable project facts and caveats that may help future Pi sessions.
   at DAG parse time.
 - New Snowflake external tables backed by S3 should usually include matching
   entries in `adhoc-ops-toolkit/s3-event-notifications` so auto-refresh works.
+- In Snowflake, schema-level future grants take precedence over database-level
+  future grants for the same object type in that schema. Avoid adding schema
+  future grants casually in `RAW_DB` or `SOURCE_DB` because they can bypass
+  database-level future-grant expectations.
 - In `gametime-data`, Assembled `/forecasts` requires `start_time` and
   `end_time` epoch values aligned to the requested `interval`; half-hour Airflow
   schedules need explicit alignment before calling the API.

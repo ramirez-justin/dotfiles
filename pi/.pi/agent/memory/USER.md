@@ -31,11 +31,18 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   rule is the real requirement.
 - Do not run Terraform or Terragrunt plan/apply commands for Snowflake; they
   time out in Pi. Leave those commands for Justin to run.
+- Prefer not to manage Snowflake table definitions in Terraform unless
+  explicitly requested; use Terraform for grants/infrastructure around tables.
 - Use the installed dbt command, not uv dbt. In dbt Cloud projects,
   commands like `dbt parse` run through dbt Cloud, so do not skip them due to
   missing local `profiles.yml` or `dbt_packages/` alone.
 - Treat source data correctness as unverified unless it has been validated.
+- For data pipeline table writes, prefer deterministic keys and metadata columns
+  that support troubleshooting; overwrite modes should only replace rows for
+  source files processed in the current run unless explicitly specified.
 - Validate automated PR review feedback before applying it; avoid iterative
   churn from bots unless the suggestion is technically justified.
+- When Justin shares a reviewer/bot suggestion with reservations, treat it as a
+  request for technical feedback and tradeoffs, not approval to implement it.
 - Do not assume local tools are installed; check availability before suggesting
   or using them.

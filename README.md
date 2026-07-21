@@ -94,12 +94,9 @@ git merge main
 ```bash
 mise run link            # re-stow all topics without package changes
 mise run update          # git pull --rebase + re-link
-mise run inject-secrets  # re-inject 1Password secrets into ~/.claude/settings.json and ~/.pi/agent/env.local.zsh
 
-# Optional Pi Notion secret, if IT grants an integration/OAuth token later:
-# export NOTION_API_KEY_OP_REF="op://..."
-# mise run inject-secrets
-# Linear is injected from 1Password item: Employee/linear_api_key/API key.
+# Agent credentials resolve from 1Password when Claude or Jira MCP starts.
+# Authenticate op before launching either tool.
 
 mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
 mise run chalk-install  # install/update Chalk CLI without full bootstrap

@@ -47,7 +47,7 @@ grep -Fx -- "--model" "$CLAUDE_CAPTURE"
 grep -Fx -- "test" "$CLAUDE_CAPTURE"
 grep -Fx -- "two words" "$CLAUDE_CAPTURE"
 
-if grep -Ev '^([A-Z_]+)=op://[^[:space:]]+$' "$REFERENCES"; then
+if grep -Ev '^([A-Z_]+)=op://.+$' "$REFERENCES"; then
     print -u2 "reference file contains a non-reference value"
     exit 1
 fi

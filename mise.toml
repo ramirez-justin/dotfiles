@@ -193,7 +193,7 @@ if mise exec -- npm audit --prefix "$pi_npm_root" --omit=peer --audit-level=high
 fi
 
 echo "Attempting safe npm audit repair for Pi extensions..."
-mise exec -- npm audit fix --prefix "$pi_npm_root" --omit=peer
+mise exec -- npm audit fix --prefix "$pi_npm_root" --omit=peer --legacy-peer-deps
 
 mise exec -- npm audit --prefix "$pi_npm_root" --omit=peer --audit-level=high
 """

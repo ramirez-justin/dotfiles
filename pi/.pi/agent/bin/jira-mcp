@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+token_ref='op://Employee/JRamirez Atlassian API Token/API token'
+JIRA_API_TOKEN=$(op read "$token_ref")
+export JIRA_API_TOKEN
+exec uvx mcp-atlassian --transport stdio

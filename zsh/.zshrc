@@ -28,9 +28,9 @@ source $(brew --prefix)/opt/spaceship/spaceship.zsh
 source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-# for Claude Code / pi
-export ENABLE_LSP_TOOLS=1
-[[ -f "$HOME/.pi/agent/env.zsh" ]] && source "$HOME/.pi/agent/env.zsh"
+# Runtime secret resolution for Claude; Pi receives no agent API secrets.
+[[ -f "$HOME/.zsh/agent-secrets.zsh" ]] &&
+    source "$HOME/.zsh/agent-secrets.zsh"
 # Pi requires Node 22+ and extensions with native modules are installed there.
 # Run Pi with the same Node ABI to avoid native module mismatch errors.
 pi() { mise exec node@22.19.0 -- command pi "$@" }

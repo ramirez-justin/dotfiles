@@ -12,7 +12,6 @@ depends = [
   "tools-install",
   "install-omz",
   "chalk-install",
-  "inject-secrets",
 ]
 run = "mise run link"
 
@@ -117,13 +116,10 @@ check "git submodules initialized" git submodule status --recursive
 check "zsh config linked" sh -c '[ -L "$HOME/.zshrc" ]'
 check "mise config linked" sh -c '[ -L "$HOME/.config/mise/config.toml" ] || [ -L "$HOME/.config/mise" ]'
 
-if [ -f "$HOME/.pi/agent/env.local.zsh" ]; then
-    check "pi env.local permissions" sh -c '[ "$(stat -f %Lp "$HOME/.pi/agent/env.local.zsh")" = "600" ]'
-fi
-
-if [ -f "$HOME/.claude/settings.local.json" ]; then
-    check "claude settings.local permissions" sh -c '[ "$(stat -f %Lp "$HOME/.claude/settings.local.json")" = "600" ]'
-fi
+check "no legacy Pi secret file" \
+    sh -c '[ ! -e "$HOME/.pi/agent/env.local.zsh" ]'
+check "no legacy Claude secret file" \
+    sh -c '[ ! -e "$HOME/.claude/settings.local.json" ]'
 
 echo "dotfiles doctor passed"
 """
@@ -268,34 +264,3 @@ run = """
   git -C {{config_root}} commit -m "chore: update nvim to latest"
 """
 
-[tasks.inject-secrets]
-description = "Write 1Password secrets into live tool configs"
-depends = ["brew-install"]
-run = """
-  JIRA_TOKEN=$(op read "op://Employee/JRamirez Atlassian API Token/API token")
-  FIVETRAN_KEY=$(op read "op://Employee/JRamirez Fivetran API Key/username")
-  FIVETRAN_SECRET=$(op read "op://Employee/JRamirez Fivetran API Key/password")
-  LINEAR_API_KEY=$(op read "op://Employee/linear_api_key/API key")
-  NOTION_API_KEY=""
-  if [ -n "${NOTION_API_KEY_OP_REF:-}" ]; then
-    NOTION_API_KEY=$(op read "$NOTION_API_KEY_OP_REF")
-  fi
-
-  mkdir -p ~/.claude
-  jq -n --arg jira "$JIRA_TOKEN" \
-     --arg fkey "$FIVETRAN_KEY" \
-     --arg fsecret "$FIVETRAN_SECRET" \
-     '{env: {JIRA_API_TOKEN: $jira, FIVETRAN_API_KEY: $fkey, FIVETRAN_API_SECRET: $fsecret}}' \
-    > ~/.claude/settings.local.json
-  chmod 600 ~/.claude/settings.local.json
-
-  mkdir -p ~/.pi/agent
-  cat > ~/.pi/agent/env.local.zsh <<EOF
-export JIRA_API_TOKEN='$JIRA_TOKEN'
-export FIVETRAN_API_KEY='$FIVETRAN_KEY'
-export FIVETRAN_API_SECRET='$FIVETRAN_SECRET'
-export LINEAR_API_KEY='$LINEAR_API_KEY'
-export NOTION_API_KEY='$NOTION_API_KEY'
-EOF
-  chmod 600 ~/.pi/agent/env.local.zsh
-"""

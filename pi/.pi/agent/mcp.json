@@ -36,12 +36,11 @@
       "lifecycle": "lazy"
     },
     "jira": {
-      "command": "uvx",
-      "args": ["mcp-atlassian", "--transport", "stdio"],
+      "command": "sh",
+      "args": ["-lc", "exec \"$HOME/.pi/agent/bin/jira-mcp\""],
       "env": {
         "JIRA_URL": "https://${JIRA_HOST}",
         "JIRA_USERNAME": "${JIRA_EMAIL}",
-        "JIRA_API_TOKEN": "${JIRA_API_TOKEN}",
         "TOOLSETS": "all"
       },
       "lifecycle": "lazy"

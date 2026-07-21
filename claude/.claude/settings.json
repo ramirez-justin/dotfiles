@@ -4,9 +4,6 @@
     "JIRA_EMAIL": "justin.ramirez@gametime.co",
     "JIRA_URL": "https://gametime.atlassian.net",
     "JIRA_USERNAME": "justin.ramirez@gametime.co",
-    "JIRA_API_TOKEN": "",
-    "FIVETRAN_API_KEY": "",
-    "FIVETRAN_API_SECRET": "",
     "FIVETRAN_GROUP_ID": "",
     "ENABLE_LSP_TOOL": "1"
   },

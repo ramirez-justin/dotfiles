@@ -97,6 +97,7 @@ mise run update          # git pull --rebase + re-link
 
 # Agent credentials resolve from 1Password when Claude or Jira MCP starts.
 # Authenticate op before launching either tool.
+# After updating an existing machine, run: mise run migrate-agent-secrets
 
 mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
 mise run chalk-install  # install/update Chalk CLI without full bootstrap

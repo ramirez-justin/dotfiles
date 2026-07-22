@@ -264,3 +264,68 @@ run = """
   git -C {{config_root}} commit -m "chore: update nvim to latest"
 """
 
+[tasks.migrate-agent-secrets]
+description = "Delete validated legacy agent secret files"
+run = """
+set -eu
+
+secrets_env="$HOME/.pi/agent/agent-secrets.env"
+claude_file="$HOME/.claude/settings.local.json"
+pi_file="$HOME/.pi/agent/env.local.zsh"
+
+if [ ! -r "$secrets_env" ]; then
+    echo "Missing runtime secret references: $secrets_env" >&2
+    exit 1
+fi
+if ! command -v op >/dev/null 2>&1; then
+    echo "1Password CLI (op) is required for migration." >&2
+    exit 1
+fi
+
+if ! python3 - "$claude_file" "$pi_file" <<'PY'
+import json
+import pathlib
+import re
+import sys
+
+claude_file = pathlib.Path(sys.argv[1])
+pi_file = pathlib.Path(sys.argv[2])
+expected_claude = {
+    "JIRA_API_TOKEN",
+    "FIVETRAN_API_KEY",
+    "FIVETRAN_API_SECRET",
+}
+expected_pi = expected_claude | {"LINEAR_API_KEY", "NOTION_API_KEY"}
+
+if claude_file.exists():
+    try:
+        document = json.loads(claude_file.read_text())
+    except (OSError, json.JSONDecodeError):
+        raise SystemExit(1)
+    if set(document) != {"env"} or set(document["env"]) != expected_claude:
+        raise SystemExit(1)
+
+if pi_file.exists():
+    try:
+        lines = pi_file.read_text().splitlines()
+    except OSError:
+        raise SystemExit(1)
+    keys = set()
+    for line in lines:
+        match = re.fullmatch(r"export ([A-Z_][A-Z0-9_]*)='[^']*'", line)
+        if not match:
+            raise SystemExit(1)
+        keys.add(match.group(1))
+    if keys != expected_pi or len(lines) != len(expected_pi):
+        raise SystemExit(1)
+PY
+then
+    echo "Refusing to delete unrecognized legacy agent secret files." >&2
+    exit 1
+fi
+
+op run --env-file="$secrets_env" -- true
+rm -f -- "$claude_file" "$pi_file"
+echo "Legacy agent secret files removed."
+"""
+

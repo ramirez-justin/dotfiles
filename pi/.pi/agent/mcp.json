@@ -39,8 +39,8 @@
       "command": "sh",
       "args": ["-lc", "exec \"$HOME/.pi/agent/bin/jira-mcp\""],
       "env": {
-        "JIRA_URL": "https://${JIRA_HOST}",
-        "JIRA_USERNAME": "${JIRA_EMAIL}",
+        "JIRA_URL": "https://gametime.atlassian.net",
+        "JIRA_USERNAME": "justin.ramirez@gametime.co",
         "TOOLSETS": "all"
       },
       "lifecycle": "lazy"

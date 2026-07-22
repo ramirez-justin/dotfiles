@@ -21,19 +21,13 @@ class RuntimeSecretsConfigTests(unittest.TestCase):
         self.assertIn("jira-mcp", command)
         self.assertIn("op read", launcher)
         self.assertIn("JIRA_API_TOKEN", launcher)
-        self.assertNotIn(
-            "${JIRA_API_TOKEN}", json.dumps(config["mcpServers"]["jira"])
-        )
+        self.assertNotIn("${JIRA_API_TOKEN}", json.dumps(config["mcpServers"]["jira"]))
 
     def test_jira_mcp_does_not_depend_on_parent_environment(self):
         config = load_json(REPO_ROOT / "pi/.pi/agent/mcp.json")
         environment = config["mcpServers"]["jira"]["env"]
-        self.assertEqual(
-            environment["JIRA_URL"], "https://gametime.atlassian.net"
-        )
-        self.assertEqual(
-            environment["JIRA_USERNAME"], "justin.ramirez@gametime.co"
-        )
+        self.assertEqual(environment["JIRA_URL"], "https://gametime.atlassian.net")
+        self.assertEqual(environment["JIRA_USERNAME"], "justin.ramirez@gametime.co")
 
     def test_claude_settings_do_not_override_runtime_secrets(self):
         settings = load_json(REPO_ROOT / "claude/.claude/settings.json")

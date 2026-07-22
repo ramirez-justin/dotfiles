@@ -7,12 +7,7 @@ minimum_release_age_excludes = ["npm:@earendil-works/pi-coding-agent"]
 
 [tasks.bootstrap]
 description = "Full machine setup (after 1Password is authenticated)"
-depends = [
-  "brew-install",
-  "tools-install",
-  "install-omz",
-  "chalk-install",
-]
+depends = ["brew-install", "tools-install", "install-omz", "chalk-install"]
 run = "mise run link"
 
 [tasks.trust-third-party-brew-taps]
@@ -328,4 +323,3 @@ op run --env-file="$secrets_env" -- true
 rm -f -- "$claude_file" "$pi_file"
 echo "Legacy agent secret files removed."
 """
-

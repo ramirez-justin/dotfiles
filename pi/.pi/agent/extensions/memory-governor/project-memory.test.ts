@@ -9,7 +9,7 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import type { RepositoryIdentity } from "./project-identity.ts";
 import {
 	createScopedMemoryText,
@@ -58,6 +58,26 @@ async function temporaryRoot(): Promise<string> {
 
 afterEach(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true })));
+});
+
+const trackedMemoryRoot = resolve(import.meta.dir, "../../memory");
+
+async function fileExists(path: string): Promise<boolean> {
+	try {
+		await access(path);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+test("tracked index resolves every scoped project file", async () => {
+	const index = await readFile(join(trackedMemoryRoot, "PROJECTS.md"), "utf8");
+	const entries = parseProjectIndex(index);
+	for (const entry of entries) {
+		expect(await fileExists(resolve(trackedMemoryRoot, entry.relativePath)))
+			.toBe(true);
+	}
 });
 
 describe("scoped project template", () => {

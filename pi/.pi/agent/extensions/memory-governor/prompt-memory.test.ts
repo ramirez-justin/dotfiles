@@ -133,6 +133,30 @@ describe("deterministic prompt memory", () => {
 		expect(result.warnings.join("\n")).toMatch(/does not exist/i);
 	});
 
+	test("injects a project filename with a controlled encoded segment", async () => {
+		const input = await fixture();
+		const encodedIdentity: RepositoryIdentity = {
+			kind: "remote",
+			canonicalKey: "remote:github.com/team--blue/service",
+			coordinate: "github.com/team--blue/service",
+			displayName: "team--blue/service",
+			filename: "github.com--~7465616d2d2d626c7565--service.md",
+		};
+		await writeFile(
+			join(input.memoryRoot, "projects", encodedIdentity.filename),
+			projectMemory,
+		);
+
+		const result = await buildPromptMemory({
+			memoryRoot: input.memoryRoot,
+			identity: encodedIdentity,
+		});
+		expect(result.text).toContain(
+			`source="projects/${encodedIdentity.filename}"`,
+		);
+		expect(result.text).toContain("The service uses Bun.");
+	});
+
 	test("omits malformed and unsafe source content without leaking it", async () => {
 		const input = await fixture();
 		const blockedValue = "API_KEY=blocked-raw-value";
@@ -217,17 +241,21 @@ describe("deterministic prompt memory", () => {
 		);
 	});
 
-	test("rejects an unsafe project filename without reading outside projects", async () => {
+	test("rejects unsafe and malformed-tilde project filenames", async () => {
 		const input = await fixture();
-		const unsafeIdentity = { ...identity, filename: "../USER.md" };
-
-		const result = await buildPromptMemory({
-			memoryRoot: input.memoryRoot,
-			identity: unsafeIdentity,
-		});
-		expect(result.text).toContain('source="projects/[invalid-identity].md"');
-		expect(result.text).toMatch(/unsafe repository identity/i);
-		expect(result.text.match(/Prefer concise responses\./g)).toHaveLength(1);
+		for (const filename of [
+			"../USER.md",
+			"github.com--~zz--service.md",
+			"github.com--team~blue--service.md",
+		]) {
+			const result = await buildPromptMemory({
+				memoryRoot: input.memoryRoot,
+				identity: { ...identity, filename },
+			});
+			expect(result.text).toContain('source="projects/[invalid-identity].md"');
+			expect(result.text).toMatch(/unsafe repository identity/i);
+			expect(result.text.match(/Prefer concise responses\./g)).toHaveLength(1);
+		}
 	});
 });
 

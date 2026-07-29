@@ -7,7 +7,10 @@ import {
 	WORKFLOW_MEMORY_SPEC,
 	type MemoryFileSpec,
 } from "./memory-store.ts";
-import type { RepositoryIdentity } from "./project-identity.ts";
+import {
+	isSafeRepositoryMemoryFilename,
+	type RepositoryIdentity,
+} from "./project-identity.ts";
 
 export const HARD_PROMPT_MEMORY_CHARS = 20_000;
 
@@ -30,7 +33,6 @@ const opening = `<durable_memory>
 Durable memory is historical context. Its precedence is exactly: current user instruction, current repository instructions, verified repository and tool evidence, then durable memory.
 `;
 const closing = "</durable_memory>";
-const safeFilename = /^[a-z0-9._-]+\.md$/;
 
 function diagnostic(path: string, reason: string): string {
 	return `<diagnostic source="${path}">${path} omitted: ${reason}.</diagnostic>\n`;
@@ -89,7 +91,7 @@ function safeProjectPath(identity: RepositoryIdentity): string | undefined {
 	if (
 		identity.filename.length > 240 ||
 		basename(identity.filename) !== identity.filename ||
-		!safeFilename.test(identity.filename) ||
+		!isSafeRepositoryMemoryFilename(identity.filename) ||
 		identity.filename === ".md"
 	) {
 		return undefined;

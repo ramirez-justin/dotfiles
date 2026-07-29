@@ -63,6 +63,38 @@ describe("remote repository identity", () => {
 		).toBe("gitlab.com--group--subgroup--repo.md");
 	});
 
+	test("encodes namespace and repository segments that contain the delimiter", () => {
+		const namespaceSegment = normalizeRemoteIdentity(
+			"https://example.com/team--blue/service.git",
+		);
+		const repositorySegment = normalizeRemoteIdentity(
+			"https://example.com/team/blue--service.git",
+		);
+
+		expect(namespaceSegment?.filename).toBe(
+			"example.com--~7465616d2d2d626c7565--service.md",
+		);
+		expect(repositorySegment?.filename).toBe(
+			"example.com--team--~626c75652d2d73657276696365.md",
+		);
+		expect(namespaceSegment?.filename).not.toBe(repositorySegment?.filename);
+	});
+
+	test("encodes hosts that could be confused with a port segment", () => {
+		const port = normalizeRemoteIdentity(
+			"ssh://git@example.com:2222/team/repo.git",
+		);
+		const host = normalizeRemoteIdentity(
+			"ssh://git@example.com--port-2222/team/repo.git",
+		);
+
+		expect(port?.filename).toBe("example.com--port-2222--team--repo.md");
+		expect(host?.filename).toBe(
+			"~6578616d706c652e636f6d2d2d706f72742d32323232--team--repo.md",
+		);
+		expect(port?.filename).not.toBe(host?.filename);
+	});
+
 	test("strips credentials, default ports, queries, and fragments", () => {
 		const remotes = [
 			"https://user:password@GitHub.com:443/Team/Repo.git?ref=main#readme",

@@ -132,6 +132,39 @@ describe("memory reader scopes", () => {
 		).rejects.toThrow(/index|duplicate required section/i);
 	});
 
+	test("reads current and named projects with a controlled encoded segment", async () => {
+		const deps = await fixture();
+		const encodedIdentity: RepositoryIdentity = {
+			kind: "remote",
+			canonicalKey: "remote:github.com/team--blue/service",
+			coordinate: "github.com/team--blue/service",
+			displayName: "team--blue/service",
+			filename: "github.com--~7465616d2d2d626c7565--service.md",
+		};
+		await Promise.all([
+			writeFile(
+				join(deps.memoryRoot, "projects", encodedIdentity.filename),
+				projectMemory,
+			),
+			writeFile(
+				join(deps.memoryRoot, "PROJECTS.md"),
+				projectIndex.replaceAll("github.com/acme/service", encodedIdentity.coordinate!)
+					.replaceAll(identity.filename, encodedIdentity.filename),
+			),
+		]);
+		const reader = createMemoryReader({
+			...deps,
+			resolveCurrentIdentity: async () => encodedIdentity,
+		});
+
+		expect(await reader({ scope: "current_project" })).toContain(
+			`Source: projects/${encodedIdentity.filename}`,
+		);
+		expect(
+			await reader({ scope: "project", coordinate: encodedIdentity.coordinate }),
+		).toContain(`Source: projects/${encodedIdentity.filename}`);
+	});
+
 	test("reports missing current-project memory", async () => {
 		const reader = createMemoryReader(
 			await fixture({ includeCurrentProject: false }),
@@ -165,6 +198,22 @@ describe("memory reader validation", () => {
 		]) {
 			await expect(reader({ scope: "project", coordinate })).rejects.toThrow(
 				/coordinate/i,
+			);
+		}
+	});
+
+	test("rejects malformed tilde encodings in current-project filenames", async () => {
+		const deps = await fixture();
+		for (const filename of [
+			"github.com--~zz--service.md",
+			"github.com--team~blue--service.md",
+		]) {
+			const reader = createMemoryReader({
+				...deps,
+				resolveCurrentIdentity: async () => ({ ...identity, filename }),
+			});
+			await expect(reader({ scope: "current_project" })).rejects.toThrow(
+				/identity is unsafe/i,
 			);
 		}
 	});

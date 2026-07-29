@@ -141,15 +141,33 @@ describe("project index Markdown", () => {
 		expect(() => parseProjectIndex(text)).toThrow(/duplicate path/i);
 	});
 
-	test("rejects traversal and paths that do not match the coordinate", () => {
+	test("accepts the controlled encoding for coordinate segments with delimiters", () => {
+		const text = `## Scoped Projects
+
+- \`github.com/team--blue/service\` →
+  \`projects/github.com--~7465616d2d2d626c7565--service.md\`
+`;
+
+		expect(parseProjectIndex(text)).toEqual([
+			{
+				coordinate: "github.com/team--blue/service",
+				relativePath:
+					"projects/github.com--~7465616d2d2d626c7565--service.md",
+			},
+		]);
+	});
+
+	test("rejects traversal, mismatched paths, and malformed tilde encodings", () => {
 		for (const relativePath of [
 			"projects/../USER.md",
 			"/tmp/service.md",
 			"projects/other.md",
+			"projects/github.com--~zz--service.md",
+			"projects/github.com--~7465616d--service.md",
 		]) {
 			const text = `## Scoped Projects
 
-- \`github.com/acme/service\` → \`${relativePath}\`
+- \`github.com/team--blue/service\` → \`${relativePath}\`
 `;
 			expect(() => parseProjectIndex(text)).toThrow(/path/i);
 		}
@@ -169,6 +187,25 @@ describe("scoped project storage", () => {
 			createScopedMemoryText(identity.coordinate!),
 		);
 		expect((await stat(expectedPath)).mode & 0o777).toBe(0o600);
+		expect(parseProjectIndex(await readFile(join(root, "PROJECTS.md"), "utf8")))
+			.toEqual([
+				{
+					coordinate: identity.coordinate,
+					relativePath: `projects/${identity.filename}`,
+				},
+			]);
+	});
+
+	test("creates project memory with a controlled encoded filename segment", async () => {
+		const root = await temporaryRoot();
+		await writeFile(join(root, "PROJECTS.md"), indexBase);
+		const identity = remoteIdentity(
+			"github.com/team--blue/service",
+			"github.com--~7465616d2d2d626c7565--service.md",
+		);
+
+		const result = await ensureScopedProjectMemory({ root, identity });
+		expect(result.path).toBe(join(root, "projects", identity.filename));
 		expect(parseProjectIndex(await readFile(join(root, "PROJECTS.md"), "utf8")))
 			.toEqual([
 				{

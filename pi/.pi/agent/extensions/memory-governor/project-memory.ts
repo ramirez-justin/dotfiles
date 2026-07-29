@@ -7,14 +7,17 @@ import {
 	SCOPED_PROJECT_SPEC,
 	type MutationResult,
 } from "./memory-store.ts";
-import type { RepositoryIdentity } from "./project-identity.ts";
+import {
+	isSafeRepositoryMemoryFilename,
+	repositoryCoordinateToFilename,
+	type RepositoryIdentity,
+} from "./project-identity.ts";
 
 export interface ProjectIndexEntry {
 	coordinate: string;
 	relativePath: string;
 }
 
-const SAFE_SEGMENT = /^[a-z0-9._-]+$/;
 const INDEX_ENTRY =
 	/-\s+`([^`]+)`\s+→\s*(?:\r?\n\s*)?`([^`]+)`/g;
 
@@ -51,35 +54,6 @@ ${scopedRules}
 `;
 }
 
-function expectedFilename(coordinate: string): string | undefined {
-	if (
-		!coordinate ||
-		coordinate.includes("\\") ||
-		/[\u0000-\u001f\u007f]/.test(coordinate) ||
-		/^[a-z][a-z0-9+.-]*:\/\//i.test(coordinate)
-	) {
-		return undefined;
-	}
-	const segments = coordinate.split("/");
-	if (segments.length < 3 || segments.some((segment) => !segment)) {
-		return undefined;
-	}
-	const hostMatch = segments[0].match(/^([a-z0-9._-]+)(?::(\d+))?$/);
-	if (!hostMatch) return undefined;
-	const [, host, port] = hostMatch;
-	if (host === "." || host === "..") return undefined;
-	if (port && (Number(port) < 1 || Number(port) > 65_535)) return undefined;
-	if (
-		segments.slice(1).some(
-			(segment) =>
-				segment === "." || segment === ".." || !SAFE_SEGMENT.test(segment),
-		)
-	) {
-		return undefined;
-	}
-	return `${[host, ...(port ? [`port-${port}`] : []), ...segments.slice(1)].join("--")}.md`;
-}
-
 function validateEntries(entries: readonly ProjectIndexEntry[]): void {
 	const coordinates = new Set<string>();
 	const paths = new Set<string>();
@@ -95,7 +69,7 @@ function validateEntries(entries: readonly ProjectIndexEntry[]): void {
 	}
 
 	for (const entry of entries) {
-		const filename = expectedFilename(entry.coordinate);
+		const filename = repositoryCoordinateToFilename(entry.coordinate);
 		if (!filename || entry.relativePath !== `projects/${filename}`) {
 			throw new Error("Project index path does not match its repository coordinate");
 		}
@@ -153,7 +127,7 @@ export function renderProjectIndex(
 function assertSafeIdentityFilename(identity: RepositoryIdentity): void {
 	if (
 		basename(identity.filename) !== identity.filename ||
-		!SAFE_SEGMENT.test(identity.filename) ||
+		!isSafeRepositoryMemoryFilename(identity.filename) ||
 		!identity.filename.endsWith(".md") ||
 		identity.filename === ".md"
 	) {
@@ -161,7 +135,7 @@ function assertSafeIdentityFilename(identity: RepositoryIdentity): void {
 	}
 	if (
 		identity.coordinate &&
-		expectedFilename(identity.coordinate) !== identity.filename
+		repositoryCoordinateToFilename(identity.coordinate) !== identity.filename
 	) {
 		throw new Error("Repository identity filename does not match its coordinate");
 	}

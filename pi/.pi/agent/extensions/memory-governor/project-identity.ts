@@ -30,6 +30,74 @@ interface ParsedRemote {
 }
 
 const SAFE_SEGMENT = /^[a-z0-9._-]+$/;
+const ENCODED_FILENAME_SEGMENT = /^~(?:[0-9a-f]{2})+$/;
+
+function isNormalizedSegment(segment: string): boolean {
+	return (
+		segment !== "." &&
+		segment !== ".." &&
+		SAFE_SEGMENT.test(segment)
+	);
+}
+
+export function encodeRepositoryFilenameSegment(segment: string): string {
+	return segment.includes("--")
+		? `~${Buffer.from(segment, "utf8").toString("hex")}`
+		: segment;
+}
+
+export function repositorySegmentsToFilename(
+	segments: readonly string[],
+): string {
+	return `${segments.map(encodeRepositoryFilenameSegment).join("--")}.md`;
+}
+
+function isControlledFilenameSegment(segment: string): boolean {
+	if (!segment.startsWith("~")) return isNormalizedSegment(segment);
+	if (!ENCODED_FILENAME_SEGMENT.test(segment)) return false;
+	const hex = segment.slice(1);
+	const decoded = Buffer.from(hex, "hex").toString("utf8");
+	return (
+		Buffer.from(decoded, "utf8").toString("hex") === hex &&
+		decoded.includes("--") &&
+		isNormalizedSegment(decoded)
+	);
+}
+
+export function isSafeRepositoryMemoryFilename(filename: string): boolean {
+	if (!filename.endsWith(".md") || filename === ".md") return false;
+	const segments = filename.slice(0, -3).split("--");
+	return segments.length > 0 && segments.every(isControlledFilenameSegment);
+}
+
+export function repositoryCoordinateToFilename(
+	coordinate: string,
+): string | undefined {
+	if (
+		!coordinate ||
+		coordinate.includes("\\") ||
+		coordinate.includes("%") ||
+		/[\u0000-\u001f\u007f]/.test(coordinate) ||
+		/^[a-z][a-z0-9+.-]*:\/\//i.test(coordinate)
+	) {
+		return undefined;
+	}
+	const segments = coordinate.split("/");
+	if (segments.length < 3 || segments.some((segment) => !segment)) {
+		return undefined;
+	}
+	const hostMatch = segments[0].match(/^([a-z0-9._-]+)(?::(\d+))?$/);
+	if (!hostMatch) return undefined;
+	const [, host, port] = hostMatch;
+	if (!isNormalizedSegment(host)) return undefined;
+	if (port && !validPort(port)) return undefined;
+	if (!segments.slice(1).every(isNormalizedSegment)) return undefined;
+	return repositorySegmentsToFilename([
+		host,
+		...(port ? [`port-${port}`] : []),
+		...segments.slice(1),
+	]);
+}
 
 function safeSegment(raw: string): string | undefined {
 	let decoded: string;
@@ -131,7 +199,10 @@ export function normalizeRemoteIdentity(
 		canonicalKey: `remote:${coordinate}`,
 		coordinate,
 		displayName: parsed.segments.join("/"),
-		filename: `${[...hostFilenameSegments, ...parsed.segments].join("--")}.md`,
+		filename: repositorySegmentsToFilename([
+			...hostFilenameSegments,
+			...parsed.segments,
+		]),
 	};
 }
 
@@ -156,7 +227,7 @@ function localIdentity(canonicalPath: string, diagnostic: string): RepositoryIde
 		kind: "local",
 		canonicalKey: `local:${canonicalPath}`,
 		displayName,
-		filename: `local--${displayName}--${hash}.md`,
+		filename: repositorySegmentsToFilename(["local", displayName, hash]),
 		diagnostic,
 	};
 }

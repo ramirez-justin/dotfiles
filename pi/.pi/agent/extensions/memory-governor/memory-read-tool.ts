@@ -7,7 +7,10 @@ import {
 	WORKFLOW_MEMORY_SPEC,
 	type MemoryFileSpec,
 } from "./memory-store.ts";
-import type { RepositoryIdentity } from "./project-identity.ts";
+import {
+	isSafeRepositoryMemoryFilename,
+	type RepositoryIdentity,
+} from "./project-identity.ts";
 import { resolveIndexedProjectMemory } from "./project-memory.ts";
 
 export const MEMORY_READ_MAX_CHARS = 5_000;
@@ -42,7 +45,6 @@ export const memoryReadParameters = {
 	additionalProperties: false,
 } as const;
 
-const SAFE_FILENAME = /^[a-z0-9._-]+\.md$/;
 const SAFE_COORDINATE_SEGMENT = /^[a-z0-9._-]+$/;
 const TRUNCATION_MARKER =
 	"\n\n[truncated: memory_read output exceeded 5000 characters]";
@@ -109,7 +111,7 @@ function safeCurrentProjectSource(identity: RepositoryIdentity): string {
 	if (
 		identity.filename.length > 240 ||
 		basename(identity.filename) !== identity.filename ||
-		!SAFE_FILENAME.test(identity.filename) ||
+		!isSafeRepositoryMemoryFilename(identity.filename) ||
 		identity.filename === ".md"
 	) {
 		throw new Error("Current project memory identity is unsafe");
@@ -119,7 +121,11 @@ function safeCurrentProjectSource(identity: RepositoryIdentity): string {
 
 function safeRelativeProjectSource(root: string, path: string): string {
 	const source = relative(root, path).split(sep).join("/");
-	if (!/^projects\/[a-z0-9._-]+\.md$/.test(source)) {
+	const prefix = "projects/";
+	if (
+		!source.startsWith(prefix) ||
+		!isSafeRepositoryMemoryFilename(source.slice(prefix.length))
+	) {
 		throw new Error("Named project memory path failed containment validation");
 	}
 	return source;

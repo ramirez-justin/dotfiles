@@ -252,7 +252,7 @@ async function inspectExistingLock(
 	lockPath: string,
 	targetPath: string,
 	options: ResolvedLockOptions,
-): Promise<"busy" | "reclaimed" | "uncertain"> {
+): Promise<"busy" | "uncertain"> {
 	const ownerPath = join(lockPath, "owner.json");
 	let raw: string;
 	let owner: LockOwner;
@@ -282,17 +282,11 @@ async function inspectExistingLock(
 	try {
 		options.processKill(owner.pid, 0);
 		return "busy";
-	} catch (error) {
-		if (errorCode(error) !== "ESRCH") return "uncertain";
-	}
-
-	try {
-		if ((await readFile(ownerPath, "utf8")) !== raw) return "uncertain";
-		await unlink(ownerPath);
-		await rmdir(lockPath);
-		return "reclaimed";
-	} catch (error) {
-		return errorCode(error) === "ENOENT" ? "reclaimed" : "uncertain";
+	} catch {
+		// Even a verified-dead owner cannot be reclaimed safely: Node has no
+		// portable conditional unlink, so another writer could replace the lock
+		// between inspection and deletion. Fail closed on all ownership doubt.
+		return "uncertain";
 	}
 }
 
@@ -333,7 +327,6 @@ async function acquireLock(
 			if (errorCode(error) !== "EEXIST") throw error;
 			const state = await inspectExistingLock(lockPath, path, options);
 			if (state === "uncertain") return "uncertain";
-			if (state === "reclaimed") continue;
 			if (options.now() >= deadline) return "timeout";
 			await pause(options.retryDelayMs());
 		}

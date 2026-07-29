@@ -234,21 +234,31 @@ describe("locked mutation", () => {
 		});
 	});
 
-	test("reclaims a stale same-host lock only when its PID is verified dead", async () => {
+	test("fails closed without deleting a stale lock whose owner is verified dead", async () => {
 		const path = await temporaryPath();
 		await writeFile(path, validUserMemory);
-		await makeLock(
-			path,
-			owner(path, {
-				pid: 2_147_483_647,
-				acquiredAt: new Date(Date.now() - 31_000).toISOString(),
-			}),
-		);
-
-		expect(await append(path, "Recovered.", { lock: fastLock })).toMatchObject({
-			status: "written",
+		const staleOwner = owner(path, {
+			pid: 2_147_483_647,
+			acquiredAt: new Date(Date.now() - 31_000).toISOString(),
 		});
-		expect(await readFile(path, "utf8")).toContain("- Recovered.");
+		await makeLock(path, staleOwner);
+
+		const result = await append(path, "Blocked.", {
+			lock: {
+				...fastLock,
+				processKill: () => {
+					const error = new Error("no such process") as NodeJS.ErrnoException;
+					error.code = "ESRCH";
+					throw error;
+				},
+			},
+		});
+
+		expect(result).toEqual({ status: "lock-uncertain", path });
+		expect(await readFile(path, "utf8")).toBe(validUserMemory);
+		expect(
+			JSON.parse(await readFile(join(`${path}.lock`, "owner.json"), "utf8")),
+		).toEqual(staleOwner);
 	});
 
 	test("treats EPERM, foreign owners, and malformed metadata as uncertain", async () => {

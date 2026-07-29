@@ -78,6 +78,10 @@ fi
 echo "Pi agent model tiers verified ($checked agents)"
 """
 
+[tasks.check-memory]
+description = "Run Pi memory-governor tests"
+run = "mise exec -- bun test ./pi/.pi/agent/extensions/memory-governor"
+
 [tasks.doctor]
 description = "Verify dotfiles, shell tools, Pi, and local machine health"
 run = """
@@ -106,6 +110,7 @@ check "no standalone npm latest tool" sh -c "if grep -R -F '\"npm:npm\" = \"late
 check "node selectors avoid patch pins" sh -c "if grep -R -E 'node(@|/)[0-9]+[.][0-9]+[.][0-9]+' {{config_root}}/mise/.config/mise/config.toml {{config_root}}/pi/.pi/agent/settings.json {{config_root}}/claude/.claude/settings.json; then exit 1; fi"
 check "Pi agent model tiers" mise run check-agent-tiers
 check "pi available" command -v pi
+check "Pi memory governor" mise run check-memory
 check "pi starts offline" mise exec -- pi --offline --list-models
 check "git submodules initialized" git submodule status --recursive
 check "zsh config linked" sh -c '[ -L "$HOME/.zshrc" ]'

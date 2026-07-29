@@ -7,6 +7,7 @@ import {
 	applyMemoryAddition,
 	auditMemoryText,
 	detectMemoryCandidate,
+	shouldRejectMemory,
 	type MemoryCandidate,
 } from "./candidate.ts";
 import { createMemoryReadTool } from "./memory-read-tool.ts";
@@ -225,6 +226,12 @@ export function createMemoryGovernor(
 
 		if (!candidate.autoWrite) {
 			pendingAdvisory = candidate;
+			return { action: "continue" };
+		}
+
+		const rejection = shouldRejectMemory(candidate.content, "");
+		if (rejection) {
+			if (ctx.hasUI) ctx.ui.notify(`Memory rejected: ${rejection}`, "warning");
 			return { action: "continue" };
 		}
 

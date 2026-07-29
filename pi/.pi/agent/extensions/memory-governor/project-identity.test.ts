@@ -47,6 +47,19 @@ describe("remote repository identity", () => {
 		});
 	});
 
+	test("normalizes redundant path slashes across remote forms", () => {
+		const canonical = normalizeRemoteIdentity(
+			"https://github.com/gametimesf/dbt-analytics.git",
+		);
+		for (const remote of [
+			"https://github.com//gametimesf///dbt-analytics.git/",
+			"ssh://git@github.com///gametimesf//dbt-analytics.git/",
+			"git@github.com:gametimesf///dbt-analytics.git/",
+		]) {
+			expect(normalizeRemoteIdentity(remote)).toEqual(canonical);
+		}
+	});
+
 	test("tags non-default ports so a normal namespace cannot collide", () => {
 		const portIdentity = normalizeRemoteIdentity(
 			"ssh://git@example.com:2222/team/repo.git",
@@ -121,6 +134,7 @@ describe("remote repository identity", () => {
 			"ftp://example.com/team/repo.git",
 			"https://example.com/repo.git",
 			"https://example.com/team/../repo.git",
+			"https://example.com/team/./repo.git",
 			"https://example.com/team/%2Fetc.git",
 			"https://example.com/team/%00repo.git",
 			"git@example.com:",

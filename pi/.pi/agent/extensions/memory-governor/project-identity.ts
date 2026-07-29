@@ -183,6 +183,7 @@ function parseUrlRemote(remote: string): ParsedRemote | undefined {
 }
 
 function parseScpRemote(remote: string): ParsedRemote | undefined {
+	if (remote.includes("://")) return undefined;
 	const withoutQuery = remote.split(/[?#]/, 1)[0];
 	const match = withoutQuery.match(/^(?:[^@/:\s]+@)?([^/:\s]+):(.+)$/);
 	if (!match) return undefined;
@@ -192,12 +193,13 @@ function parseScpRemote(remote: string): ParsedRemote | undefined {
 }
 
 function normalizePathSegments(rawSegments: string[]): string[] | undefined {
-	if (rawSegments.length < 2 || rawSegments.some((segment) => segment === "")) {
-		return undefined;
-	}
-	const repository = rawSegments.at(-1)?.replace(/\.git$/i, "");
+	const nonemptySegments = rawSegments.filter((segment) => segment !== "");
+	if (nonemptySegments.length < 2) return undefined;
+	const repository = nonemptySegments.at(-1)?.replace(/\.git$/i, "");
 	if (!repository) return undefined;
-	const normalized = [...rawSegments.slice(0, -1), repository].map(safeSegment);
+	const normalized = [...nonemptySegments.slice(0, -1), repository].map(
+		safeSegment,
+	);
 	if (normalized.some((segment) => segment === undefined)) return undefined;
 	return normalized as string[];
 }

@@ -176,12 +176,16 @@ async function readMemory(
 		});
 	}
 
+	const coordinate = parameters.coordinate;
+	if (!coordinate) {
+		throw new Error("A coordinate is required for project memory reads");
+	}
 	const path = await resolveIndexedProjectMemory({
 		root: deps.memoryRoot,
-		coordinate: parameters.coordinate!,
+		coordinate,
 	});
 	if (!path) {
-		throw new Error(`Unknown project coordinate: ${parameters.coordinate}`);
+		throw new Error(`Unknown project coordinate: ${coordinate}`);
 	}
 	const source = safeRelativeProjectSource(deps.memoryRoot, path);
 	return readSafeMemory({

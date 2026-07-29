@@ -178,7 +178,8 @@ function containedProjectPath(projects: string, filename: string): string {
 
 async function rejectSymlink(path: string): Promise<void> {
 	try {
-		if ((await lstat(path)).isSymbolicLink()) {
+		const stats = await lstat(path);
+		if (stats.isSymbolicLink()) {
 			throw new Error("Project memory path cannot be a symbolic link");
 		}
 	} catch (error) {
@@ -298,9 +299,8 @@ export async function resolveIndexedProjectMemory(input: {
 	root: string;
 	coordinate: string;
 }): Promise<string | undefined> {
-	const entry = (await readIndex(input.root)).find(
-		(item) => item.coordinate === input.coordinate,
-	);
+	const entries = await readIndex(input.root);
+	const entry = entries.find((item) => item.coordinate === input.coordinate);
 	if (!entry) return undefined;
 	await safeIndexedPath(input.root, entry);
 	return join(input.root, entry.relativePath);

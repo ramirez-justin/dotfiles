@@ -289,6 +289,32 @@ describe("memory governor lifecycle", () => {
 });
 
 describe("explicit memory writes", () => {
+	test("rejects unsafe project memory before persistent state access", async () => {
+		const persistentCalls: string[] = [];
+		const harness = createExtensionHarness({
+			async resolveIdentity() {
+				persistentCalls.push("resolveIdentity");
+				return identity;
+			},
+			async ensureScopedProject() {
+				persistentCalls.push("ensureScopedProject");
+				return { path: "/memory/projects/unsafe.md", created: false };
+			},
+			async mutateFile() {
+				persistentCalls.push("mutateFile");
+				return { status: "written", text: "", summary: "written" };
+			},
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input("Remember: In this repo API_KEY=abc");
+
+		expect(persistentCalls).toEqual([]);
+		expect(harness.notifications).toEqual([
+			{ text: "Memory rejected: secret-like content", level: "warning" },
+		]);
+	});
+
 	test("only explicit Remember writes", async () => {
 		const harness = createExtensionHarness();
 		createMemoryGovernor(harness.pi, harness.deps);

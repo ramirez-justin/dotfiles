@@ -95,10 +95,18 @@ function scopedSection(text: string): {
 export function parseProjectIndex(text: string): ProjectIndexEntry[] {
 	const section = scopedSection(text);
 	const body = text.slice(section.bodyStart, section.bodyEnd);
-	const entries = Array.from(body.matchAll(INDEX_ENTRY), (match) => ({
-		coordinate: match[1],
-		relativePath: match[2],
-	}));
+	const entries: ProjectIndexEntry[] = [];
+	let consumed = 0;
+	for (const match of body.matchAll(INDEX_ENTRY)) {
+		if (body.slice(consumed, match.index).trim()) {
+			throw new Error("Malformed project index entry");
+		}
+		entries.push({ coordinate: match[1], relativePath: match[2] });
+		consumed = match.index + match[0].length;
+	}
+	if (body.slice(consumed).trim()) {
+		throw new Error("Malformed project index entry");
+	}
 	validateEntries(entries);
 	return entries;
 }
@@ -256,6 +264,21 @@ async function safeIndexedPath(root: string, entry: ProjectIndexEntry): Promise<
 	return path;
 }
 
+async function requireRegularIndexedAuditTarget(
+	path: string,
+	relativePath: string,
+): Promise<void> {
+	try {
+		const target = await lstat(path);
+		if (target.isFile()) return;
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+	}
+	throw new Error(
+		`Project index drift: indexed audit target is missing or not a regular file: ${relativePath}`,
+	);
+}
+
 async function readIndex(root: string): Promise<ProjectIndexEntry[]> {
 	const indexPath = join(await realpath(root), "PROJECTS.md");
 	const validated = await readValidatedMemory({
@@ -289,7 +312,8 @@ export async function listAuditTargets(root: string): Promise<string[]> {
 		join(root, "PROJECTS.md"),
 	];
 	for (const entry of await readIndex(root)) {
-		await safeIndexedPath(root, entry);
+		const path = await safeIndexedPath(root, entry);
+		await requireRegularIndexedAuditTarget(path, entry.relativePath);
 		targets.push(join(root, entry.relativePath));
 	}
 	return targets;

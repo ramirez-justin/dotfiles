@@ -123,6 +123,23 @@ describe("project index Markdown", () => {
 		expect(renderProjectIndex(indexBase, entries)).toBe(rendered);
 	});
 
+	test("rejects malformed nonblank scoped-project content without echoing it", () => {
+		const malformed = "private malformed index content";
+		const text = indexBase.replace(
+			"## Scoped Projects\n",
+			`## Scoped Projects\n\n${malformed}\n`,
+		);
+
+		let error: Error | undefined;
+		try {
+			parseProjectIndex(text);
+		} catch (caught) {
+			error = caught as Error;
+		}
+		expect(error?.message).toMatch(/malformed project index entry/i);
+		expect(error?.message).not.toContain(malformed);
+	});
+
 	test("rejects duplicate coordinates before incidental path errors", () => {
 		const text = `## Scoped Projects
 
@@ -194,6 +211,25 @@ describe("scoped project storage", () => {
 					relativePath: `projects/${identity.filename}`,
 				},
 			]);
+	});
+
+	test("preserves a malformed index and releases mutation locks", async () => {
+		const root = await temporaryRoot();
+		const malformedIndex = indexBase.replace(
+			"## Scoped Projects\n",
+			"## Scoped Projects\n\nmalformed nonblank content\n",
+		);
+		const indexPath = join(root, "PROJECTS.md");
+		const identity = remoteIdentity();
+		const scopedPath = join(root, "projects", identity.filename);
+		await writeFile(indexPath, malformedIndex);
+
+		await expect(
+			ensureScopedProjectMemory({ root, identity }),
+		).rejects.toThrow(/malformed project index entry/i);
+		expect(await readFile(indexPath, "utf8")).toBe(malformedIndex);
+		expect(await fileExists(`${indexPath}.lock`)).toBe(false);
+		expect(await fileExists(`${scopedPath}.lock`)).toBe(false);
 	});
 
 	test("creates project memory with a controlled encoded filename segment", async () => {
@@ -276,6 +312,14 @@ describe("scoped project storage", () => {
 			},
 		];
 		await writeFile(join(root, "PROJECTS.md"), renderProjectIndex(indexBase, entries));
+		await Promise.all(
+			entries.map((entry) =>
+				writeFile(
+					join(root, entry.relativePath),
+					createScopedMemoryText(entry.coordinate),
+				),
+			),
+		);
 
 		expect(await listAuditTargets(root)).toEqual([
 			join(root, "USER.md"),
@@ -284,5 +328,34 @@ describe("scoped project storage", () => {
 			join(projects, "github.com--acme--alpha.md"),
 			join(projects, "github.com--acme--zeta.md"),
 		]);
+	});
+
+	test("rejects missing and non-file indexed audit targets as safe drift errors", async () => {
+		for (const targetKind of ["missing", "directory"] as const) {
+			const root = await temporaryRoot();
+			const projects = join(root, "projects");
+			await mkdir(projects);
+			const entry = {
+				coordinate: "github.com/acme/service",
+				relativePath: "projects/github.com--acme--service.md",
+			};
+			await writeFile(
+				join(root, "PROJECTS.md"),
+				renderProjectIndex(indexBase, [entry]),
+			);
+			if (targetKind === "directory") {
+				await mkdir(join(root, entry.relativePath));
+			}
+
+			let error: Error | undefined;
+			try {
+				await listAuditTargets(root);
+			} catch (caught) {
+				error = caught as Error;
+			}
+			expect(error?.message).toMatch(/project index drift/i);
+			expect(error?.message).toContain(entry.relativePath);
+			expect(error?.message).not.toContain(root);
+		}
 	});
 });

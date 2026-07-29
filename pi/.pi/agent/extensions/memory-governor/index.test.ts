@@ -417,6 +417,42 @@ describe("memory audit", () => {
 		]);
 	});
 
+	test("notifies an audit target enumeration failure when UI is available", async () => {
+		const failure = new Error(
+			"Project index drift: projects/github.com--acme--missing.md",
+		);
+		const harness = createExtensionHarness({
+			auditTargets: async () => {
+				throw failure;
+			},
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.audit();
+		expect(harness.notifications).toEqual([
+			{ text: `Memory audit failed: ${failure.message}`, level: "error" },
+		]);
+		expect(harness.mutations).toEqual([]);
+		expect(harness.sentMessages).toEqual([]);
+	});
+
+	test("rethrows an audit target enumeration failure without UI", async () => {
+		const failure = new Error(
+			"Project index drift: projects/github.com--acme--missing.md",
+		);
+		const harness = createExtensionHarness({
+			auditTargets: async () => {
+				throw failure;
+			},
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await expect(harness.audit({ hasUI: false })).rejects.toBe(failure);
+		expect(harness.notifications).toEqual([]);
+		expect(harness.mutations).toEqual([]);
+		expect(harness.sentMessages).toEqual([]);
+	});
+
 	test("reports audit outcomes without touching UI when unavailable", async () => {
 		const harness = createExtensionHarness();
 		createMemoryGovernor(harness.pi, harness.deps);

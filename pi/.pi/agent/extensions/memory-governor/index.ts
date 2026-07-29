@@ -273,7 +273,16 @@ export function createMemoryGovernor(
 		description: "Audit Pi memory files and remove exact duplicate bullets",
 		handler: async (_args, ctx) => {
 			const summaries: string[] = [];
-			const targets = await deps.auditTargets(deps.memoryRoot);
+			let targets: string[];
+			try {
+				targets = await deps.auditTargets(deps.memoryRoot);
+			} catch (error) {
+				if (!ctx.hasUI) throw error;
+				const message =
+					error instanceof Error ? error.message : "unknown enumeration error";
+				ctx.ui.notify(`Memory audit failed: ${message}`, "error");
+				return;
+			}
 			for (const path of targets) {
 				const label = relativeLabel(deps.memoryRoot, path);
 				const result = await deps.mutateFile({

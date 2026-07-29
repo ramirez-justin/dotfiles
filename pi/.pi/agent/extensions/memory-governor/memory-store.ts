@@ -377,7 +377,8 @@ async function inspectExistingLock(
 	} catch (error) {
 		if (errorCode(error) !== "ENOENT") return "uncertain";
 		try {
-			const age = options.now() - (await stat(lockPath)).mtimeMs;
+			const lockMetadata = await stat(lockPath);
+			const age = options.now() - lockMetadata.mtimeMs;
 			return age >= -1_000 && age <= options.staleMs ? "busy" : "uncertain";
 		} catch {
 			return "busy";

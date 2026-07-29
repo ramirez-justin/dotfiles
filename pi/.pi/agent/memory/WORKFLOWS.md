@@ -9,6 +9,10 @@ Durable workflow conventions for Justin's Pi sessions.
 - Audit existing entries before appending new workflow memory.
 - Prefer merging, pruning, or replacing stale entries over growing the file.
 - Prefer adding automation when a manual command must be remembered.
+- Before opening or updating a Python PR, inspect the active CI workflow and run
+  its exact code-quality command from the same working directory, with the same
+  tool version and final changed-file set. A subdirectory invocation or local
+  pre-commit result is not equivalent evidence.
 
 ## Conventions
 
@@ -36,3 +40,6 @@ Durable workflow conventions for Justin's Pi sessions.
 - Justin's `aws-me` AWS session helper is a zsh alias; from Pi shell tools,
   invoke it through interactive zsh, for example
   `zsh -ic 'aws-me -- <command>'`.
+- Immediately before creating or finalizing a PR, verify task-specific design,
+  specification, and implementation-plan artifacts are absent from both the
+  worktree and the final diff, unless Justin explicitly asks to retain them.

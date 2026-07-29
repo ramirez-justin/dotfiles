@@ -16,6 +16,11 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Prefer reviewing designs and plans interactively in chat rather than being
   asked to review a file separately.
 - Prefer minimum code that solves the problem.
+- For small, focused changes, work directly on a feature branch; use an
+  isolated worktree only when isolation materially helps or Justin requests it.
+- When a worktree is needed, choose a sensible isolated location and proceed;
+  do not ask Justin to choose implementation details unless the tradeoff affects
+  him.
 - Use Neovim rather than VS Code. Do not install or manage VS Code or its
   extensions unless explicitly requested.
 - Prefer explicit success criteria and verified outcomes.
@@ -27,6 +32,11 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   caveats. Do not wait only for explicit “remember this” requests.
 - Prefer choosing the desired end-state and building it directly over adding
   intermediate scaffolding or process overhead.
+- Avoid PR sprawl; fold tightly related fixes into an existing PR when the
+  resulting scope remains coherent and reviewable.
+- Treat implementation plans and design specs as temporary working artifacts.
+  Immediately before opening or finalizing a PR, verify task-specific artifacts
+  are absent unless explicitly requested; do not rely on intended cleanup.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
 - Do not run Terraform or Terragrunt plan/apply commands for Snowflake; they

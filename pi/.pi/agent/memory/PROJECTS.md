@@ -79,6 +79,11 @@ Stable project facts and caveats that may help future Pi sessions.
   behavior, because CI uses sampled/modified-state builds and can time out on
   unbounded first runs.
 
+## Gametime Notebooks
+
+- Use `mlctl job logs <job-ref>` to retrieve Baseline/SageMaker notebook output,
+  final counters, runtime warnings, and benchmark metrics.
+
 ## Gametime Data Review Lessons
 
 - In `gametime-data`, Astro staging and production deploy workflows both call

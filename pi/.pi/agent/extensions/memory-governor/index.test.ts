@@ -1,7 +1,20 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import {
+	lstat,
+	mkdtemp,
+	readFile,
+	readlink,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import type { MemoryCandidate } from "./candidate.ts";
-import type { MutationResult } from "./memory-store.ts";
+import {
+	mutateMemoryFile,
+	type MutationResult,
+} from "./memory-store.ts";
 import type { RepositoryIdentity } from "./project-identity.ts";
 import * as governorModule from "./index.ts";
 
@@ -18,6 +31,7 @@ interface MemoryGovernorDependencies {
 		identity: RepositoryIdentity;
 	}): Promise<{ path: string; created: boolean }>;
 	mutateFile(input: {
+		root: string;
 		path: string;
 		spec: unknown;
 		mutate(text: string):
@@ -41,6 +55,18 @@ const createMemoryGovernor =
 		: () => {
 				throw new Error("createMemoryGovernor is not implemented");
 			};
+
+const roots: string[] = [];
+
+async function temporaryRoot(prefix: string): Promise<string> {
+	const root = await mkdtemp(join(tmpdir(), prefix));
+	roots.push(root);
+	return root;
+}
+
+afterEach(async () => {
+	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true })));
+});
 
 const identity: RepositoryIdentity = {
 	kind: "remote",
@@ -289,6 +315,28 @@ describe("memory governor lifecycle", () => {
 });
 
 describe("explicit memory writes", () => {
+	test("rejects a top-level final symlink without copying external Markdown", async () => {
+		const memoryRoot = await temporaryRoot("memory-governor-root-");
+		const outside = await temporaryRoot("memory-governor-outside-");
+		const target = join(memoryRoot, "USER.md");
+		const externalPath = join(outside, "USER.md");
+		const externalContent = templates["USER.md"].replace(
+			"- Safe.",
+			"- Valid external content must remain external.",
+		);
+		await writeFile(externalPath, externalContent);
+		await symlink(externalPath, target);
+		const harness = createExtensionHarness({ memoryRoot, mutateFile: mutateMemoryFile });
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input("Remember: Prefer direct answers.");
+
+		expect((await lstat(target)).isSymbolicLink()).toBe(true);
+		expect(await readlink(target)).toBe(externalPath);
+		expect(await readFile(externalPath, "utf8")).toBe(externalContent);
+		expect(harness.notifications.map((notice) => notice.text).join("\n"))
+			.toMatch(/rejected.*symbolic link|containment/i);
+	});
 	test("rejects unsafe project memory before persistent state access", async () => {
 		const persistentCalls: string[] = [];
 		const harness = createExtensionHarness({
@@ -404,6 +452,28 @@ describe("explicit memory writes", () => {
 });
 
 describe("memory audit", () => {
+	test("rejects a top-level final symlink without copying audited external Markdown", async () => {
+		const memoryRoot = await temporaryRoot("memory-audit-root-");
+		const outside = await temporaryRoot("memory-audit-outside-");
+		const target = join(memoryRoot, "WORKFLOWS.md");
+		const externalPath = join(outside, "WORKFLOWS.md");
+		const externalContent = `${templates["WORKFLOWS.md"]}\n- Duplicate.\n- Duplicate.\n`;
+		await writeFile(externalPath, externalContent);
+		await symlink(externalPath, target);
+		const harness = createExtensionHarness({
+			memoryRoot,
+			mutateFile: mutateMemoryFile,
+			auditTargets: async () => [target],
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.audit();
+
+		expect((await lstat(target)).isSymbolicLink()).toBe(true);
+		expect(await readlink(target)).toBe(externalPath);
+		expect(await readFile(externalPath, "utf8")).toBe(externalContent);
+		expect(harness.sentMessages[0].content).toMatch(/rejected.*symbolic link|containment/i);
+	});
 	test("audits top-level and indexed files sequentially through safe mutation", async () => {
 		const order: string[] = [];
 		let active = 0;

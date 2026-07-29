@@ -208,6 +208,7 @@ export async function ensureScopedProjectMemory(input: {
 	await rejectSymlink(path);
 	const coordinate = input.identity.coordinate ?? input.identity.displayName;
 	const scopedResult = await mutateMemoryFile({
+		root: input.root,
 		path,
 		spec: SCOPED_PROJECT_SPEC,
 		mutate: (text) =>
@@ -228,6 +229,7 @@ export async function ensureScopedProjectMemory(input: {
 			relativePath: `projects/${input.identity.filename}`,
 		};
 		const indexResult = await mutateMemoryFile({
+			root: input.root,
 			path: indexPath,
 			spec: PROJECT_INDEX_SPEC,
 			mutate: (text) => {

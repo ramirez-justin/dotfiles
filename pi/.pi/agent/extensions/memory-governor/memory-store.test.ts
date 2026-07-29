@@ -5,6 +5,7 @@ import {
 	mkdtemp,
 	readFile,
 	readdir,
+	realpath,
 	rm,
 	stat,
 	symlink,
@@ -25,7 +26,7 @@ const roots: string[] = [];
 async function temporaryPath(filename = "USER.md"): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), "memory-store-"));
 	roots.push(root);
-	return join(root, filename);
+	return join(await realpath(root), filename);
 }
 
 const validUserMemory = `# User Memory
@@ -65,6 +66,7 @@ const fastLock = {
 
 async function append(path: string, bullet: string, extra = {}) {
 	return mutateMemoryFile({
+		root: dirname(path),
 		path,
 		spec: USER_MEMORY_SPEC,
 		mutate: (text: string) => ({
@@ -207,6 +209,7 @@ describe("locked mutation", () => {
 			firstEntered = resolve;
 		});
 		const first = mutateMemoryFile({
+			root: dirname(path),
 			path,
 			spec: USER_MEMORY_SPEC,
 			mutate: async (text) => {
@@ -222,6 +225,7 @@ describe("locked mutation", () => {
 		await entered;
 		let secondSawFirst = false;
 		const second = mutateMemoryFile({
+			root: dirname(path),
 			path,
 			spec: USER_MEMORY_SPEC,
 			mutate: (text) => {
@@ -255,6 +259,7 @@ describe("locked mutation", () => {
 		await writeFile(path, validUserMemory);
 
 		const result = await mutateMemoryFile({
+			root: dirname(path),
 			path,
 			spec,
 			mutate: (text) => ({
@@ -357,6 +362,7 @@ describe("locked mutation", () => {
 		const external = `${validUserMemory}\n- Manual edit.\n`;
 
 		const result = await mutateMemoryFile({
+			root: dirname(path),
 			path,
 			spec: USER_MEMORY_SPEC,
 			mutate: async (text) => {
@@ -378,6 +384,7 @@ describe("locked mutation", () => {
 		let observed: Record<string, unknown> | undefined;
 
 		await mutateMemoryFile({
+			root: dirname(path),
 			path,
 			spec: USER_MEMORY_SPEC,
 			mutate: async (text) => {
@@ -407,6 +414,7 @@ describe("locked mutation", () => {
 
 		await expect(
 			mutateMemoryFile({
+				root: dirname(path),
 				path,
 				spec: USER_MEMORY_SPEC,
 				mutate: () => {
@@ -418,6 +426,34 @@ describe("locked mutation", () => {
 		expect(names).toEqual([basename(path)]);
 	});
 
+	test("supports mutation through a Stow-like symlinked memory root", async () => {
+		const container = await mkdtemp(join(tmpdir(), "memory-store-stow-mutation-"));
+		roots.push(container);
+		const realRoot = join(container, "repo", "memory");
+		const linkedRoot = join(container, "home", "memory");
+		await mkdir(realRoot, { recursive: true });
+		await mkdir(dirname(linkedRoot), { recursive: true });
+		await writeFile(join(realRoot, "USER.md"), validUserMemory);
+		await symlink(realRoot, linkedRoot);
+
+		const result = await mutateMemoryFile({
+			root: linkedRoot,
+			path: join(linkedRoot, "USER.md"),
+			spec: USER_MEMORY_SPEC,
+			mutate: (text) => ({
+				changed: true,
+				text: `${text.trimEnd()}\n- Stored through linked root.\n`,
+				summary: "stored through linked root",
+			}),
+		});
+
+		expect(result).toMatchObject({ status: "written" });
+		expect(await readFile(join(realRoot, "USER.md"), "utf8")).toContain(
+			"- Stored through linked root.",
+		);
+		expect(await readdir(realRoot)).toEqual(["USER.md"]);
+	});
+
 	test("preserves an existing mode and creates a new file with mode 0600", async () => {
 		const existing = await temporaryPath("existing.md");
 		await writeFile(existing, validUserMemory);
@@ -427,6 +463,7 @@ describe("locked mutation", () => {
 
 		const created = await temporaryPath("created.md");
 		const result = await mutateMemoryFile({
+			root: dirname(created),
 			path: created,
 			spec: USER_MEMORY_SPEC,
 			mutate: () => ({
@@ -446,6 +483,7 @@ describe("locked mutation", () => {
 
 		await expect(
 			mutateMemoryFile({
+				root: dirname(path),
 				path,
 				spec: USER_MEMORY_SPEC,
 				mutate: async () => {

@@ -108,10 +108,87 @@ interface FileSnapshot {
 	mode: number;
 }
 
+class MutationBoundaryError extends Error {}
+
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 function errorCode(error: unknown): string | undefined {
 	return (error as NodeJS.ErrnoException).code;
+}
+
+function containedPath(root: string, path: string): boolean {
+	const relativePath = relative(root, path);
+	return Boolean(relativePath) &&
+		relativePath !== ".." &&
+		!relativePath.startsWith(`..${sep}`) &&
+		!isAbsolute(relativePath);
+}
+
+async function canonicalMutationTarget(root: string, path: string): Promise<string> {
+	const canonicalRoot = await realpath(root);
+	try {
+		const targetMetadata = await lstat(path);
+		if (targetMetadata.isSymbolicLink()) {
+			throw new MutationBoundaryError("file cannot be a symbolic link");
+		}
+		const canonicalTarget = await realpath(path);
+		if (!containedPath(canonicalRoot, canonicalTarget)) {
+			throw new MutationBoundaryError("file failed root containment validation");
+		}
+		return canonicalTarget;
+	} catch (error) {
+		if (error instanceof MutationBoundaryError) throw error;
+		if (errorCode(error) !== "ENOENT") {
+			throw new MutationBoundaryError("file could not be accessed safely");
+		}
+	}
+
+	let canonicalParent: string;
+	try {
+		canonicalParent = await realpath(dirname(path));
+	} catch {
+		throw new MutationBoundaryError("file parent could not be accessed safely");
+	}
+	if (
+		canonicalParent !== canonicalRoot &&
+		!containedPath(canonicalRoot, canonicalParent)
+	) {
+		throw new MutationBoundaryError("file failed root containment validation");
+	}
+	const canonicalTarget = join(canonicalParent, basename(path));
+	if (!containedPath(canonicalRoot, canonicalTarget)) {
+		throw new MutationBoundaryError("file failed root containment validation");
+	}
+	return canonicalTarget;
+}
+
+async function validateCanonicalMutationTarget(
+	root: string,
+	path: string,
+): Promise<void> {
+	const canonicalRoot = await realpath(root);
+	try {
+		const targetMetadata = await lstat(path);
+		if (targetMetadata.isSymbolicLink()) {
+			throw new MutationBoundaryError("file cannot be a symbolic link");
+		}
+		const currentTarget = await realpath(path);
+		if (currentTarget !== path || !containedPath(canonicalRoot, currentTarget)) {
+			throw new MutationBoundaryError("file failed root containment validation");
+		}
+	} catch (error) {
+		if (error instanceof MutationBoundaryError) throw error;
+		if (errorCode(error) !== "ENOENT") {
+			throw new MutationBoundaryError("file could not be accessed safely");
+		}
+		const currentParent = await realpath(dirname(path));
+		if (
+			currentParent !== dirname(path) ||
+			(currentParent !== canonicalRoot && !containedPath(canonicalRoot, currentParent))
+		) {
+			throw new MutationBoundaryError("file failed root containment validation");
+		}
+	}
 }
 
 function escapeRegExp(text: string): string {
@@ -216,13 +293,7 @@ export async function readValidatedMemory(input: {
 				};
 			}
 			const canonicalTarget = await realpath(input.path);
-			const relativeTarget = relative(canonicalRoot, canonicalTarget);
-			if (
-				!relativeTarget ||
-				relativeTarget === ".." ||
-				relativeTarget.startsWith(`..${sep}`) ||
-				isAbsolute(relativeTarget)
-			) {
+			if (!containedPath(canonicalRoot, canonicalTarget)) {
 				return {
 					warnings: [],
 					blockedReasons: ["file failed root containment validation"],
@@ -391,22 +462,49 @@ function snapshotsMatch(first: FileSnapshot, second: FileSnapshot): boolean {
 }
 
 export async function mutateMemoryFile(input: {
+	root: string;
 	path: string;
 	spec: MemoryFileSpec;
 	mutate: (text: string) => MemoryMutation | Promise<MemoryMutation>;
 	lock?: LockOptions;
 }): Promise<MutationResult> {
-	const acquired = await acquireLock(input.path, input.lock ?? {});
+	let targetPath: string;
+	try {
+		targetPath = await canonicalMutationTarget(input.root, input.path);
+	} catch (error) {
+		return {
+			status: "rejected",
+			text: "",
+			reason:
+				error instanceof MutationBoundaryError
+					? error.message
+					: "file failed root containment validation",
+		};
+	}
+
+	const acquired = await acquireLock(targetPath, input.lock ?? {});
 	if (acquired === "timeout") {
-		return { status: "lock-timeout", path: input.path };
+		return { status: "lock-timeout", path: targetPath };
 	}
 	if (acquired === "uncertain") {
-		return { status: "lock-uncertain", path: input.path };
+		return { status: "lock-uncertain", path: targetPath };
 	}
 
 	let temporaryPath: string | undefined;
 	try {
-		const initial = await snapshot(input.path);
+		try {
+			await validateCanonicalMutationTarget(input.root, targetPath);
+		} catch (error) {
+			return {
+				status: "rejected",
+				text: "",
+				reason:
+					error instanceof MutationBoundaryError
+						? error.message
+						: "file failed root containment validation",
+			};
+		}
+		const initial = await snapshot(targetPath);
 		let existingText = "";
 		if (initial.exists) {
 			const decoded = decodeSnapshot(initial);
@@ -455,17 +553,17 @@ export async function mutateMemoryFile(input: {
 			};
 		}
 
-		const latest = await snapshot(input.path);
+		const latest = await snapshot(targetPath);
 		if (!snapshotsMatch(initial, latest)) {
-			return { status: "conflict", path: input.path };
+			return { status: "conflict", path: targetPath };
 		}
 
 		// POSIX rename has no portable compare-and-swap. A noncooperating manual
 		// editor can still race in the narrow window after this final hash check.
 		const token = acquired.owner.token;
 		temporaryPath = join(
-			dirname(input.path),
-			`.${basename(input.path)}.memory-${token}.tmp`,
+			dirname(targetPath),
+			`.${basename(targetPath)}.memory-${token}.tmp`,
 		);
 		const handle = await open(temporaryPath, "wx", initial.mode);
 		try {
@@ -475,7 +573,7 @@ export async function mutateMemoryFile(input: {
 		} finally {
 			await handle.close();
 		}
-		await rename(temporaryPath, input.path);
+		await rename(temporaryPath, targetPath);
 		temporaryPath = undefined;
 		return {
 			status: "written",

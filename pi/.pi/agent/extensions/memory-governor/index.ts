@@ -35,6 +35,7 @@ import {
 } from "./prompt-memory.ts";
 
 interface MutationInput {
+	root: string;
 	path: string;
 	spec: MemoryFileSpec;
 	mutate: Parameters<typeof mutateMemoryFile>[0]["mutate"];
@@ -237,6 +238,7 @@ export function createMemoryGovernor(
 
 		const target = await targetFor(candidate, ctx.cwd);
 		const result = await deps.mutateFile({
+			root: deps.memoryRoot,
 			path: target.path,
 			spec: target.spec,
 			mutate: (existingText) =>
@@ -293,6 +295,7 @@ export function createMemoryGovernor(
 			for (const path of targets) {
 				const label = relativeLabel(deps.memoryRoot, path);
 				const result = await deps.mutateFile({
+					root: deps.memoryRoot,
 					path,
 					spec: specForPath(path),
 					mutate: (text) => {

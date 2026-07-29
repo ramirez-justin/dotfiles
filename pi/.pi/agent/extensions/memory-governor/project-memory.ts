@@ -282,6 +282,7 @@ async function requireRegularIndexedAuditTarget(
 async function readIndex(root: string): Promise<ProjectIndexEntry[]> {
 	const indexPath = join(await realpath(root), "PROJECTS.md");
 	const validated = await readValidatedMemory({
+		root,
 		path: indexPath,
 		spec: PROJECT_INDEX_SPEC,
 	});

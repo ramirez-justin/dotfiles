@@ -7,6 +7,7 @@ import {
 	readdir,
 	rm,
 	stat,
+	symlink,
 	writeFile,
 } from "node:fs/promises";
 import { hostname } from "node:os";
@@ -131,6 +132,52 @@ describe("memory validation", () => {
 			expect(result.blockedReasons.join(" ")).not.toContain(unsafe);
 			expect(result.blockedReasons.join(" ")).toMatch(/unsafe/i);
 		}
+	});
+
+	test("blocks a final symlink outside the required root without leaking content", async () => {
+		const root = await mkdtemp(join(tmpdir(), "memory-store-root-"));
+		const outside = await mkdtemp(join(tmpdir(), "memory-store-outside-"));
+		roots.push(root, outside);
+		const externalPath = join(outside, "USER.md");
+		const externalContent = validUserMemory.replace(
+			"Prefer concise responses.",
+			"External content must not leak.",
+		);
+		await writeFile(externalPath, externalContent);
+		const path = join(root, "USER.md");
+		await symlink(externalPath, path);
+
+		const result = await readValidatedMemory({
+			root,
+			path,
+			spec: USER_MEMORY_SPEC,
+		});
+		expect(result.text).toBeUndefined();
+		expect(result.blockedReasons.join(" ")).toMatch(/symbolic link|containment/i);
+		expect(result.blockedReasons.join(" ")).not.toContain(externalContent);
+	});
+
+	test("supports a required root that is itself a symlink", async () => {
+		const container = await mkdtemp(join(tmpdir(), "memory-store-stow-"));
+		roots.push(container);
+		const realRoot = join(container, "repo", "memory");
+		const linkedRoot = join(container, "home", "memory");
+		await mkdir(realRoot, { recursive: true });
+		await mkdir(dirname(linkedRoot), { recursive: true });
+		await writeFile(join(realRoot, "USER.md"), validUserMemory);
+		await symlink(realRoot, linkedRoot);
+
+		expect(
+			await readValidatedMemory({
+				root: linkedRoot,
+				path: join(linkedRoot, "USER.md"),
+				spec: USER_MEMORY_SPEC,
+			}),
+		).toEqual({
+			text: validUserMemory,
+			warnings: [],
+			blockedReasons: [],
+		});
 	});
 
 	test("warns when a valid file exceeds its normal budget", async () => {

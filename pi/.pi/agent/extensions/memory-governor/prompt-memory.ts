@@ -104,12 +104,14 @@ function hasDurableMemoryDelimiter(text: string): boolean {
 }
 
 async function readSource(input: {
+	root: string;
 	path: string;
 	absolutePath: string;
 	spec: MemoryFileSpec;
 	missingReason?: string;
 }): Promise<PromptSource> {
 	const result = await readValidatedMemory({
+		root: input.root,
 		path: input.absolutePath,
 		spec: input.spec,
 	});
@@ -212,6 +214,7 @@ export async function buildPromptMemory(input: {
 	const sources: PromptSource[] = [];
 	sources.push(
 		await readSource({
+			root: input.memoryRoot,
 			path: "USER.md",
 			absolutePath: join(input.memoryRoot, "USER.md"),
 			spec: USER_MEMORY_SPEC,
@@ -219,6 +222,7 @@ export async function buildPromptMemory(input: {
 	);
 	sources.push(
 		await readSource({
+			root: input.memoryRoot,
 			path: "WORKFLOWS.md",
 			absolutePath: join(input.memoryRoot, "WORKFLOWS.md"),
 			spec: WORKFLOW_MEMORY_SPEC,
@@ -229,6 +233,7 @@ export async function buildPromptMemory(input: {
 	if (projectPath) {
 		sources.push(
 			await readSource({
+				root: input.memoryRoot,
 				path: projectPath,
 				absolutePath: join(input.memoryRoot, projectPath),
 				spec: SCOPED_PROJECT_SPEC,

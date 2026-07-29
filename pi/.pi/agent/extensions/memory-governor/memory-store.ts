@@ -1,15 +1,17 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
+	lstat,
 	mkdir,
 	open,
 	readFile,
+	realpath,
 	rename,
 	rmdir,
 	stat,
 	unlink,
 } from "node:fs/promises";
 import { hostname as systemHostname } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 
 export type MemoryFileKind =
 	| "user"
@@ -196,12 +198,52 @@ function decodeSnapshot(file: FileSnapshot): ValidatedMemory {
 }
 
 export async function readValidatedMemory(input: {
+	root?: string;
 	path: string;
 	spec: MemoryFileSpec;
 }): Promise<ValidatedMemory> {
+	let readPath = input.path;
+	if (input.root) {
+		try {
+			const [canonicalRoot, targetMetadata] = await Promise.all([
+				realpath(input.root),
+				lstat(input.path),
+			]);
+			if (targetMetadata.isSymbolicLink()) {
+				return {
+					warnings: [],
+					blockedReasons: ["file cannot be a symbolic link"],
+				};
+			}
+			const canonicalTarget = await realpath(input.path);
+			const relativeTarget = relative(canonicalRoot, canonicalTarget);
+			if (
+				!relativeTarget ||
+				relativeTarget === ".." ||
+				relativeTarget.startsWith(`..${sep}`) ||
+				isAbsolute(relativeTarget)
+			) {
+				return {
+					warnings: [],
+					blockedReasons: ["file failed root containment validation"],
+				};
+			}
+			readPath = canonicalTarget;
+		} catch (error) {
+			return {
+				warnings: [],
+				blockedReasons: [
+					errorCode(error) === "ENOENT"
+						? "file does not exist"
+						: "file could not be read",
+				],
+			};
+		}
+	}
+
 	let file: FileSnapshot;
 	try {
-		file = await snapshot(input.path);
+		file = await snapshot(readPath);
 	} catch {
 		return {
 			warnings: [],

@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MemoryCandidate } from "./candidate.ts";
@@ -177,6 +184,27 @@ describe("deterministic prompt memory", () => {
 		expect(result.text).toMatch(/USER\.md[^\n]*unsafe/i);
 		expect(result.text).toMatch(/WORKFLOWS\.md[^\n]*missing required section/i);
 		expect(result.text).toContain("The service uses Bun.");
+	});
+
+	test("blocks a final scoped-memory symlink without leaking external content", async () => {
+		const input = await fixture();
+		const outside = await mkdtemp(join(tmpdir(), "prompt-memory-outside-"));
+		roots.push(outside);
+		const externalContent = projectMemory.replace(
+			"The service uses Bun.",
+			"Raw external prompt content must stay absent.",
+		);
+		const externalPath = join(outside, identity.filename);
+		await writeFile(externalPath, externalContent);
+		const scopedPath = join(input.memoryRoot, "projects", identity.filename);
+		await rm(scopedPath);
+		await symlink(externalPath, scopedPath);
+
+		const result = await buildPromptMemory(input);
+		expect(result.text).not.toContain(externalContent);
+		expect(result.text).not.toContain("Raw external prompt content must stay absent.");
+		expect(result.warnings.join("\n")).not.toContain(externalContent);
+		expect(result.text).toMatch(/projects\/[^"]+[^\n]*(?:symbolic link|containment)/i);
 	});
 
 	test("includes source-specific normal-budget warnings", async () => {

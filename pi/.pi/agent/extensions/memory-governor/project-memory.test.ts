@@ -6,6 +6,7 @@ import {
 	readFile,
 	rm,
 	stat,
+	symlink,
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -297,6 +298,70 @@ describe("scoped project storage", () => {
 				coordinate: "github.com/acme/unknown",
 			}),
 		).toBeUndefined();
+	});
+
+	test("blocks a project index symlink outside the memory root", async () => {
+		const root = await temporaryRoot();
+		const outside = await temporaryRoot();
+		const identity = remoteIdentity();
+		const entry = {
+			coordinate: identity.coordinate!,
+			relativePath: `projects/${identity.filename}`,
+		};
+		await mkdir(join(root, "projects"));
+		await writeFile(
+			join(root, entry.relativePath),
+			createScopedMemoryText(entry.coordinate),
+		);
+		const externalMarker = "Raw external index content must stay absent.";
+		await writeFile(
+			join(outside, "PROJECTS.md"),
+			renderProjectIndex(
+				indexBase.replace("Repository-scoped", `${externalMarker}\n\nRepository-scoped`),
+				[entry],
+			),
+		);
+		await symlink(join(outside, "PROJECTS.md"), join(root, "PROJECTS.md"));
+
+		try {
+			await resolveIndexedProjectMemory({
+				root,
+				coordinate: identity.coordinate!,
+			});
+			throw new Error("expected escaped project index to be rejected");
+		} catch (error) {
+			expect(String(error)).toMatch(/symbolic link|containment|unavailable/i);
+			expect(String(error)).not.toContain(externalMarker);
+		}
+	});
+
+	test("supports a Stow-like symlinked memory root", async () => {
+		const container = await temporaryRoot();
+		const realRoot = join(container, "repo", "memory");
+		const linkedRoot = join(container, "home", "memory");
+		const identity = remoteIdentity();
+		const entry = {
+			coordinate: identity.coordinate!,
+			relativePath: `projects/${identity.filename}`,
+		};
+		await mkdir(join(realRoot, "projects"), { recursive: true });
+		await mkdir(join(container, "home"));
+		await writeFile(
+			join(realRoot, "PROJECTS.md"),
+			renderProjectIndex(indexBase, [entry]),
+		);
+		await writeFile(
+			join(realRoot, entry.relativePath),
+			createScopedMemoryText(entry.coordinate),
+		);
+		await symlink(realRoot, linkedRoot);
+
+		expect(
+			await resolveIndexedProjectMemory({
+				root: linkedRoot,
+				coordinate: identity.coordinate!,
+			}),
+		).toBe(join(linkedRoot, entry.relativePath));
 	});
 
 	test("enumerates top-level and indexed audit targets sequentially", async () => {

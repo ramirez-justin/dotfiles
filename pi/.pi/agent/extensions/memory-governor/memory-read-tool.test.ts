@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepositoryIdentity } from "./project-identity.ts";
@@ -242,6 +242,33 @@ describe("memory reader validation", () => {
 		} catch (error) {
 			expect(String(error)).toMatch(/unsafe/i);
 			expect(String(error)).not.toContain(unsafeValue);
+		}
+	});
+
+	test("blocks a projects parent symlink escape without returning external content", async () => {
+		const deps = await fixture();
+		const outside = await mkdtemp(join(tmpdir(), "memory-read-tool-outside-"));
+		roots.push(outside);
+		const externalProjects = join(outside, "projects");
+		await mkdir(externalProjects);
+		const externalContent = projectMemory.replace(
+			"The service uses Bun.",
+			"Raw external tool content must stay absent.",
+		);
+		await writeFile(join(externalProjects, identity.filename), externalContent);
+		await rm(join(deps.memoryRoot, "projects"), { recursive: true });
+		await symlink(externalProjects, join(deps.memoryRoot, "projects"));
+		const reader = createMemoryReader(deps);
+
+		try {
+			await reader({ scope: "current_project" });
+			throw new Error("expected escaped project memory to be rejected");
+		} catch (error) {
+			expect(String(error)).toMatch(/containment|unavailable/i);
+			expect(String(error)).not.toContain(externalContent);
+			expect(String(error)).not.toContain(
+				"Raw external tool content must stay absent.",
+			);
 		}
 	});
 

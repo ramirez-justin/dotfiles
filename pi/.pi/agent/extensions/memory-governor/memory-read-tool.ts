@@ -103,12 +103,14 @@ function safeRelativeProjectSource(root: string, path: string): string {
 }
 
 async function readSafeMemory(input: {
+	root: string;
 	absolutePath: string;
 	source: string;
 	spec: MemoryFileSpec;
 	description: string;
 }): Promise<string> {
 	const result = await readValidatedMemory({
+		root: input.root,
 		path: input.absolutePath,
 		spec: input.spec,
 	});
@@ -136,6 +138,7 @@ async function readMemory(
 
 	if (parameters.scope === "user") {
 		return readSafeMemory({
+			root: deps.memoryRoot,
 			absolutePath: join(deps.memoryRoot, "USER.md"),
 			source: "USER.md",
 			spec: USER_MEMORY_SPEC,
@@ -144,6 +147,7 @@ async function readMemory(
 	}
 	if (parameters.scope === "workflow") {
 		return readSafeMemory({
+			root: deps.memoryRoot,
 			absolutePath: join(deps.memoryRoot, "WORKFLOWS.md"),
 			source: "WORKFLOWS.md",
 			spec: WORKFLOW_MEMORY_SPEC,
@@ -152,6 +156,7 @@ async function readMemory(
 	}
 	if (parameters.scope === "index") {
 		return readSafeMemory({
+			root: deps.memoryRoot,
 			absolutePath: join(deps.memoryRoot, "PROJECTS.md"),
 			source: "PROJECTS.md",
 			spec: PROJECT_INDEX_SPEC,
@@ -163,6 +168,7 @@ async function readMemory(
 		if (!identity) throw new Error("Current project memory identity is unavailable");
 		const source = safeCurrentProjectSource(identity);
 		return readSafeMemory({
+			root: deps.memoryRoot,
 			absolutePath: join(deps.memoryRoot, source),
 			source,
 			spec: SCOPED_PROJECT_SPEC,
@@ -179,6 +185,7 @@ async function readMemory(
 	}
 	const source = safeRelativeProjectSource(deps.memoryRoot, path);
 	return readSafeMemory({
+		root: deps.memoryRoot,
 		absolutePath: path,
 		source,
 		spec: SCOPED_PROJECT_SPEC,

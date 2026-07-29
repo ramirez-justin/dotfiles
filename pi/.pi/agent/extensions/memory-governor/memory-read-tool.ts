@@ -9,6 +9,7 @@ import {
 } from "./memory-store.ts";
 import {
 	isSafeRepositoryMemoryFilename,
+	repositoryCoordinateToFilename,
 	type RepositoryIdentity,
 } from "./project-identity.ts";
 import { resolveIndexedProjectMemory } from "./project-memory.ts";
@@ -45,7 +46,6 @@ export const memoryReadParameters = {
 	additionalProperties: false,
 } as const;
 
-const SAFE_COORDINATE_SEGMENT = /^[a-z0-9._-]+$/;
 const TRUNCATION_MARKER =
 	"\n\n[truncated: memory_read output exceeded 5000 characters]";
 
@@ -73,36 +73,7 @@ function validateParameters(value: MemoryReadParameters): void {
 }
 
 function validateCoordinate(coordinate: string): void {
-	if (
-		coordinate.includes("\\") ||
-		coordinate.includes("%") ||
-		/[\u0000-\u001f\u007f]/.test(coordinate) ||
-		/^[a-z][a-z0-9+.-]*:/i.test(coordinate)
-	) {
-		throw new Error("Project coordinate is malformed");
-	}
-	const segments = coordinate.split("/");
-	if (segments.length < 3 || segments.some((segment) => !segment)) {
-		throw new Error("Project coordinate is malformed");
-	}
-	const host = segments[0].match(/^([a-z0-9._-]+)(?::(\d+))?$/);
-	if (!host || host[1] === "." || host[1] === "..") {
-		throw new Error("Project coordinate is malformed");
-	}
-	if (host[2]) {
-		const port = Number(host[2]);
-		if (port < 1 || port > 65_535) {
-			throw new Error("Project coordinate is malformed");
-		}
-	}
-	if (
-		segments.slice(1).some(
-			(segment) =>
-				segment === "." ||
-				segment === ".." ||
-				!SAFE_COORDINATE_SEGMENT.test(segment),
-		)
-	) {
+	if (!repositoryCoordinateToFilename(coordinate)) {
 		throw new Error("Project coordinate is malformed");
 	}
 }

@@ -140,7 +140,7 @@ describe("deterministic prompt memory", () => {
 			canonicalKey: "remote:github.com/team--blue/service",
 			coordinate: "github.com/team--blue/service",
 			displayName: "team--blue/service",
-			filename: "github.com--~7465616d2d2d626c7565--service.md",
+			filename: "github.com--~x7465616d2d2d626c7565--service.md",
 		};
 		await writeFile(
 			join(input.memoryRoot, "projects", encodedIdentity.filename),
@@ -245,8 +245,10 @@ describe("deterministic prompt memory", () => {
 		const input = await fixture();
 		for (const filename of [
 			"../USER.md",
-			"github.com--~zz--service.md",
+			"github.com--~xzz--service.md",
 			"github.com--team~blue--service.md",
+			"github.com--team--~p2222--service.md",
+			"github.com--~l--team--service.md",
 		]) {
 			const result = await buildPromptMemory({
 				memoryRoot: input.memoryRoot,

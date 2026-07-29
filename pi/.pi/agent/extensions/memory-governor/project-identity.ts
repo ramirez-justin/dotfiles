@@ -30,7 +30,10 @@ interface ParsedRemote {
 }
 
 const SAFE_SEGMENT = /^[a-z0-9._-]+$/;
-const ENCODED_FILENAME_SEGMENT = /^~(?:[0-9a-f]{2})+$/;
+const ESCAPED_FILENAME_SEGMENT = /^~x([0-9a-f]+)$/;
+const PORT_FILENAME_SEGMENT = /^~p([1-9]\d*)$/;
+const LOCAL_FILENAME_SEGMENT = "~l";
+const LOCAL_HASH_SEGMENT = /^[0-9a-f]{12}$/;
 
 function isNormalizedSegment(segment: string): boolean {
 	return (
@@ -42,7 +45,7 @@ function isNormalizedSegment(segment: string): boolean {
 
 export function encodeRepositoryFilenameSegment(segment: string): string {
 	return segment.includes("--")
-		? `~${Buffer.from(segment, "utf8").toString("hex")}`
+		? `~x${Buffer.from(segment, "utf8").toString("hex")}`
 		: segment;
 }
 
@@ -52,10 +55,12 @@ export function repositorySegmentsToFilename(
 	return `${segments.map(encodeRepositoryFilenameSegment).join("--")}.md`;
 }
 
-function isControlledFilenameSegment(segment: string): boolean {
+function isControlledOrdinarySegment(segment: string): boolean {
 	if (!segment.startsWith("~")) return isNormalizedSegment(segment);
-	if (!ENCODED_FILENAME_SEGMENT.test(segment)) return false;
-	const hex = segment.slice(1);
+	const match = segment.match(ESCAPED_FILENAME_SEGMENT);
+	if (!match) return false;
+	const hex = match[1];
+	if (hex.length % 2 !== 0) return false;
 	const decoded = Buffer.from(hex, "hex").toString("utf8");
 	return (
 		Buffer.from(decoded, "utf8").toString("hex") === hex &&
@@ -64,10 +69,29 @@ function isControlledFilenameSegment(segment: string): boolean {
 	);
 }
 
+function isPortFilenameSegment(segment: string): boolean {
+	const match = segment.match(PORT_FILENAME_SEGMENT);
+	return Boolean(match && validPort(match[1]));
+}
+
 export function isSafeRepositoryMemoryFilename(filename: string): boolean {
 	if (!filename.endsWith(".md") || filename === ".md") return false;
 	const segments = filename.slice(0, -3).split("--");
-	return segments.length > 0 && segments.every(isControlledFilenameSegment);
+	if (segments[0] === LOCAL_FILENAME_SEGMENT) {
+		return (
+			segments.length === 3 &&
+			isControlledOrdinarySegment(segments[1]) &&
+			LOCAL_HASH_SEGMENT.test(segments[2])
+		);
+	}
+	if (segments.length < 3 || !isControlledOrdinarySegment(segments[0])) {
+		return false;
+	}
+	const repositoryStart = isPortFilenameSegment(segments[1]) ? 2 : 1;
+	return (
+		segments.length - repositoryStart >= 2 &&
+		segments.slice(repositoryStart).every(isControlledOrdinarySegment)
+	);
 }
 
 export function repositoryCoordinateToFilename(
@@ -92,11 +116,11 @@ export function repositoryCoordinateToFilename(
 	if (!isNormalizedSegment(host)) return undefined;
 	if (port && !validPort(port)) return undefined;
 	if (!segments.slice(1).every(isNormalizedSegment)) return undefined;
-	return repositorySegmentsToFilename([
-		host,
-		...(port ? [`port-${port}`] : []),
-		...segments.slice(1),
-	]);
+	return `${[
+		encodeRepositoryFilenameSegment(host),
+		...(port ? [`~p${port}`] : []),
+		...segments.slice(1).map(encodeRepositoryFilenameSegment),
+	].join("--")}.md`;
 }
 
 function safeSegment(raw: string): string | undefined {
@@ -123,9 +147,9 @@ function safeSegment(raw: string): string | undefined {
 }
 
 function validPort(port: string): boolean {
-	if (!/^\d+$/.test(port)) return false;
+	if (!/^[1-9]\d*$/.test(port)) return false;
 	const numeric = Number(port);
-	return numeric >= 1 && numeric <= 65_535;
+	return numeric <= 65_535 && String(numeric) === port;
 }
 
 function parseUrlRemote(remote: string): ParsedRemote | undefined {
@@ -190,19 +214,18 @@ export function normalizeRemoteIdentity(
 		? `${parsed.host}:${parsed.port}`
 		: parsed.host;
 	const coordinate = [hostCoordinate, ...parsed.segments].join("/");
-	const hostFilenameSegments = parsed.port
-		? [parsed.host, `port-${parsed.port}`]
-		: [parsed.host];
+	const filenameSegments = [
+		encodeRepositoryFilenameSegment(parsed.host),
+		...(parsed.port ? [`~p${parsed.port}`] : []),
+		...parsed.segments.map(encodeRepositoryFilenameSegment),
+	];
 
 	return {
 		kind: "remote",
 		canonicalKey: `remote:${coordinate}`,
 		coordinate,
 		displayName: parsed.segments.join("/"),
-		filename: repositorySegmentsToFilename([
-			...hostFilenameSegments,
-			...parsed.segments,
-		]),
+		filename: `${filenameSegments.join("--")}.md`,
 	};
 }
 
@@ -227,7 +250,7 @@ function localIdentity(canonicalPath: string, diagnostic: string): RepositoryIde
 		kind: "local",
 		canonicalKey: `local:${canonicalPath}`,
 		displayName,
-		filename: repositorySegmentsToFilename(["local", displayName, hash]),
+		filename: `${LOCAL_FILENAME_SEGMENT}--${encodeRepositoryFilenameSegment(displayName)}--${hash}.md`,
 		diagnostic,
 	};
 }

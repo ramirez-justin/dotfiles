@@ -139,7 +139,7 @@ describe("memory reader scopes", () => {
 			canonicalKey: "remote:github.com/team--blue/service",
 			coordinate: "github.com/team--blue/service",
 			displayName: "team--blue/service",
-			filename: "github.com--~7465616d2d2d626c7565--service.md",
+			filename: "github.com--~x7465616d2d2d626c7565--service.md",
 		};
 		await Promise.all([
 			writeFile(
@@ -205,8 +205,10 @@ describe("memory reader validation", () => {
 	test("rejects malformed tilde encodings in current-project filenames", async () => {
 		const deps = await fixture();
 		for (const filename of [
-			"github.com--~zz--service.md",
+			"github.com--~xzz--service.md",
 			"github.com--team~blue--service.md",
+			"github.com--team--~p2222--service.md",
+			"github.com--~l--team--service.md",
 		]) {
 			const reader = createMemoryReader({
 				...deps,

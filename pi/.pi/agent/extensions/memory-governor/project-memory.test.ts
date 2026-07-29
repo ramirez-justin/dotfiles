@@ -162,14 +162,14 @@ describe("project index Markdown", () => {
 		const text = `## Scoped Projects
 
 - \`github.com/team--blue/service\` →
-  \`projects/github.com--~7465616d2d2d626c7565--service.md\`
+  \`projects/github.com--~x7465616d2d2d626c7565--service.md\`
 `;
 
 		expect(parseProjectIndex(text)).toEqual([
 			{
 				coordinate: "github.com/team--blue/service",
 				relativePath:
-					"projects/github.com--~7465616d2d2d626c7565--service.md",
+					"projects/github.com--~x7465616d2d2d626c7565--service.md",
 			},
 		]);
 	});
@@ -179,8 +179,10 @@ describe("project index Markdown", () => {
 			"projects/../USER.md",
 			"/tmp/service.md",
 			"projects/other.md",
-			"projects/github.com--~zz--service.md",
-			"projects/github.com--~7465616d--service.md",
+			"projects/github.com--~xzz--service.md",
+			"projects/github.com--~x7465616d--service.md",
+			"projects/github.com--team--~p2222--service.md",
+			"projects/github.com--~l--team--service.md",
 		]) {
 			const text = `## Scoped Projects
 
@@ -237,7 +239,7 @@ describe("scoped project storage", () => {
 		await writeFile(join(root, "PROJECTS.md"), indexBase);
 		const identity = remoteIdentity(
 			"github.com/team--blue/service",
-			"github.com--~7465616d2d2d626c7565--service.md",
+			"github.com--~x7465616d2d2d626c7565--service.md",
 		);
 
 		const result = await ensureScopedProjectMemory({ root, identity });
@@ -257,7 +259,7 @@ describe("scoped project storage", () => {
 			kind: "local",
 			canonicalKey: "local:/source/service/.git",
 			displayName: "service",
-			filename: "local--service--0123456789ab.md",
+			filename: "~l--service--0123456789ab.md",
 		};
 
 		const result = await ensureScopedProjectMemory({ root, identity });

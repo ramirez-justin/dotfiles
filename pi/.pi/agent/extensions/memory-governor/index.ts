@@ -1,497 +1,306 @@
-// @ts-nocheck
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// @ts-nocheck -- Pi runtime types are installed outside this repository.
+import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join, relative } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+	applyMemoryAddition,
+	auditMemoryText,
+	detectMemoryCandidate,
+	type MemoryCandidate,
+} from "./candidate.ts";
+import { createMemoryReadTool } from "./memory-read-tool.ts";
+import {
+	mutateMemoryFile,
+	PROJECT_INDEX_SPEC,
+	SCOPED_PROJECT_SPEC,
+	USER_MEMORY_SPEC,
+	WORKFLOW_MEMORY_SPEC,
+	type MemoryFileSpec,
+	type MutationResult,
+} from "./memory-store.ts";
+import {
+	createGitQuery,
+	resolveRepositoryIdentity,
+	type RepositoryIdentity,
+} from "./project-identity.ts";
+import {
+	ensureScopedProjectMemory,
+	listAuditTargets,
+} from "./project-memory.ts";
+import {
+	appendDurableMemory,
+	buildPromptMemory,
+} from "./prompt-memory.ts";
 
-type MemoryTarget = "USER.md" | "WORKFLOWS.md" | "PROJECTS.md";
+interface MutationInput {
+	path: string;
+	spec: MemoryFileSpec;
+	mutate: Parameters<typeof mutateMemoryFile>[0]["mutate"];
+}
 
-type MemoryCandidate = {
-	content: string;
-	reason: string;
-	target: MemoryTarget;
-	autoWrite: boolean;
-};
+interface PromptInput {
+	memoryRoot: string;
+	identity: RepositoryIdentity;
+	advisoryCandidate?: MemoryCandidate;
+}
 
-type ApplyMemoryUpdateInput = {
-	existingText: string;
-	target: MemoryTarget;
-	content: string;
-	reason: string;
-};
+export interface MemoryGovernorDependencies {
+	memoryRoot: string;
+	detectCandidate(text: string): MemoryCandidate | undefined;
+	resolveIdentity(cwd: string): Promise<RepositoryIdentity>;
+	buildPrompt(input: PromptInput): Promise<{
+		text: string;
+		warnings: string[];
+	}>;
+	ensureScopedProject(input: {
+		root: string;
+		identity: RepositoryIdentity;
+	}): Promise<{ path: string; created: boolean }>;
+	mutateFile(input: MutationInput): Promise<MutationResult>;
+	auditTargets(root: string): Promise<string[]>;
+	createReadTool: typeof createMemoryReadTool;
+}
 
-type ApplyMemoryUpdateResult = {
-	changed: boolean;
-	text: string;
-	summary: string;
-	reason: string;
-};
+interface WriteTarget {
+	path: string;
+	spec: MemoryFileSpec;
+	section: string;
+	label: string;
+}
 
-type AuditResult = {
-	text: string;
-	removedDuplicates: number;
-};
-
-type MemoryUpdateNoticeInput = ApplyMemoryUpdateResult & {
-	target: MemoryTarget;
-};
-
-type MemoryUpdateNotice = {
-	uiText: string;
-	modelMessage?: string;
-};
-
-const MAX_MEMORY_CHARS: Record<MemoryTarget, number> = {
-	"USER.md": 4_000,
-	"WORKFLOWS.md": 4_000,
-	"PROJECTS.md": 5_000,
-};
-
-const TARGET_SECTION: Record<MemoryTarget, string> = {
-	"USER.md": "Preferences",
-	"WORKFLOWS.md": "Conventions",
-	"PROJECTS.md": "Dotfiles",
-};
-
-function memoryDir(): string {
+function defaultMemoryRoot(): string {
 	return join(homedir(), ".pi/agent/memory");
 }
 
-function memoryPath(target: MemoryTarget): string {
-	return join(memoryDir(), target);
+function relativeLabel(root: string, path: string): string {
+	return relative(root, path).split("\\").join("/") || basename(path);
 }
 
-function normalize(text: string): string {
-	return text
-		.toLowerCase()
-		.replace(/[“”]/g, '"')
-		.replace(/[’]/g, "'")
-		.replace(/[^a-z0-9\s]/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
-}
-
-function sentence(text: string): string {
-	const cleaned = text.replace(/\s+/g, " ").trim();
-	if (!cleaned) return cleaned;
-	return /[.!?]$/.test(cleaned) ? cleaned : `${cleaned}.`;
-}
-
-function stripBullet(line: string): string {
-	return line.replace(/^\s*-\s+/, "").trim();
-}
-
-function truncate(text: string, max = 180): string {
-	const cleaned = text.replace(/\s+/g, " ").trim();
-	if (cleaned.length <= max) return cleaned;
-	return `${cleaned.slice(0, max - 1).trim()}…`;
-}
-
-function isTaskContext(text: string): boolean {
-	const lower = text.toLowerCase();
-	return (
-		/\b(current branch|this branch|branch has|current pr|pull request)\b/.test(
-			lower,
-		) ||
-		/\b(job|script|file|service|svc|airflow|redis|token|proxy)\b/.test(lower) ||
-		/\b(needs? to|get a token|connect to|being used to run)\b/.test(lower) ||
-		/\b\w+[/.][\w/.-]+\b/.test(lower)
-	);
-}
-
-function isLowQualityMemoryContent(text: string): boolean {
-	const cleaned = text.replace(/\s+/g, " ").trim();
-	return (
-		/\?/.test(cleaned) ||
-		/^\s*(?:i|we)\s+(?:don'?t|do not)\s+(?:know|think|understand|see|believe)\b/i.test(
-			cleaned,
-		) ||
-		/^\s*(?:do we|can we|could we|why|how|what)\b/i.test(cleaned) ||
-		/\b(?:the question you asked|as far as|i think we should|i don'?t know|i don'?t think|i do not know|i do not think|i do not understand)\b/i.test(
-			cleaned,
-		)
-	);
-}
-
-function isEphemeralInstruction(text: string): boolean {
-	return (
-		/\b(this|that|these|those)\s+(plan|branch|change|changes|file|diff|session)\b/i.test(
-			text,
-		) || /\b(when done|for now|just this|throw it away|trash it)\b/i.test(text)
-	);
-}
-
-function hasExplicitDurableCommand(text: string): boolean {
-	return /^\s*(remember|prefer|do not|don'?t|always|for\b|when\b)/i.test(text);
-}
-
-function hasExplicitRememberCommand(text: string): boolean {
-	return /^\s*remember:?\s+\S/i.test(text);
-}
-
-export function shouldAutoWriteMemoryCandidate(
-	candidate: MemoryCandidate,
-): boolean {
-	return candidate.autoWrite === true;
-}
-
-export function classifyMemoryTarget(text: string): MemoryTarget {
-	const lower = text.toLowerCase();
-	if (
-		/\b(pr review|pull request|workflow|process|when .*review|for .*reviews)\b/.test(
-			lower,
-		)
-	) {
-		return "WORKFLOWS.md";
+function specForPath(path: string): MemoryFileSpec {
+	switch (basename(path)) {
+		case "USER.md":
+			return USER_MEMORY_SPEC;
+		case "WORKFLOWS.md":
+			return WORKFLOW_MEMORY_SPEC;
+		case "PROJECTS.md":
+			return PROJECT_INDEX_SPEC;
+		default:
+			return SCOPED_PROJECT_SPEC;
 	}
-	if (
-		/\b(this repo|repository|project|dotfiles|mise|stow|in this repo|gametime|pi memory|memory governor|markdown files|database)\b/.test(
-			lower,
-		)
-	) {
-		return "PROJECTS.md";
-	}
-	return "USER.md";
 }
 
-function extractPreference(text: string): string | undefined {
-	const cleaned = text.replace(/\s+/g, " ").trim();
-	const lower = cleaned.toLowerCase();
-
-	if (isLowQualityMemoryContent(cleaned)) return undefined;
-
-	const rememberMatch = cleaned.match(/^remember:?\s+(.{3,220})/i);
-	if (rememberMatch) {
-		const remembered = rememberMatch[1].trim();
-		return isLowQualityMemoryContent(remembered)
-			? undefined
-			: sentence(remembered);
+function mutationNotice(
+	result: MutationResult,
+	label: string,
+): { text: string; level: "info" | "warning" | "error" } {
+	switch (result.status) {
+		case "written":
+			return { text: `Memory updated: ${label}`, level: "info" };
+		case "unchanged":
+			return {
+				text: result.summary.startsWith("skipped memory:")
+					? `Memory rejected: ${result.summary.slice("skipped memory: ".length)}`
+					: `Memory unchanged: ${result.summary}`,
+				level: "warning",
+			};
+		case "rejected":
+			return {
+				text: `Memory rejected: ${label} (${result.reason})`,
+				level: "warning",
+			};
+		case "conflict":
+			return {
+				text: `Memory conflict: ${label} changed before commit`,
+				level: "warning",
+			};
+		case "lock-timeout":
+			return {
+				text: `Memory update timed out waiting for ${label}`,
+				level: "warning",
+			};
+		case "lock-uncertain":
+			return {
+				text: `Memory update stopped because the lock for ${label} is uncertain`,
+				level: "warning",
+			};
+		default:
+			throw new Error("Unknown memory mutation result");
 	}
-
-	if (lower.includes("when to update memory")) {
-		return "Proactively consider when to update memory after behavioral corrections, workflow preferences, repeated-frustration feedback, or stable project caveats.";
-	}
-
-	if (/why don'?t we just pick where we want to go/i.test(cleaned)) {
-		return "Prefer choosing the desired end-state and building it directly over adding intermediate scaffolding or process overhead.";
-	}
-
-	const preferMatch = cleaned.match(/\bprefer\s+(.{3,220})/i);
-	if (preferMatch) return sentence(`Prefer ${preferMatch[1]}`);
-
-	const dontMatch = cleaned.match(/\b(?:don'?t|do not)\s+(.{3,220})/i);
-	if (dontMatch) return sentence(`Do not ${dontMatch[1]}`);
-
-	const alwaysMatch = cleaned.match(/\b(?:always|you should)\s+(.{3,220})/i);
-	if (alwaysMatch) return sentence(`Always ${alwaysMatch[1]}`);
-
-	const workflowMatch = cleaned.match(/\b(?:for|when)\s+(.{3,220})/i);
-	if (
-		workflowMatch &&
-		/\b(use|run|check|review|workflow|process)\b/i.test(workflowMatch[1])
-	) {
-		return sentence(truncate(cleaned));
-	}
-
-	if (
-		/you (keep|kept|always|don'?t|do not|forgot|forget|missed|seem)/i.test(
-			cleaned,
-		)
-	) {
-		return sentence(truncate(cleaned));
-	}
-
-	return undefined;
 }
 
-export function detectMemoryCandidate(
-	text: string,
-): MemoryCandidate | undefined {
-	if (!text || text.length > 4_000) return undefined;
-	if (isEphemeralInstruction(text)) {
-		return undefined;
+function auditSummary(result: MutationResult, label: string): string {
+	switch (result.status) {
+		case "written":
+		case "unchanged":
+			return `${label}: ${result.summary}`;
+		case "rejected":
+			return `${label}: rejected (${result.reason})`;
+		case "conflict":
+			return `${label}: conflict`;
+		case "lock-timeout":
+			return `${label}: lock timeout`;
+		case "lock-uncertain":
+			return `${label}: lock uncertain`;
+		default:
+			throw new Error("Unknown memory mutation result");
 	}
-	if (/\?/.test(text) && !hasExplicitDurableCommand(text)) {
-		return undefined;
-	}
-	if (isTaskContext(text) && !hasExplicitDurableCommand(text)) {
-		return undefined;
-	}
-	const lower = text.toLowerCase();
-	const hasTrigger =
-		/\b(remember|forget|update memory)\b/.test(lower) ||
-		/\b(prefer|don'?t|do not|always|you should)\b/.test(lower) ||
-		/\b(for|when)\b.*\b(use|run|check|review|workflow|process)\b/.test(lower) ||
-		/you (keep|kept|always|don'?t|do not|forgot|forget|missed|seem)/.test(
-			lower,
-		) ||
-		lower.includes("frustrat");
+}
 
-	if (!hasTrigger) return undefined;
-	const content = extractPreference(text);
-	if (!content) return undefined;
-
-	let reason = "memory-worthy preference";
-	if (
-		/you (keep|kept|always|don'?t|do not|forgot|forget|missed|seem)/.test(lower)
-	) {
-		reason = "behavioral correction";
-	} else if (
-		/\b(for|when)\b.*\b(use|run|check|review|workflow|process)\b/.test(lower)
-	) {
-		reason = "workflow rule";
-	}
-
-	return {
-		content,
-		reason,
-		target: classifyMemoryTarget(text),
-		autoWrite: hasExplicitRememberCommand(text),
+export function createMemoryGovernor(
+	pi: ExtensionAPI,
+	overrides: Partial<MemoryGovernorDependencies> = {},
+): void {
+	const memoryRoot = overrides.memoryRoot ?? defaultMemoryRoot();
+	const resolveIdentity =
+		overrides.resolveIdentity ??
+		((cwd: string) =>
+			resolveRepositoryIdentity({
+				cwd,
+				memoryProjectsDir: join(memoryRoot, "projects"),
+				git: createGitQuery(pi),
+				realpath,
+			}));
+	const deps: MemoryGovernorDependencies = {
+		memoryRoot,
+		detectCandidate: detectMemoryCandidate,
+		resolveIdentity,
+		buildPrompt: buildPromptMemory,
+		ensureScopedProject: ensureScopedProjectMemory,
+		mutateFile: mutateMemoryFile,
+		auditTargets: listAuditTargets,
+		createReadTool: createMemoryReadTool,
+		...overrides,
+		memoryRoot,
+		resolveIdentity,
 	};
-}
+	let pendingAdvisory: MemoryCandidate | undefined;
 
-export function shouldRejectMemory(
-	content: string,
-	existingText: string,
-): string | undefined {
-	const lower = content.toLowerCase();
-	if (/begin (rsa |openssh |ec |)?private key/i.test(content))
-		return "secret-like content";
-	if (/\b(api[_-]?key|token|secret|password)\s*[:=]/i.test(content))
-		return "secret-like content";
-	if (/op:\/\//i.test(content)) return "secret-like content";
-	if (
-		/ignore (all )?(previous|prior) instructions|system prompt|developer message/i.test(
-			content,
-		)
-	) {
-		return "prompt-injection-like content";
-	}
-	if (
-		/\b(this session only|temporary|for now|one[- ]off|just this time)\b/i.test(
-			content,
-		)
-	) {
-		return "transient content";
-	}
-	if (/\b(i guess|maybe|might|probably|not sure|unverified)\b/i.test(content)) {
-		return "unverified assumption";
-	}
-	if (isEphemeralInstruction(content)) {
-		return "ephemeral instruction";
-	}
-	if (isLowQualityMemoryContent(content)) {
-		return "raw question or conversational fragment";
-	}
-	if (isTaskContext(content) && !hasExplicitDurableCommand(content)) {
-		return "transient task context";
-	}
-
-	const normalizedContent = normalize(stripBullet(content));
-	const normalizedExisting = normalize(existingText);
-	if (
-		normalizedContent.length > 12 &&
-		(normalizedExisting.includes(normalizedContent) ||
-			normalizedExisting.split(" ").includes(normalizedContent))
-	) {
-		return "already represented";
-	}
-	return undefined;
-}
-
-export function auditMemoryText(text: string): AuditResult {
-	const seenBullets = new Set<string>();
-	let removedDuplicates = 0;
-	const lines = text.split("\n");
-	const audited = lines.filter((line) => {
-		if (!/^\s*-\s+/.test(line)) return true;
-		const key = normalize(stripBullet(line));
-		if (!key) return true;
-		if (seenBullets.has(key)) {
-			removedDuplicates += 1;
-			return false;
+	async function targetFor(
+		candidate: MemoryCandidate,
+		cwd: string,
+	): Promise<WriteTarget> {
+		if (candidate.scope === "user") {
+			return {
+				path: join(deps.memoryRoot, "USER.md"),
+				spec: USER_MEMORY_SPEC,
+				section: "Preferences",
+				label: "USER.md",
+			};
 		}
-		seenBullets.add(key);
-		return true;
-	});
-	return { text: audited.join("\n"), removedDuplicates };
-}
-
-function defaultMemoryText(target: MemoryTarget): string {
-	if (target === "USER.md") {
-		return "# User Memory\n\n## Rules\n\n- Do not store secrets.\n\n## Preferences\n";
-	}
-	if (target === "WORKFLOWS.md") {
-		return "# Workflow Memory\n\n## Rules\n\n- Do not store secrets.\n\n## Conventions\n";
-	}
-	return "# Project Memory\n\n## Rules\n\n- Do not store secrets.\n\n## Dotfiles\n";
-}
-
-function insertBullet(text: string, section: string, content: string): string {
-	const lines = text.split("\n");
-	const heading = `## ${section}`;
-	const start = lines.findIndex((line) => line.trim() === heading);
-	if (start === -1) {
-		const suffix = text.endsWith("\n") ? "" : "\n";
-		return `${text}${suffix}\n${heading}\n\n- ${content}\n`;
-	}
-
-	let end = lines.length;
-	for (let i = start + 1; i < lines.length; i += 1) {
-		if (/^##\s+/.test(lines[i])) {
-			end = i;
-			break;
+		if (candidate.scope === "workflow") {
+			return {
+				path: join(deps.memoryRoot, "WORKFLOWS.md"),
+				spec: WORKFLOW_MEMORY_SPEC,
+				section: "Conventions",
+				label: "WORKFLOWS.md",
+			};
 		}
-	}
+		if (candidate.scope === "unscoped") {
+			return {
+				path: join(deps.memoryRoot, "PROJECTS.md"),
+				spec: PROJECT_INDEX_SPEC,
+				section: "Unscoped Facts",
+				label: "PROJECTS.md",
+			};
+		}
 
-	let insertAt = end;
-	while (insertAt > start + 1 && lines[insertAt - 1].trim() === "") {
-		insertAt -= 1;
-	}
-	lines.splice(insertAt, 0, `- ${content}`);
-	return `${lines
-		.join("\n")
-		.replace(/\n{3,}/g, "\n\n")
-		.trimEnd()}\n`;
-}
-
-export function applyMemoryUpdate(
-	input: ApplyMemoryUpdateInput,
-): ApplyMemoryUpdateResult {
-	const audited = auditMemoryText(
-		input.existingText || defaultMemoryText(input.target),
-	);
-	const rejection = shouldRejectMemory(input.content, audited.text);
-	if (rejection) {
+		const identity = await deps.resolveIdentity(cwd);
+		const scoped = await deps.ensureScopedProject({
+			root: deps.memoryRoot,
+			identity,
+		});
 		return {
-			changed: audited.text !== input.existingText,
-			text: audited.text,
-			summary: `skipped memory: ${rejection}`,
-			reason: input.reason,
+			path: scoped.path,
+			spec: SCOPED_PROJECT_SPEC,
+			section: "Facts",
+			label: relativeLabel(deps.memoryRoot, scoped.path),
 		};
 	}
 
-	const section = TARGET_SECTION[input.target];
-	const content = sentence(stripBullet(input.content));
-	const nextText = insertBullet(audited.text, section, content);
-
-	if (nextText.length > MAX_MEMORY_CHARS[input.target]) {
-		return {
-			changed: audited.text !== input.existingText,
-			text: audited.text,
-			summary: "skipped memory: file needs cleanup before growing",
-			reason: input.reason,
-		};
-	}
-
-	return {
-		changed: nextText !== input.existingText,
-		text: nextText,
-		summary:
-			audited.removedDuplicates > 0
-				? `added memory after removing ${audited.removedDuplicates} duplicate(s)`
-				: "added memory",
-		reason: input.reason,
-	};
-}
-
-function readMemory(target: MemoryTarget): string {
-	const path = memoryPath(target);
-	if (!existsSync(path)) return defaultMemoryText(target);
-	return readFileSync(path, "utf8");
-}
-
-function writeMemory(target: MemoryTarget, text: string): void {
-	mkdirSync(memoryDir(), { recursive: true });
-	writeFileSync(memoryPath(target), text, "utf8");
-}
-
-function processCandidate(
-	candidate: MemoryCandidate,
-): ApplyMemoryUpdateResult & { target: MemoryTarget } {
-	const existingText = readMemory(candidate.target);
-	const result = applyMemoryUpdate({
-		existingText,
-		target: candidate.target,
-		content: candidate.content,
-		reason: candidate.reason,
-	});
-	if (result.changed) writeMemory(candidate.target, result.text);
-	return { ...result, target: candidate.target };
-}
-
-function auditAllMemoryFiles(): string {
-	const summaries: string[] = [];
-	for (const target of ["USER.md", "WORKFLOWS.md", "PROJECTS.md"] as const) {
-		const before = readMemory(target);
-		const audited = auditMemoryText(before);
-		if (audited.text !== before) writeMemory(target, audited.text);
-		summaries.push(
-			`${target}: removed ${audited.removedDuplicates} duplicate(s)`,
-		);
-	}
-	return summaries.join("\n");
-}
-
-export function buildMemoryUpdateNotice(
-	result: MemoryUpdateNoticeInput,
-): MemoryUpdateNotice {
-	return {
-		uiText: result.changed
-			? `Memory updated: ${result.target} (${result.reason})`
-			: `Memory unchanged: ${result.summary}`,
-	};
-}
-
-function buildMemoryCandidateMessage(candidate: MemoryCandidate): string {
-	return [
-		"Memory candidate detected; do not write it verbatim.",
-		`Target: ${candidate.target}`,
-		`Reason: ${candidate.reason}`,
-		`Candidate: ${candidate.content}`,
-		"Use the memory-management skill to distill, audit, and write only durable memory.",
-	].join("\n");
-}
-
-export default function memoryGovernor(pi: ExtensionAPI) {
 	pi.on("input", async (event, ctx) => {
 		if (event.source === "extension") return { action: "continue" };
-		const candidate = detectMemoryCandidate(event.text);
+		const candidate = deps.detectCandidate(event.text);
 		if (!candidate) return { action: "continue" };
 
-		if (!shouldAutoWriteMemoryCandidate(candidate)) {
-			if (ctx.hasUI) {
-				ctx.ui.notify(
-					`Memory candidate needs distillation: ${candidate.target}`,
-					"warning",
-				);
-			}
-			pi.sendMessage({
-				customType: "memory-governor-candidate",
-				display: true,
-				content: buildMemoryCandidateMessage(candidate),
-			});
+		if (!candidate.autoWrite) {
+			pendingAdvisory = candidate;
 			return { action: "continue" };
 		}
 
-		const result = processCandidate(candidate);
-		const notice = buildMemoryUpdateNotice(result);
+		const target = await targetFor(candidate, ctx.cwd);
+		const result = await deps.mutateFile({
+			path: target.path,
+			spec: target.spec,
+			mutate: (existingText) =>
+				applyMemoryAddition({
+					content: candidate.content,
+					existingText,
+					section: target.section,
+					maxChars: target.spec.normalMaxChars,
+				}),
+		});
 		if (ctx.hasUI) {
-			ctx.ui.notify(notice.uiText, result.changed ? "info" : "warning");
+			const notice = mutationNotice(result, target.label);
+			ctx.ui.notify(notice.text, notice.level);
 		}
 		return { action: "continue" };
 	});
 
+	pi.on("before_agent_start", async (event, ctx) => {
+		const advisoryCandidate = pendingAdvisory;
+		pendingAdvisory = undefined;
+		const identity = await deps.resolveIdentity(ctx.cwd);
+		const memory = await deps.buildPrompt({
+			memoryRoot: deps.memoryRoot,
+			identity,
+			advisoryCandidate,
+		});
+		return {
+			systemPrompt: appendDurableMemory(event.systemPrompt, memory.text),
+		};
+	});
+
+	pi.registerTool(
+		deps.createReadTool({
+			memoryRoot: deps.memoryRoot,
+			resolveCurrentIdentity: (cwd?: string) =>
+				cwd ? deps.resolveIdentity(cwd) : Promise.resolve(undefined),
+		}),
+	);
+
 	pi.registerCommand("memory-audit", {
 		description: "Audit Pi memory files and remove exact duplicate bullets",
 		handler: async (_args, ctx) => {
-			const summary = auditAllMemoryFiles();
-			ctx.ui.notify("Memory audit complete.", "info");
+			const summaries: string[] = [];
+			const targets = await deps.auditTargets(deps.memoryRoot);
+			for (const path of targets) {
+				const label = relativeLabel(deps.memoryRoot, path);
+				const result = await deps.mutateFile({
+					path,
+					spec: specForPath(path),
+					mutate: (text) => {
+						const audited = auditMemoryText(text);
+						return {
+							changed: audited.removedDuplicates > 0,
+							text: audited.text,
+							summary: `removed ${audited.removedDuplicates} duplicate(s)`,
+						};
+					},
+				});
+				summaries.push(auditSummary(result, label));
+			}
+
+			if (ctx.hasUI) ctx.ui.notify("Memory audit complete.", "info");
 			pi.sendMessage({
 				customType: "memory-governor-audit",
 				display: true,
-				content: summary,
+				content: summaries.join("\n"),
 			});
 		},
 	});
+}
+
+export default function memoryGovernor(pi: ExtensionAPI): void {
+	createMemoryGovernor(pi);
 }

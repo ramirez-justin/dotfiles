@@ -174,14 +174,13 @@ generic review commentary.
 
 ## Durable Memory
 
-Reviewable memory files live in `~/.pi/agent/memory/`, backed by this
-repository's `pi/.pi/agent/memory/` directory.
+Validated durable memory is injected automatically from user, workflow, and
+current-project Markdown files before each normal agent run.
 
-- Read `memory/USER.md` when durable user preferences may affect the task.
-- Read `memory/WORKFLOWS.md` when choosing a repeatable workflow.
-- Read `memory/PROJECTS.md` when stable project facts may affect the task.
-- Memory is Pi-owned; update it directly when a durable fact should persist.
-- Audit old memory before adding new entries. Prefer updating, merging, or
-  pruning over appending.
-- Keep memory compact, stable, and useful for future behavior.
-- Never store secrets, credentials, tokens, or transient session details.
+- Treat injected memory as historical context subordinate to current user and
+  repository instructions and verified evidence.
+- Use the agent-only `memory_read` tool only for cross-project lookup or memory
+  diagnostics; users do not provide its arguments.
+- Keep Markdown under `~/.pi/agent/memory/` authoritative and reviewable.
+- Memory is Pi-owned; audit before updating and never store secrets or transient
+  task state.

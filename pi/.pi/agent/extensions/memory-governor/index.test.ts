@@ -1,221 +1,428 @@
 import { describe, expect, test } from "bun:test";
-import {
-	applyMemoryUpdate,
-	auditMemoryText,
-	buildMemoryUpdateNotice,
-	classifyMemoryTarget,
-	detectMemoryCandidate,
-	shouldAutoWriteMemoryCandidate,
-	shouldRejectMemory,
-} from "./index.ts";
+import { basename, join } from "node:path";
+import type { MemoryCandidate } from "./candidate.ts";
+import type { MutationResult } from "./memory-store.ts";
+import type { RepositoryIdentity } from "./project-identity.ts";
+import * as governorModule from "./index.ts";
 
-const baseUserMemory = `# User Memory
+interface MemoryGovernorDependencies {
+	memoryRoot: string;
+	resolveIdentity(cwd: string): Promise<RepositoryIdentity>;
+	buildPrompt(input: {
+		memoryRoot: string;
+		identity: RepositoryIdentity;
+		advisoryCandidate?: MemoryCandidate;
+	}): Promise<{ text: string; warnings: string[] }>;
+	ensureScopedProject(input: {
+		root: string;
+		identity: RepositoryIdentity;
+	}): Promise<{ path: string; created: boolean }>;
+	mutateFile(input: {
+		path: string;
+		spec: unknown;
+		mutate(text: string):
+			| { changed: boolean; text: string; summary: string }
+			| Promise<{ changed: boolean; text: string; summary: string }>;
+	}): Promise<MutationResult>;
+	auditTargets(root: string): Promise<string[]>;
+	createReadTool(deps: {
+		memoryRoot: string;
+		resolveCurrentIdentity(cwd?: string): Promise<RepositoryIdentity | undefined>;
+	}): any;
+	detectCandidate(text: string): MemoryCandidate | undefined;
+}
 
-## Rules
+const createMemoryGovernor =
+	"createMemoryGovernor" in governorModule
+		? (governorModule.createMemoryGovernor as (
+				pi: never,
+				overrides: Partial<MemoryGovernorDependencies>,
+			) => void)
+		: () => {
+				throw new Error("createMemoryGovernor is not implemented");
+			};
 
-- Do not store secrets.
+const identity: RepositoryIdentity = {
+	kind: "remote",
+	canonicalKey: "remote:github.com/acme/service",
+	coordinate: "github.com/acme/service",
+	displayName: "acme/service",
+	filename: "github.com--acme--service.md",
+};
 
-## Preferences
+const templates: Record<string, string> = {
+	"USER.md": "# User Memory\n\n## Rules\n\n- Safe.\n\n## Preferences\n",
+	"WORKFLOWS.md":
+		"# Workflow Memory\n\n## Rules\n\n- Safe.\n\n## Conventions\n",
+	"PROJECTS.md":
+		"# Project Memory\n\n## Rules\n\n- Safe.\n\n## Scoped Projects\n\n## Unscoped Facts\n",
+	[identity.filename]:
+		"# Project Memory\n\n## Rules\n\n- Safe.\n\n## Facts\n",
+};
 
-- Prefer concise responses unless the task requires detail.
-`;
+type EventHandler = (event: any, ctx: any) => Promise<any> | any;
+type CommandHandler = (args: string, ctx: any) => Promise<any> | any;
 
-const baseWorkflowMemory = `# Workflow Memory
+function createExtensionHarness(
+	overrides: Partial<MemoryGovernorDependencies> = {},
+) {
+	const events = new Map<string, EventHandler>();
+	const commands = new Map<string, CommandHandler>();
+	const tools = new Map<string, any>();
+	const notifications: Array<{ text: string; level: string }> = [];
+	const sentMessages: any[] = [];
+	const mutations: Array<{ path: string; text: string }> = [];
+	const identityCwds: string[] = [];
+	const promptInputs: Array<{
+		memoryRoot: string;
+		identity: RepositoryIdentity;
+		advisoryCandidate?: MemoryCandidate;
+	}> = [];
+	const memory = new Map<string, string>();
+	const memoryRoot = "/memory";
+	for (const [filename, text] of Object.entries(templates)) {
+		const path =
+			filename === identity.filename
+				? join(memoryRoot, "projects", filename)
+				: join(memoryRoot, filename);
+		memory.set(path, text);
+	}
 
-## Rules
+	const deps: Partial<MemoryGovernorDependencies> = {
+		memoryRoot,
+		async resolveIdentity(cwd) {
+			identityCwds.push(cwd);
+			return identity;
+		},
+		async buildPrompt(input) {
+			promptInputs.push(input);
+			const advisory = input.advisoryCandidate
+				? `\nbehavioral correction: ${input.advisoryCandidate.content}`
+				: "";
+			return {
+				text: `<durable_memory>fresh-${promptInputs.length}${advisory}</durable_memory>`,
+				warnings: [],
+			};
+		},
+		async ensureScopedProject({ root, identity: currentIdentity }) {
+			return {
+				path: join(root, "projects", currentIdentity.filename),
+				created: false,
+			};
+		},
+		async mutateFile(input) {
+			const current = memory.get(input.path) ?? "";
+			const mutation = await input.mutate(current);
+			mutations.push({ path: input.path, text: mutation.text });
+			if (!mutation.changed) {
+				return {
+					status: "unchanged",
+					text: mutation.text,
+					summary: mutation.summary,
+				};
+			}
+			memory.set(input.path, mutation.text);
+			return {
+				status: "written",
+				text: mutation.text,
+				summary: mutation.summary,
+			};
+		},
+		async auditTargets(root) {
+			return [
+				join(root, "USER.md"),
+				join(root, "WORKFLOWS.md"),
+				join(root, "PROJECTS.md"),
+				join(root, "projects", identity.filename),
+			];
+		},
+		createReadTool(readerDeps) {
+			return {
+				name: "memory_read",
+				async execute(
+					_toolCallId: string,
+					_parameters: unknown,
+					_signal: AbortSignal,
+					_onUpdate: unknown,
+					ctx: { cwd: string },
+				) {
+					const currentIdentity =
+						await readerDeps.resolveCurrentIdentity(ctx.cwd);
+					return {
+						content: [
+							{ type: "text", text: currentIdentity?.canonicalKey ?? "missing" },
+						],
+					};
+				},
+			};
+		},
+		...overrides,
+	};
 
-- Do not store secrets.
+	const pi = {
+		on(name: string, handler: EventHandler) {
+			events.set(name, handler);
+		},
+		registerCommand(
+			name: string,
+			definition: { handler: CommandHandler },
+		) {
+			commands.set(name, definition.handler);
+		},
+		registerTool(tool: any) {
+			tools.set(tool.name, tool);
+		},
+		sendMessage(message: any) {
+			sentMessages.push(message);
+		},
+		exec: async () => ({ stdout: "", code: 1 }),
+	};
 
-## Conventions
+	function context(cwd: string, hasUI: boolean) {
+		return {
+			cwd,
+			hasUI,
+			ui: {
+				notify(text: string, level: string) {
+					if (!hasUI) throw new Error("UI used without ctx.hasUI");
+					notifications.push({ text, level });
+				},
+			},
+		};
+	}
 
-- Use /finish before claiming work is complete.
-`;
+	return {
+		pi: pi as never,
+		deps,
+		events,
+		commands,
+		tools,
+		notifications,
+		sentMessages,
+		mutations,
+		identityCwds,
+		promptInputs,
+		memory,
+		async input(text: string, options: { cwd?: string; hasUI?: boolean } = {}) {
+			return events.get("input")!(
+				{ text, source: "interactive" },
+				context(options.cwd ?? "/work/service", options.hasUI ?? true),
+			);
+		},
+		async beforeAgentStart(
+			systemPrompt: string,
+			options: { cwd?: string; hasUI?: boolean } = {},
+		) {
+			return events.get("before_agent_start")!(
+				{ prompt: "task", systemPrompt },
+				context(options.cwd ?? "/work/service", options.hasUI ?? true),
+			);
+		},
+		async audit(options: { cwd?: string; hasUI?: boolean } = {}) {
+			return commands.get("memory-audit")!(
+				"",
+				context(options.cwd ?? "/work/service", options.hasUI ?? true),
+			);
+		},
+	};
+}
 
-describe("memory-governor detection", () => {
-	test("detects behavioral corrections without requiring remember wording", () => {
-		const candidate = detectMemoryCandidate(
-			"It seems like you don't know when to update memory.",
-		);
+describe("memory governor lifecycle", () => {
+	test("registers the reliable memory lifecycle", () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
 
-		expect(candidate?.reason).toContain("behavioral correction");
-		expect(candidate?.content).toContain("when to update memory");
+		expect(harness.events.has("input")).toBe(true);
+		expect(harness.events.has("before_agent_start")).toBe(true);
+		expect(harness.commands.has("memory-audit")).toBe(true);
+		expect(harness.tools.has("memory_read")).toBe(true);
 	});
 
-	test("classifies workflow rules separately from user preferences", () => {
-		expect(
-			classifyMemoryTarget("For PR reviews, use line-specific comments."),
-		).toBe("WORKFLOWS.md");
-		expect(classifyMemoryTarget("Prefer direct implementation.")).toBe(
-			"USER.md",
-		);
-		expect(classifyMemoryTarget("In this repo, run mise run link.")).toBe(
-			"PROJECTS.md",
-		);
+	test("keeps an inferred candidate private until one run then clears it", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input("You keep forgetting to verify the diff.");
+		expect(harness.notifications).toEqual([]);
+		expect(harness.sentMessages).toEqual([]);
+
+		const first = await harness.beforeAgentStart("base prompt");
+		expect(first.systemPrompt).toContain("behavioral correction");
+		expect(first.systemPrompt).toContain("You keep forgetting");
+		const second = await harness.beforeAgentStart(first.systemPrompt);
+		expect(second.systemPrompt).not.toContain("You keep forgetting");
 	});
 
-	test("does not capture task descriptions as memory", () => {
-		const candidate = detectMemoryCandidate(
-			"The current branch has several changes. When staging runs jobs/example.py, it needs a token from another service before connecting to an internal service location.",
+	test("builds fresh memory once per run and leaves one memory block", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		const first = await harness.beforeAgentStart(
+			"base\n<durable_memory>stale</durable_memory>",
+			{ cwd: "/work/one" },
 		);
-
-		expect(candidate).toBeUndefined();
-	});
-
-	test("does not auto-write advisory questions as raw memory", () => {
-		const candidate = detectMemoryCandidate(
-			"Should this one-off regression become a broader rule? I want file-backed memory for this project, not a database.",
-		);
-
-		expect(candidate).toBeUndefined();
-	});
-
-	test("does not capture deictic task instructions as durable memory", () => {
-		const candidate = detectMemoryCandidate(
-			"Do not commit that plan. We are going to throw it away when done.",
-		);
-
-		expect(candidate).toBeUndefined();
-	});
-
-	test("captures explicit durable rules without copying task prompts", () => {
-		const candidate = detectMemoryCandidate(
-			"Remember: For gametime Pi memory, use markdown files instead of a database.",
-		);
-
-		expect(candidate?.target).toBe("PROJECTS.md");
-		expect(candidate?.content).toBe(
-			"For gametime Pi memory, use markdown files instead of a database.",
-		);
-	});
-
-	test("does not turn first-person uncertainty into imperative memory", () => {
-		expect(detectMemoryCandidate("I do not know why.")).toBeUndefined();
-		expect(
-			detectMemoryCandidate("I don't think the data is correct."),
-		).toBeUndefined();
-		expect(
-			detectMemoryCandidate(
-				"I do not understand the customer discovery extension.",
-			),
-		).toBeUndefined();
-	});
-
-	test("does not store raw questions as durable memory", () => {
-		expect(
-			detectMemoryCandidate(
-				"Do we have examples in this project of macros used for incremental models?",
-			),
-		).toBeUndefined();
-		expect(
-			detectMemoryCandidate(
-				"For the question you asked I think we should use a global sample.",
-			),
-		).toBeUndefined();
-	});
-});
-
-describe("memory-governor candidate gate", () => {
-	test("auto-writes only explicit remember commands", () => {
-		const explicit = detectMemoryCandidate(
-			"Remember: Prefer concise responses unless the task requires detail.",
-		);
-		const correction = detectMemoryCandidate(
-			"It seems like you don't know when to update memory.",
-		);
-
-		if (!explicit) throw new Error("expected explicit memory candidate");
-		if (!correction) throw new Error("expected correction memory candidate");
-		expect(shouldAutoWriteMemoryCandidate(explicit)).toBe(true);
-		expect(shouldAutoWriteMemoryCandidate(correction)).toBe(false);
-	});
-
-	test("does not auto-write inferred workflow rules", () => {
-		const candidate = detectMemoryCandidate(
-			"For PR reviews, use line-specific comments.",
-		);
-
-		if (!candidate) throw new Error("expected workflow memory candidate");
-		expect(candidate.reason).toBe("workflow rule");
-		expect(shouldAutoWriteMemoryCandidate(candidate)).toBe(false);
-	});
-});
-
-describe("memory-governor safety", () => {
-	test("rejects secrets, transient notes, duplicates, and unverified guesses", () => {
-		expect(shouldRejectMemory("API_KEY=abcdef1234567890", baseUserMemory)).toBe(
-			"secret-like content",
-		);
-		expect(
-			shouldRejectMemory(
-				"For this session only, use verbose output.",
-				baseUserMemory,
-			),
-		).toBe("transient content");
-		expect(shouldRejectMemory("Prefer concise responses", baseUserMemory)).toBe(
-			"already represented",
-		);
-		expect(
-			shouldRejectMemory(
-				"I guess Justin might prefer GraphQL.",
-				baseUserMemory,
-			),
-		).toBe("unverified assumption");
-	});
-
-	test("audit removes duplicate bullets before appending", () => {
-		const audited = auditMemoryText(`${baseWorkflowMemory}
-- Use /finish before claiming work is complete.
-`);
-
-		expect(audited.removedDuplicates).toBe(1);
-		expect(
-			audited.text.match(/Use \/finish before claiming work is complete\./g),
-		)?.toHaveLength(1);
-	});
-});
-
-describe("memory-governor notifications", () => {
-	test("memory updates notify the UI without injecting next-turn model context", () => {
-		const notice = buildMemoryUpdateNotice({
-			changed: true,
-			reason: "behavioral correction",
-			summary: "added memory",
-			target: "USER.md",
-			text: baseUserMemory,
+		const second = await harness.beforeAgentStart(first.systemPrompt, {
+			cwd: "/work/two",
 		});
 
-		expect(notice.uiText).toContain("Memory updated: USER.md");
-		expect(notice.modelMessage).toBeUndefined();
+		expect(harness.promptInputs).toHaveLength(2);
+		expect(harness.identityCwds).toEqual(["/work/one", "/work/two"]);
+		expect(first.systemPrompt.match(/<durable_memory>/g)).toHaveLength(1);
+		expect(second.systemPrompt.match(/<durable_memory>/g)).toHaveLength(1);
+		expect(second.systemPrompt).toContain("fresh-2");
+	});
+
+	test("memory_read resolves identity from execution cwd", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+		const tool = harness.tools.get("memory_read");
+
+		await tool.execute(
+			"call-1",
+			{ scope: "current_project" },
+			new AbortController().signal,
+			undefined,
+			{ cwd: "/tool/cwd" },
+		);
+		expect(harness.identityCwds).toEqual(["/tool/cwd"]);
 	});
 });
 
-describe("memory-governor writes", () => {
-	test("updates an existing scoped section instead of adding new scaffolding", () => {
-		const result = applyMemoryUpdate({
-			existingText: baseUserMemory,
-			target: "USER.md",
-			content:
-				"Prefer choosing the desired end-state and building it directly.",
-			reason: "behavioral correction",
-		});
+describe("explicit memory writes", () => {
+	test("only explicit Remember writes", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
 
-		expect(result.changed).toBe(true);
-		expect(result.summary).toContain("added memory");
-		expect(result.text).toContain("## Preferences");
-		expect(result.text).toContain(
-			"- Prefer choosing the desired end-state and building it directly.",
-		);
+		await harness.input("I prefer concise answers.");
+		expect(harness.mutations).toEqual([]);
+		await harness.input("Remember: Prefer concise answers.");
+		expect(harness.mutations).toHaveLength(1);
+		expect(harness.mutations[0].path).toBe("/memory/USER.md");
+		expect(harness.mutations[0].text).toContain("## Preferences");
+		expect(harness.mutations[0].text).toContain("- Prefer concise answers.");
 	});
 
-	test("does not append already represented memory", () => {
-		const result = applyMemoryUpdate({
-			existingText: baseUserMemory,
-			target: "USER.md",
-			content: "Prefer concise responses unless the task requires detail.",
-			reason: "duplicate correction",
+	test("routes workflow, project, and unscoped candidates safely", async () => {
+		let inferred: MemoryCandidate | undefined;
+		const harness = createExtensionHarness({
+			detectCandidate(text) {
+				if (text === "unscoped") return inferred;
+				return undefined;
+			},
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		inferred = {
+			content: "Use the fallback fact.",
+			reason: "explicit-memory",
+			scope: "unscoped",
+			autoWrite: true,
+		};
+		await harness.input("unscoped");
+
+		const paths = harness.mutations.map((item) => item.path);
+		expect(paths).toEqual(["/memory/PROJECTS.md"]);
+		expect(harness.mutations[0].text).toContain("## Unscoped Facts");
+	});
+
+	test("routes workflow and project facts to their scoped sections", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input(
+			"Remember: For PR reviews, use line-specific comments.",
+		);
+		await harness.input("Remember: In this repo, run mise run link.", {
+			cwd: "/work/project",
 		});
 
-		expect(result.changed).toBe(false);
-		expect(result.summary).toContain("already represented");
+		expect(harness.mutations.map((item) => item.path)).toEqual([
+			"/memory/WORKFLOWS.md",
+			`/memory/projects/${identity.filename}`,
+		]);
+		expect(harness.mutations[0].text).toContain("## Conventions");
+		expect(harness.mutations[1].text).toContain("## Facts");
+		expect(harness.identityCwds).toContain("/work/project");
+	});
+
+	test("notifies only through available UI for rejected and conflict results", async () => {
+		const results: MutationResult[] = [
+			{ status: "rejected", text: "", reason: "unsafe content" },
+			{ status: "conflict", path: "/memory/USER.md" },
+		];
+		const harness = createExtensionHarness({
+			mutateFile: async () => results.shift()!,
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input("Remember: Prefer concise answers.");
+		await harness.input("Remember: Prefer direct answers.");
+		expect(harness.notifications.map((notice) => notice.text).join("\n")).toMatch(
+			/rejected.*unsafe content/i,
+		);
+		expect(harness.notifications.map((notice) => notice.text).join("\n")).toMatch(
+			/conflict/i,
+		);
+
+		const noUi = createExtensionHarness({
+			mutateFile: async () => ({
+				status: "rejected",
+				text: "",
+				reason: "unsafe content",
+			}),
+		});
+		createMemoryGovernor(noUi.pi, noUi.deps);
+		await noUi.input("Remember: Prefer concise answers.", { hasUI: false });
+		expect(noUi.notifications).toEqual([]);
+	});
+});
+
+describe("memory audit", () => {
+	test("audits top-level and indexed files sequentially through safe mutation", async () => {
+		const order: string[] = [];
+		let active = 0;
+		let maximumActive = 0;
+		const harness = createExtensionHarness({
+			async mutateFile(input) {
+				active += 1;
+				maximumActive = Math.max(maximumActive, active);
+				order.push(input.path);
+				const duplicate = `${templates[basename(input.path)] ?? templates[identity.filename]}\n- Same.\n- Same.\n`;
+				const mutation = await input.mutate(duplicate);
+				await Promise.resolve();
+				active -= 1;
+				return {
+					status: "written",
+					text: mutation.text,
+					summary: mutation.summary,
+				};
+			},
+		});
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.audit();
+		expect(order).toEqual([
+			"/memory/USER.md",
+			"/memory/WORKFLOWS.md",
+			"/memory/PROJECTS.md",
+			`/memory/projects/${identity.filename}`,
+		]);
+		expect(maximumActive).toBe(1);
+		expect(harness.sentMessages).toHaveLength(1);
+		expect(harness.sentMessages[0].content).toMatch(
+			/USER\.md: removed 1 duplicate/i,
+		);
+		expect(harness.notifications).toEqual([
+			{ text: "Memory audit complete.", level: "info" },
+		]);
+	});
+
+	test("reports audit outcomes without touching UI when unavailable", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.audit({ hasUI: false });
+		expect(harness.notifications).toEqual([]);
+		expect(harness.sentMessages).toHaveLength(1);
 	});
 });

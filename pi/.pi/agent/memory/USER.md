@@ -18,9 +18,9 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Prefer minimum code that solves the problem.
 - For small, focused changes, work directly on a feature branch; use an
   isolated worktree only when isolation materially helps or Justin requests it.
-- When a worktree is needed, choose a sensible isolated location and proceed;
-  do not ask Justin to choose implementation details unless the tradeoff affects
-  him.
+- When a worktree is needed, use a global isolated location by default (for
+  example, `~/.config/superpowers/worktrees/<project>/`); do not ask Justin to
+  choose implementation details unless the tradeoff affects him.
 - Use Neovim rather than VS Code. Do not install or manage VS Code or its
   extensions unless explicitly requested.
 - Prefer explicit success criteria and verified outcomes.

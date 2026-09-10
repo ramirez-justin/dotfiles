@@ -21,4 +21,7 @@ Repository-scoped memory index and unscoped fallback.
 - `github.com/gametimesf/gametime-data` →
   `projects/github.com--gametimesf--gametime-data.md`
 
+- `github.com/gametimesf/omni-analytics` →
+  `projects/github.com--gametimesf--omni-analytics.md`
+
 ## Unscoped Facts

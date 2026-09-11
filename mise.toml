@@ -53,16 +53,18 @@ chalk version
 """
 
 [tasks.check-agent-tiers]
-description = "Verify Luna/Terra use max reasoning and Sol uses medium"
+description = "Verify Pi agent models, reasoning levels, and defaults"
 run = """
 set -e
 agents={{config_root}}/pi/.pi/agent/agents
+settings={{config_root}}/pi/.pi/agent/settings.json
+astra="$agents/AstraPlan.md"
 checked=0
 for file in "$agents"/*.md; do
     model=$(awk -F': ' '$1 == "model" { print $2; exit }' "$file")
     thinking=$(awk -F': ' '$1 == "thinking" { print $2; exit }' "$file")
     case "$model" in
-        *gpt-5.6-luna|*gpt-5.6-terra) expected=max ;;
+        *gpt-5.6-luna|*gpt-5.6-terra|*gpt-6-astra) expected=max ;;
         *gpt-5.6-sol) expected=medium ;;
         *) continue ;;
     esac
@@ -73,10 +75,50 @@ for file in "$agents"/*.md; do
     fi
 done
 if [ "$checked" -eq 0 ]; then
-    echo "No GPT-5.6 tiered agents found in $agents" >&2
+    echo "No tiered Pi agents found in $agents" >&2
     exit 1
 fi
-echo "Pi agent model tiers verified ($checked agents)"
+
+if [ ! -f "$astra" ]; then
+    echo "Missing Astra planning agent: $astra" >&2
+    exit 1
+fi
+for expected in \
+    "name: AstraPlan" \
+    "tools: read, grep, find, bash" \
+    "model: openai-codex/gpt-6-astra" \
+    "thinking: max" \
+    "max_turns: 20" \
+    "isolated: true" \
+    "isolation: off" \
+    "prompt_mode: append"
+do
+    if ! grep -Fxq -- "$expected" "$astra"; then
+        echo "$astra: missing required setting: $expected" >&2
+        exit 1
+    fi
+done
+
+for expected in \
+    '"defaultProvider": "openai-codex"' \
+    '"defaultModel": "gpt-5.6-sol"' \
+    '"defaultThinkingLevel": "medium"'
+do
+    if ! grep -Fq -- "$expected" "$settings"; then
+        echo "$settings: missing required default: $expected" >&2
+        exit 1
+    fi
+done
+
+if ! mise exec -- pi --offline --list-models | \
+    awk '$1 == "openai-codex" && $2 == "gpt-6-astra" { found=1 }
+         END { exit !found }'
+then
+    echo "Pi model catalog does not contain openai-codex/gpt-6-astra" >&2
+    exit 1
+fi
+
+echo "Pi agent models and defaults verified ($checked agents)"
 """
 
 [tasks.check-memory]

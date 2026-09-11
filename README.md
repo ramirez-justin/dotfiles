@@ -107,8 +107,9 @@ mise run chalk-install  # install/update Chalk CLI without full bootstrap
 
 # Pi personal workflows:
 # - Subagents: npm:@tintinweb/pi-subagents with model-tiered agents.
-#   Sol handles general work, Luna/Terra handle specialist work, and Astra is
-#   reserved for highly complex architecture planning. Use /agents to manage.
+#   Sol handles general and routine work, Luna/Terra handle specialist work,
+#   and Astra handles complex planning and implementation. Use /agents to
+#   manage.
 # - Memory: ~/.pi/agent/memory/*.md, managed through the memory-management
 #   skill.
 # - Skill creation: use the skill-creation skill to draft local skills under

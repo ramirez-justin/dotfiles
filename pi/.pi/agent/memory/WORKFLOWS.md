@@ -27,7 +27,8 @@ Durable workflow conventions for Justin's Pi sessions.
 - Use `/finish` before claiming implementation work is complete. Launch
   `verifier` for independent evidence on meaningful changes.
 - Use `@tintinweb/pi-subagents` when delegation adds value: run Luna and Terra
-  agents with max reasoning, Sol with medium reasoning, and reserve
+  agents with max reasoning, Sol with medium reasoning, `implementer` on Astra
+  with low reasoning for approved nontrivial execution, and reserve
   `AstraPlan` for the automatic high-complexity gate in `AGENTS.md`. For
   qualifying tasks, gather evidence once, use Astra for architecture, then use
   Terra only for file-level expansion unless sequencing is inseparable. The

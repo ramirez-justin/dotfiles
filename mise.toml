@@ -59,12 +59,14 @@ set -e
 agents={{config_root}}/pi/.pi/agent/agents
 settings={{config_root}}/pi/.pi/agent/settings.json
 astra="$agents/AstraPlan.md"
+implementer="$agents/implementer.md"
+worker="$agents/worker.md"
 checked=0
 for file in "$agents"/*.md; do
     model=$(awk -F': ' '$1 == "model" { print $2; exit }' "$file")
     thinking=$(awk -F': ' '$1 == "thinking" { print $2; exit }' "$file")
     case "$model" in
-        *gpt-5.6-luna|*gpt-5.6-terra|*gpt-6-astra) expected=max ;;
+        *gpt-5.6-luna|*gpt-5.6-terra) expected=max ;;
         *gpt-5.6-sol) expected=medium ;;
         *) continue ;;
     esac
@@ -79,10 +81,22 @@ if [ "$checked" -eq 0 ]; then
     exit 1
 fi
 
-if [ ! -f "$astra" ]; then
-    echo "Missing Astra planning agent: $astra" >&2
-    exit 1
-fi
+for file in "$astra" "$implementer" "$worker"; do
+    if [ ! -f "$file" ]; then
+        echo "Missing required agent: $file" >&2
+        exit 1
+    fi
+done
+
+require_setting() {
+    file=$1
+    expected=$2
+    if ! grep -Fxq -- "$expected" "$file"; then
+        echo "$file: missing required setting: $expected" >&2
+        exit 1
+    fi
+}
+
 for expected in \
     "name: AstraPlan" \
     "tools: read, grep, find, bash" \
@@ -93,10 +107,23 @@ for expected in \
     "isolation: off" \
     "prompt_mode: append"
 do
-    if ! grep -Fxq -- "$expected" "$astra"; then
-        echo "$astra: missing required setting: $expected" >&2
-        exit 1
-    fi
+    require_setting "$astra" "$expected"
+done
+
+for expected in \
+    "display_name: Implementer (Astra)" \
+    "model: openai-codex/gpt-6-astra" \
+    "thinking: low"
+do
+    require_setting "$implementer" "$expected"
+done
+
+for expected in \
+    "display_name: Worker (Sol)" \
+    "model: openai-codex/gpt-5.6-sol" \
+    "thinking: medium"
+do
+    require_setting "$worker" "$expected"
 done
 
 for expected in \
@@ -118,7 +145,7 @@ then
     exit 1
 fi
 
-echo "Pi agent models and defaults verified ($checked agents)"
+echo "Pi agent models and defaults verified"
 """
 
 [tasks.check-memory]

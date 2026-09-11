@@ -43,6 +43,7 @@ Durable workflow conventions for Justin's Pi sessions.
 - For Astro production task logs, use the `Data Eng` 1Password item named
   `astro production starship api token` as a bearer token for the deployment's
   Airflow REST API. Never print or persist the token.
-- Immediately before creating or finalizing a PR, verify task-specific design,
-  specification, and implementation-plan artifacts are absent from both the
-  worktree and the final diff, unless Justin explicitly asks to retain them.
+- Specs and plans may be committed while work is active. Remove task-specific
+  design, specification, and implementation-plan artifacts when the work is
+  complete. Before creating or finalizing a PR, verify they are absent from both
+  the worktree and final diff unless Justin explicitly asks to retain them.

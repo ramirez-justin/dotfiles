@@ -32,11 +32,10 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   caveats. Do not wait only for explicit “remember this” requests.
 - Prefer choosing the desired end-state and building it directly over adding
   intermediate scaffolding or process overhead.
+- Prefer one explicit resource size across staging and production; add
+  environment-based sizing only when requirements actually differ.
 - Avoid PR sprawl; fold tightly related fixes into an existing PR when the
   resulting scope remains coherent and reviewable.
-- Treat implementation plans and design specs as temporary working artifacts.
-  Immediately before opening or finalizing a PR, verify task-specific artifacts
-  are absent unless explicitly requested; do not rely on intended cleanup.
 - Prefer general behavior tests over exact prompt regressions when a broader
   rule is the real requirement.
 - Do not run Terraform or Terragrunt plan/apply commands for Snowflake; they
@@ -50,9 +49,9 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - For data pipeline table writes, prefer deterministic keys and metadata columns
   that support troubleshooting; overwrite modes should only replace rows for
   source files processed in the current run unless explicitly specified.
-- Validate automated PR review feedback before applying it; avoid iterative
-  churn from bots unless the suggestion is technically justified.
-- When Justin shares a reviewer/bot suggestion with reservations, treat it as a
-  request for technical feedback and tradeoffs, not approval to implement it.
+- Validate automated review suggestions before applying them. When Justin
+  shares one with reservations, treat it as a request for technical feedback
+  and tradeoffs, not approval to implement; avoid bot-driven churn unless the
+  suggestion is technically justified.
 - Do not assume local tools are installed; check availability before suggesting
   or using them.

@@ -12,7 +12,15 @@ Stable facts for `github.com/gametimesf/gametime-data`.
 ## Facts
 
 - Use `mlctl job logs <job-ref>` to retrieve Baseline/SageMaker notebook output,
-  final counters, runtime warnings, and benchmark metrics.
+  final counters, runtime warnings, and benchmark metrics. For resource-failure
+  diagnosis, query CloudWatch in the workload account rather than assuming the
+  source-data or container-registry account owns the job. Baseline CloudWatch
+  hosts use `baseline-<job-ref>/algo-1` in the
+  `/aws/sagemaker/TrainingJobs` namespace. Check host memory, GPU memory, GPU
+  utilization, disk, and the underlying log stream together. Zero-valued host
+  telemetry is not proof that usage was zero; treat it as missing/broken data.
+  Low GPU memory plus zero GPU utilization rules against GPU OOM, but does not
+  exclude host OOM, input decoding failures, or native-process crashes.
 
 - In `gametime-data`, Astro staging and production deploy workflows both call
   `.github/workflows/astro-deploy-to-env.yml`; changes there affect production

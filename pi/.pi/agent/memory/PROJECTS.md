@@ -20,7 +20,8 @@ Repository-scoped memory index and unscoped fallback.
   `projects/github.com--gametimesf--dbt-analytics.md`
 - `github.com/gametimesf/gametime-data` →
   `projects/github.com--gametimesf--gametime-data.md`
-
+- `github.com/gametimesf/chalk` →
+  `projects/github.com--gametimesf--chalk.md`
 - `github.com/gametimesf/omni-analytics` →
   `projects/github.com--gametimesf--omni-analytics.md`
 

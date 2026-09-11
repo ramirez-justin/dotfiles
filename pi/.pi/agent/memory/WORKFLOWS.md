@@ -40,6 +40,9 @@ Durable workflow conventions for Justin's Pi sessions.
 - Justin's `aws-me` AWS session helper is a zsh alias; from Pi shell tools,
   invoke it through interactive zsh, for example
   `zsh -ic 'aws-me -- <command>'`.
+- For Astro production task logs, use the `Data Eng` 1Password item named
+  `astro production starship api token` as a bearer token for the deployment's
+  Airflow REST API. Never print or persist the token.
 - Immediately before creating or finalizing a PR, verify task-specific design,
   specification, and implementation-plan artifacts are absent from both the
   worktree and the final diff, unless Justin explicitly asks to retain them.

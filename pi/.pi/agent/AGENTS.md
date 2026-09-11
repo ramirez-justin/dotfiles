@@ -61,8 +61,22 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
 - Launch `Plan`, `reviewer`, `oracle`, or `researcher` on Terra with max
-  reasoning for difficult planning, independent review, assumption checks, or
+  reasoning for detailed planning, independent review, assumption checks, or
   current research.
+- Automatically launch `AstraPlan` for architecture planning when a task has
+  either one impact signal plus two structural complexity signals, or at least
+  three structural complexity signals. Impact signals are production, data,
+  security, compliance, significant cost, public-contract, hard-to-reverse, or
+  difficult-rollback risk. Structural signals are three or more systems or
+  contracts; migration, backfill, compatibility, cutover, or rollback work;
+  conflicting requirements or multiple viable architectures; or evidence that
+  spans source, history, current documentation, and ownership boundaries.
+- For qualifying tasks, gather missing evidence once with `Explore` or
+  `researcher`, give `AstraPlan` a curated brief and escalation justification,
+  then use Terra `Plan` only to expand the architecture into file-level steps.
+  Skip Terra when architecture and sequencing cannot reasonably be separated.
+- Do not escalate based only on file count, prompt length, or a request for
+  thoroughness. Do not ask multiple agents to recreate the same plan.
 - Launch exactly one `worker` or `implementer` on Sol for approved delegated
   edits. Do not edit the same worktree concurrently in the parent.
 - Launch `verifier` on Luna with max reasoning for independent validation of
@@ -70,9 +84,10 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 - Keep direct work in the Sol parent for small, clear tasks where delegation
   would add more overhead than value.
 
-The parent remains accountable for scope, decisions, reviewing actual changes,
-and user-facing claims. Do not delegate Linear, Notion, Snowflake, or Cortex
-mutations by default; keep preview-before-mutation approval in the parent.
+The parent remains accountable for routing, scope, decisions, reviewing actual
+changes, and user-facing claims. Do not delegate Linear, Notion, Snowflake, or
+Cortex mutations by default; keep preview-before-mutation approval in the
+parent.
 
 ## Tool Preferences
 

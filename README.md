@@ -106,8 +106,9 @@ mise run chalk-install  # install/update Chalk CLI without full bootstrap
 # /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
 
 # Pi personal workflows:
-# - Subagents: npm:@tintinweb/pi-subagents with GPT-5.6 model-tiered agents.
-#   Use Explore/Plan for built-in compatibility and /agents for management.
+# - Subagents: npm:@tintinweb/pi-subagents with model-tiered agents.
+#   Sol handles general work, Luna/Terra handle specialist work, and Astra is
+#   reserved for highly complex architecture planning. Use /agents to manage.
 # - Memory: ~/.pi/agent/memory/*.md, managed through the memory-management
 #   skill.
 # - Skill creation: use the skill-creation skill to draft local skills under

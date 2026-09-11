@@ -18,6 +18,8 @@ export PKG_CONFIG_PATH="/opt/homebrew/opt/ruby/lib/pkgconfig"
 # terraform
 export TENV_GITHUB_TOKEN="$(op read "op://employee/github_token/token" 2>/dev/null)"
 export TG_LOG_FORMAT=bare
+export TG_PROVIDER_CACHE=1
+export TG_PROVIDER_CACHE_DIR="$HOME/.terragrunt-cache/providers"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -175,10 +177,6 @@ tg_clean_output() {
 }
 # Generic terragrunt plan to file
 alias tgp_file="terragrunt plan -no-color | tg_clean_output > ~/Desktop/tfplan.txt"
-# Staging environment
-alias tgp_staging_file='export AWS_REGION=us-west-2 && export SNOWFLAKE_PRIVATE_KEY=$(<"/Users/justin/.ssh/snowflake_staging.p8") && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_staging.txt'
-# Production environment
-alias tgp_prod_file='export AWS_REGION=us-west-2 && export SNOWFLAKE_PRIVATE_KEY=$(<"/Users/justin/.ssh/snowflake_production.p8") && terragrunt plan -no-color -parallelism=30 | tg_clean_output > ~/Desktop/tfplan_production.txt'
 #####################################
 ##### Snowflake Terraform alias #####
 #####################################

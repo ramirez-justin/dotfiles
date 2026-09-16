@@ -35,6 +35,12 @@ Durable workflow conventions for Justin's Pi sessions.
   parent remains accountable for routing, decisions, mutations, and claims.
 - Do not use subagents by default for Linear, Notion, Snowflake, or Cortex
   mutations. Keep preview-before-mutation approval in the parent session.
+- When reviewing PR comments, inspect both GitHub review threads and any linked
+  Linear Review diff threads; GitHub APIs do not expose Linear-only findings.
+- When auditing Terraform plans from a long-lived branch, distinguish real
+  state drift from branch-relative differences by checking changes merged after
+  the branch point. Deduplicate findings against Linear and separate
+  destructive or irreversible changes from state-only moves before ticketing.
 - If Cortex cannot access the needed Snowflake account, Snowflake CLI key-pair
   access via 1Password may be used as a fallback. Never print or persist
   private keys, passphrases, tokens, or decrypted credential material.

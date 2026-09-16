@@ -39,6 +39,9 @@ Stable facts for `github.com/gametimesf/gametime-data`.
   future grants for the same object type in that schema. Avoid adding schema
   future grants casually in `RAW_DB` or `SOURCE_DB` because they can bypass
   database-level future-grant expectations.
+- Treat all `RFD__*` and `TRF__*` Snowflake schemas as transitional. Their
+  models will be migrated or succeeded by new tables, so do not establish them
+  as durable consumer contracts; prefer stable ADL products or named successors.
 - In `gametime-data`, Assembled `/forecasts` requires `start_time` and
   `end_time` epoch values aligned to the requested `interval`; half-hour Airflow
   schedules need explicit alignment before calling the API.

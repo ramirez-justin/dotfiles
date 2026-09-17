@@ -1,9 +1,9 @@
 ---
 description: Research agent for current external evidence.
-display_name: Researcher (Terra)
+display_name: Researcher (Claude Sonnet)
 tools: read, grep, find, bash
-model: openai-codex/gpt-5.6-terra
-thinking: max
+model: pi-claude-code-provider/sonnet
+thinking: high
 max_turns: 24
 prompt_mode: append
 ---

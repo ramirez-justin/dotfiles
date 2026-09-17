@@ -56,96 +56,128 @@ chalk version
 description = "Verify Pi agent models, reasoning levels, and defaults"
 run = """
 set -e
-agents={{config_root}}/pi/.pi/agent/agents
-settings={{config_root}}/pi/.pi/agent/settings.json
-astra="$agents/AstraPlan.md"
-implementer="$agents/implementer.md"
-worker="$agents/worker.md"
-checked=0
-for file in "$agents"/*.md; do
-    model=$(awk -F': ' '$1 == "model" { print $2; exit }' "$file")
-    thinking=$(awk -F': ' '$1 == "thinking" { print $2; exit }' "$file")
-    case "$model" in
-        *gpt-5.6-luna|*gpt-5.6-terra) expected=max ;;
-        *gpt-5.6-sol) expected=medium ;;
-        *) continue ;;
-    esac
-    checked=$((checked + 1))
-    if [ "$thinking" != "$expected" ]; then
-        echo "$file: expected thinking $expected for $model, got $thinking" >&2
-        exit 1
-    fi
-done
-if [ "$checked" -eq 0 ]; then
-    echo "No tiered Pi agents found in $agents" >&2
-    exit 1
-fi
+cd {{config_root}}
+python3 - <<'PY'
+import json
+import pathlib
+import subprocess
+import sys
 
-for file in "$astra" "$implementer" "$worker"; do
-    if [ ! -f "$file" ]; then
-        echo "Missing required agent: $file" >&2
-        exit 1
-    fi
-done
+root = pathlib.Path.cwd()
+agents = root / "pi/.pi/agent/agents"
+settings_path = root / "pi/.pi/agent/settings.json"
 
-require_setting() {
-    file=$1
-    expected=$2
-    if ! grep -Fxq -- "$expected" "$file"; then
-        echo "$file: missing required setting: $expected" >&2
-        exit 1
-    fi
+expected = {
+    "AstraPlan.md": ("openai-codex/gpt-6-astra", "max"),
+    "Explore.md": ("openai-codex/gpt-5.6-luna", "max"),
+    "implementer.md": ("openai-codex/gpt-6-astra", "low"),
+    "oracle.md": ("openai-codex/gpt-5.6-terra", "max"),
+    "Plan.md": ("openai-codex/gpt-5.6-terra", "max"),
+    "researcher.md": (
+        "pi-claude-code-provider/sonnet",
+        "high",
+    ),
+    "reviewer.md": ("openai-codex/gpt-5.6-terra", "max"),
+    "verifier.md": ("openai-codex/gpt-5.6-luna", "max"),
+    "worker.md": ("openai-codex/gpt-5.6-sol", "medium"),
 }
 
-for expected in \
-    "name: AstraPlan" \
-    "tools: read, grep, find, bash" \
-    "model: openai-codex/gpt-6-astra" \
-    "thinking: max" \
-    "max_turns: 20" \
-    "isolated: true" \
-    "isolation: off" \
-    "prompt_mode: append"
-do
-    require_setting "$astra" "$expected"
-done
 
-for expected in \
-    "display_name: Implementer (Astra)" \
-    "model: openai-codex/gpt-6-astra" \
-    "thinking: low"
-do
-    require_setting "$implementer" "$expected"
-done
+def frontmatter(path):
+    text = path.read_text()
+    parts = text.split("---", 2)
+    if len(parts) != 3:
+        raise ValueError(f"{path}: missing YAML frontmatter")
+    values = {}
+    for line in parts[1].splitlines():
+        if ": " in line:
+            key, value = line.split(": ", 1)
+            values[key] = value
+    return values
 
-for expected in \
-    "display_name: Worker (Sol)" \
-    "model: openai-codex/gpt-5.6-sol" \
-    "thinking: medium"
-do
-    require_setting "$worker" "$expected"
-done
 
-for expected in \
-    '"defaultProvider": "openai-codex"' \
-    '"defaultModel": "gpt-5.6-sol"' \
-    '"defaultThinkingLevel": "medium"'
-do
-    if ! grep -Fq -- "$expected" "$settings"; then
-        echo "$settings: missing required default: $expected" >&2
-        exit 1
-    fi
-done
+errors = []
+for name, (model, thinking) in expected.items():
+    path = agents / name
+    if not path.is_file():
+        errors.append(f"missing required agent: {path}")
+        continue
+    values = frontmatter(path)
+    if values.get("model") != model:
+        errors.append(
+            f"{path}: expected model {model}, got "
+            f"{values.get('model')}"
+        )
+    if values.get("thinking") != thinking:
+        errors.append(
+            f"{path}: expected thinking {thinking}, got "
+            f"{values.get('thinking')}"
+        )
 
-if ! mise exec -- pi --offline --list-models | \
-    awk '$1 == "openai-codex" && $2 == "gpt-6-astra" { found=1 }
-         END { exit !found }'
-then
-    echo "Pi model catalog does not contain openai-codex/gpt-6-astra" >&2
-    exit 1
-fi
+actual_files = {path.name for path in agents.glob("*.md")}
+extra_files = sorted(actual_files - set(expected))
+if extra_files:
+    errors.append(f"unvalidated agent definitions: {extra_files}")
 
-echo "Pi agent models and defaults verified"
+settings = json.loads(settings_path.read_text())
+sources = [
+    item if isinstance(item, str) else item.get("source")
+    for item in settings.get("packages", [])
+]
+required_sources = {
+    "git:https://github.com/obra/superpowers.git",
+    "npm:pi-claude-code-provider",
+}
+for source in sorted(required_sources):
+    if source not in sources:
+        errors.append(f"{settings_path}: missing package {source}")
+
+for source in sources:
+    if source and source.startswith(
+        "git:https://github.com/obra/superpowers.git@"
+    ):
+        errors.append(f"{settings_path}: Superpowers must be unpinned")
+    if source and source.startswith("npm:pi-claude-code-provider@"):
+        errors.append(f"{settings_path}: Claude provider must be unpinned")
+
+required_defaults = {
+    "defaultProvider": "openai-codex",
+    "defaultModel": "gpt-5.6-sol",
+    "defaultThinkingLevel": "medium",
+}
+for key, value in required_defaults.items():
+    if settings.get(key) != value:
+        errors.append(
+            f"{settings_path}: expected {key}={value}, got "
+            f"{settings.get(key)}"
+        )
+
+if errors:
+    print("\\n".join(errors), file=sys.stderr)
+    raise SystemExit(1)
+
+result = subprocess.run(
+    ["mise", "exec", "--", "pi", "--offline", "--list-models"],
+    check=True,
+    capture_output=True,
+    text=True,
+)
+catalog = {
+    (parts[0], parts[1])
+    for line in result.stdout.splitlines()
+    if len(parts := line.split()) >= 2
+}
+for model, _thinking in expected.values():
+    provider, model_id = model.split("/", 1)
+    if (provider, model_id) not in catalog:
+        errors.append(f"Pi model catalog does not contain {model}")
+
+if errors:
+    print("\\n".join(errors), file=sys.stderr)
+    raise SystemExit(1)
+
+print("Pi agent models and defaults verified")
+PY
 """
 
 [tasks.check-memory]

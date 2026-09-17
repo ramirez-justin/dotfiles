@@ -60,9 +60,10 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
-- Launch `Plan`, `reviewer`, `oracle`, or `researcher` on Terra with max
-  reasoning for detailed planning, independent review, assumption checks, or
-  current research.
+- Launch `Plan`, `reviewer`, or `oracle` on Terra with max reasoning for
+  detailed planning, independent review, or assumption checks.
+- Launch `researcher` on Claude Sonnet with high reasoning for current external
+  evidence.
 - Automatically launch `AstraPlan` for architecture planning when a task has
   either one impact signal plus two structural complexity signals, or at least
   three structural complexity signals. Impact signals are production, data,
@@ -85,6 +86,9 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
   meaningful changes before claiming completion.
 - Keep direct work in the Sol parent for small, clear tasks where delegation
   would add more overhead than value.
+
+Explicit per-call model overrides require a task-specific reason and do not
+change the default routing matrix.
 
 The parent remains accountable for routing, scope, decisions, reviewing actual
 changes, and user-facing claims. Do not delegate Linear, Notion, Snowflake, or

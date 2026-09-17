@@ -21,7 +21,7 @@
   "enableSkillCommands": true,
   "packages": [
     {
-      "source": "git:https://github.com/obra/superpowers.git@v5.0.7",
+      "source": "git:https://github.com/obra/superpowers.git",
       "skills": [
         "skills/brainstorming/**",
         "skills/writing-plans/**",
@@ -49,6 +49,7 @@
       ]
     },
     "npm:pi-lens",
+    "npm:pi-claude-code-provider",
     "npm:@tintinweb/pi-subagents",
     "npm:pi-intercom"
   ],

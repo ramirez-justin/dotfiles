@@ -22,13 +22,17 @@ Prioritize LSP tools as the first choice for code intelligence tasks:
 - Need regex or fuzzy matching
 - Working with file types without LSP support
 
-## Jira Preferences
+## Issue Tracking Preferences
 
-When creating Jira tickets during working sessions:
+- Prefer Linear for new issue-tracking work.
+- Do not create or update Jira issues unless the user explicitly requests Jira.
 
-- **Always assign to user**: Use account ID `712020:7757ba7e-3a31-44e7-87f5-e74d04928405`
-- **Priority names**: Use "Major" or "Minor" (not "Medium" or "High")
-- **Transition to start work**: Use "Start working" (not "In Progress")
+When Jira is explicitly requested:
+
+- **Always assign to user**: Use account ID
+  `712020:7757ba7e-3a31-44e7-87f5-e74d04928405`.
+- **Priority names**: Use "Major" or "Minor" (not "Medium" or "High").
+- **Transition to start work**: Use "Start working" (not "In Progress").
 
 ## PR Review Preferences
 

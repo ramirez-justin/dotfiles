@@ -24,8 +24,6 @@
       "source": "git:https://github.com/obra/superpowers.git",
       "skills": [
         "skills/brainstorming/**",
-        "skills/writing-plans/**",
-        "skills/executing-plans/**",
         "skills/systematic-debugging/**",
         "skills/test-driven-development/**",
         "skills/verification-before-completion/**",

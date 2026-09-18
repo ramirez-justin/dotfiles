@@ -102,7 +102,7 @@ mise run update          # git pull --rebase + re-link
 mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
 mise run chalk-install  # install/update Chalk CLI without full bootstrap
 
-# pi workflow shortcuts, backed by the Superpowers skills package:
+# Local Pi workflow with selected Superpowers engineering practices:
 # /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
 
 # Pi personal workflows:
@@ -120,6 +120,23 @@ mise run submodule-update # update all submodules to latest
 
 dots                     # cd ~/Repositories/dotfiles
 ```
+
+## Pi Planning and Execution
+
+Local `writing-plans` and `executing-plans` skills own the planning and
+execution workflow. `/write-plan` produces concrete, reviewable steps and
+hands an approved build request to `/execute-plan` automatically, without an
+execution-mode menu. Planning-only requests do not start implementation.
+Execution routes one writer, reviews the actual diff and verification evidence,
+and uses an independent verifier for meaningful changes. Worktrees are optional
+when isolation helps. Plans in `docs/superpowers/plans` and task-specific specs
+are temporary unless explicitly retained.
+
+The unpinned Superpowers package still supplies selected engineering practices,
+including brainstorming, TDD, debugging, and verification. Its writing-plans
+and executing-plans skills are excluded to avoid local name collisions.
+Run `mise run check-agent-tiers` to check agent routing defaults and the local
+workflow skill configuration.
 
 ## Chalk and Pi
 

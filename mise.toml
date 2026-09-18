@@ -53,7 +53,7 @@ chalk version
 """
 
 [tasks.check-agent-tiers]
-description = "Verify Pi agent models, reasoning levels, and defaults"
+description = "Verify Pi agent tiers, defaults, and local workflow skills"
 run = """
 set -e
 cd {{config_root}}
@@ -140,6 +140,49 @@ for source in sources:
     if source and source.startswith("npm:pi-claude-code-provider@"):
         errors.append(f"{settings_path}: Claude provider must be unpinned")
 
+# Require the explicit allowlist so broad globs, omitted filters, or a
+# duplicate package entry cannot silently restore upstream orchestration.
+retained_skills = {
+    "brainstorming",
+    "systematic-debugging",
+    "test-driven-development",
+    "verification-before-completion",
+    "finishing-a-development-branch",
+    "receiving-code-review",
+    "requesting-code-review",
+    "using-git-worktrees",
+}
+superpowers = [
+    item for item in settings.get("packages", [])
+    if (item if isinstance(item, str) else item.get("source"))
+    == "git:https://github.com/obra/superpowers.git"
+]
+expected_filters = {f"skills/{name}/**" for name in retained_skills}
+if len(superpowers) != 1 or not isinstance(superpowers[0], dict):
+    errors.append("Superpowers must have exactly one filtered package entry")
+else:
+    filters = superpowers[0].get("skills")
+    if not isinstance(filters, list) or set(filters) != expected_filters:
+        errors.append(
+            "Superpowers skills must use the retained engineering allowlist; "
+            "writing-plans and executing-plans must remain local only"
+        )
+
+for name in ("writing-plans", "executing-plans"):
+    path = root / "pi/.pi/agent/skills" / name / "SKILL.md"
+    if not path.is_file():
+        errors.append(f"missing local workflow skill: {path}")
+        continue
+    try:
+        values = frontmatter(path)
+    except ValueError as error:
+        errors.append(str(error))
+        continue
+    if values.get("name") != name:
+        errors.append(f"{path}: expected skill name {name}")
+    if not values.get("description"):
+        errors.append(f"{path}: missing skill description")
+
 required_defaults = {
     "defaultProvider": "openai-codex",
     "defaultModel": "gpt-5.6-sol",
@@ -176,7 +219,7 @@ if errors:
     print("\\n".join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print("Pi agent models and defaults verified")
+print("Pi agent models, defaults, and local workflow skills verified")
 PY
 """
 

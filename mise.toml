@@ -202,7 +202,13 @@ check() {
     fi
 }
 
-check "brew bundle" brew bundle check --file={{config_root}}/Brewfile
+check "brew bundle" sh -c '
+brew_prefix=$(brew --prefix)
+PATH="$brew_prefix/bin:$brew_prefix/sbin:$HOME/.cargo/bin:$PATH"
+export PATH
+export HOMEBREW_NO_AUTO_UPDATE=1
+brew bundle check --no-upgrade --file="$1"
+' sh {{config_root}}/Brewfile
 check "stow available" command -v stow
 check "mise available" command -v mise
 check "mise tools installed" mise current

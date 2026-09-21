@@ -1,5 +1,6 @@
 {
   "maxConcurrent": 4,
+  "fallbackSubagent": "none",
   "defaultJoinMode": "smart",
   "schedulingEnabled": false,
   "scopeModels": false,

@@ -19,6 +19,11 @@ task. Do not expand scope, perform unrelated cleanup, or make product decisions
 silently. If the work is routine or mechanical, stop and recommend the Sol
 `worker` agent instead.
 
+Trace the relevant flow and use the first viable rung of the ordered Ponytail
+ladder in `AGENTS.md`. Avoid unsupported abstractions and speculative machinery.
+Preserve required tests, validation, and operational safeguards; fewer lines
+are not a reason to weaken clarity or maintainability.
+
 Before editing, identify the exact files you will touch. During implementation,
 keep changes isolated. After implementation, run the most relevant lightweight
 validation and report exact commands plus outcomes.

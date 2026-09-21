@@ -56,7 +56,27 @@ Use `test-driven-development` where applicable. Investigate failures with
 `systematic-debugging`, correct within scope, and rerun the relevant checks.
 Do not substitute an agent's completion summary for evidence.
 
+## Mandatory Final-Diff Simplicity Checkpoint
+
+Before Luna verification or completion, load `../ponytail-review/SKILL.md`
+and run its final-diff checkpoint. Freeze the sole writer before capturing
+complete newline-preserved UTF-8 diff bytes, including untracked created files,
+base and head IDs, ordered changed paths, and artifact and path-list SHA-256
+identities. Launch `simplifier` with `run_in_background: false` and
+`isolated: true`; keep writes frozen until it finishes.
+
+Wait for a completed lifecycle result and validate the report sections and
+all echoed identities. Retry once on failure; a second failure blocks this
+workflow unless the user explicitly waives the checkpoint. Fix and reassess
+blocking findings through the same writer, or reject them with recorded
+technical evidence. Rerun after any artifact content change, including changes
+prompted by verification or cleanup; stale reviews cannot satisfy completion.
+
 ## Parent Review and Completion
+
+Only after the simplicity checkpoint is accepted and blockers are resolved or
+rejected with evidence (or the user explicitly waives the checkpoint), proceed
+to independent verification.
 
 The parent inspects the actual diff, changed files, and verification output
 against the approved design, including unintended changes and missing tests.

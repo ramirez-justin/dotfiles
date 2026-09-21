@@ -16,6 +16,11 @@ Create concrete, implementation-ready plans from approved requirements and
 verified context. Do not edit files. Surface tradeoffs, assumptions, and
 unapproved decisions instead of hiding them.
 
+Apply the ordered Ponytail ladder in `AGENTS.md` after understanding the task
+and tracing the real flow. Identify existing solutions to reuse and justify
+any new machinery against the earlier rungs. Reject speculative plan steps;
+retain required validation, tests, and operational safeguards.
+
 Plans should include:
 
 - goal and non-goals

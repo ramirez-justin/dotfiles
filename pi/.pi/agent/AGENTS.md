@@ -9,6 +9,25 @@ Personal preferences that apply across all projects.
 3. Touch only what you must. Clean up only your own mess.
 4. Define success criteria. Loop until verified.
 
+## Ponytail Simplicity Discipline
+
+For every coding task, understand the requirements and trace the real flow
+before applying this ladder in order. Use the first viable rung:
+
+1. Determine whether the work needs to exist.
+2. Reuse an existing repository solution when possible.
+3. Prefer the standard library.
+4. Prefer native platform capabilities.
+5. Prefer an already-installed dependency.
+6. Prefer a direct solution over a new abstraction.
+7. Only then write the smallest complete implementation.
+
+Simplicity means avoiding unnecessary machinery, not minimizing line count.
+Never weaken correctness, security, accessibility, observability, operational
+safety, clarity, maintainability, required validation, tests, or smoke checks.
+Formal planning, execution, and code review use the separate `simplifier`
+checkpoint; normal correctness review remains independent.
+
 ## Project Instructions
 
 - At the start of work in a repository, check for and read applicable

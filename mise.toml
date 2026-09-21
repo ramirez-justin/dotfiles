@@ -78,6 +78,7 @@ expected = {
         "high",
     ),
     "reviewer.md": ("openai-codex/gpt-5.6-terra", "max"),
+    "simplifier.md": ("openai-codex/gpt-5.6-terra", "max"),
     "verifier.md": ("openai-codex/gpt-5.6-luna", "max"),
     "worker.md": ("openai-codex/gpt-5.6-sol", "medium"),
 }
@@ -113,6 +114,47 @@ for name, (model, thinking) in expected.items():
             f"{path}: expected thinking {thinking}, got "
             f"{values.get('thinking')}"
         )
+
+simplifier = agents / "simplifier.md"
+if simplifier.is_file():
+    values = frontmatter(simplifier)
+    for key, value in {"tools": "read, grep, find", "isolated": "true"}.items():
+        if values.get(key) != value:
+            errors.append(f"{simplifier}: expected {key}={value}")
+
+subagents_path = root / "pi/.pi/agent/subagents.json"
+subagents = json.loads(subagents_path.read_text())
+if subagents.get("fallbackSubagent") != "none":
+    errors.append(f"{subagents_path}: expected fallbackSubagent=none")
+
+changed_paths = set()
+for args in (
+    ["diff", "--name-only", "-z"],
+    ["diff", "--cached", "--name-only", "-z"],
+    ["ls-files", "--others", "--exclude-standard", "-z"],
+):
+    result = subprocess.run(
+        ["git", *args], check=True, capture_output=True, text=True,
+    )
+    changed_paths.update(result.stdout.split("\\0"))
+
+pi_root = pathlib.Path("pi/.pi/agent")
+markers = ("TODO", "TBD")
+instructions = {"AGENTS.md", "AGENT.local.md", "CLAUDE.md", "CLAUDE.local.md"}
+for name in sorted(changed_paths - {""}):
+    relative = pathlib.Path(name)
+    path = root / relative
+    if path.suffix.lower() != ".md" or not path.is_file():
+        continue
+    pi_markdown = relative.is_relative_to(pi_root) and (
+        relative.relative_to(pi_root).parts[0] in {"agents", "skills", "prompts"}
+        or path.name in instructions
+    )
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        if len(line) > 80:
+            errors.append(f"{relative}:{number}: line exceeds 80 characters")
+        if pi_markdown and any(marker in line for marker in markers):
+            errors.append(f"{relative}:{number}: unfinished marker")
 
 actual_files = {path.name for path in agents.glob("*.md")}
 extra_files = sorted(actual_files - set(expected))
@@ -168,7 +210,7 @@ else:
             "writing-plans and executing-plans must remain local only"
         )
 
-for name in ("writing-plans", "executing-plans"):
+for name in ("writing-plans", "executing-plans", "ponytail-review"):
     path = root / "pi/.pi/agent/skills" / name / "SKILL.md"
     if not path.is_file():
         errors.append(f"missing local workflow skill: {path}")

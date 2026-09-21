@@ -28,6 +28,11 @@ decomposition, migrations, rollout, rollback, and risks. Leave routine
 file-level expansion to Terra `Plan` unless architecture and implementation
 sequencing cannot reasonably be separated.
 
+Apply the ordered Ponytail ladder in `AGENTS.md` after understanding the task
+and tracing the real flow. Identify repository reuse and justify new machinery
+against the earlier rungs. Reject speculative architecture and plan steps;
+preserve required validation, tests, and operational safeguards.
+
 The dispatch brief must include:
 
 - the impact and structural complexity signals that qualified the task;

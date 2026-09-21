@@ -4,13 +4,18 @@ Personal macOS development environment managed with mise + GNU Stow + Homebrew +
 
 ## Stack
 
-| Tool                                                       | Role                                                           |
-| ---------------------------------------------------------- | -------------------------------------------------------------- |
-| [mise](https://mise.jdx.dev)                               | Task runner, tool version management                           |
-| [GNU Stow](https://www.gnu.org/software/stow/)             | Symlink management                                             |
-| [Homebrew](https://brew.sh)                                | Package management via `Brewfile`                              |
-| [1Password CLI](https://developer.1password.com/docs/cli/) | Secret injection                                               |
-| git branches                                               | Machine-specific config (`main` = personal, `gametime` = work) |
+| Tool | Role |
+| --- | --- |
+| [mise][mise] | Task runner and tool version management |
+| [GNU Stow][stow] | Symlink management |
+| [Homebrew][homebrew] | Package management via `Brewfile` |
+| [1Password CLI][onepassword] | Runtime credential resolution |
+| Git branches | Machine config (`main` = personal, `gametime` = work) |
+
+[mise]: https://mise.jdx.dev
+[stow]: https://www.gnu.org/software/stow/
+[homebrew]: https://brew.sh
+[onepassword]: https://developer.1password.com/docs/cli/
 
 ## Structure
 
@@ -29,7 +34,9 @@ dotfiles/
 ├── git/             # → ~/.gitconfig, ~/.config/git/
 ├── mise/            # → ~/.config/mise/
 ├── claude/          # → ~/.claude/settings.json, CLAUDE.md, statusline.sh
-├── pi/              # → ~/.pi/agent/settings.json, AGENTS.md, env.zsh, prompts/
+│                    #   tracked settings exclude runtime secret values
+├── pi/              # → ~/.pi/agent/ settings, agents, skills, extensions,
+│                    #   memory, MCP config, prompts, binaries, and tests
 ├── snowflake/       # → ~/.snowflake/connections.toml.example
 ├── eza/             # → ~/.config/eza/ (submodule: eza-themes)
 └── marimo/          # → ~/.config/marimo/
@@ -63,7 +70,8 @@ mise run bootstrap
 # 7. Authenticate Chalk through the browser with the work Google account
 chalk login
 
-# 8. Open a new shell, then create ~/.zshrc.local with machine-specific secrets
+# 8. Open a new shell, then create ~/.zshrc.local for machine-specific
+#    shell config
 # 9. Copy snowflake/.snowflake/connections.toml.example to
 #    ~/.snowflake/connections.toml and verify with:
 #    snow connection test -c default
@@ -93,11 +101,11 @@ git merge main
 
 ```bash
 mise run link            # re-stow all topics without package changes
-mise run update          # git pull --rebase + re-link
+mise run update          # git pull --rebase + re-link + Pi package updates
 
-# Agent credentials resolve from 1Password when Claude or Jira MCP starts.
-# Authenticate op before launching either tool.
-# After updating an existing machine, run: mise run migrate-agent-secrets
+# Agent integrations resolve credentials from 1Password at runtime.
+# Authenticate op before launching Pi or Claude Code.
+# After updating a legacy machine, run: mise run migrate-agent-secrets
 
 mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
 mise run chalk-install  # install/update Chalk CLI without full bootstrap
@@ -107,9 +115,9 @@ mise run chalk-install  # install/update Chalk CLI without full bootstrap
 
 # Pi personal workflows:
 # - Subagents: npm:@tintinweb/pi-subagents with model-tiered agents.
-#   Sol handles general and routine work, Luna/Terra handle specialist work,
-#   and Astra handles complex planning and implementation. Use /agents to
-#   manage.
+#   Sol handles routine work; Luna handles exploration and verification;
+#   Terra handles planning and review; Claude Sonnet handles research; and
+#   Astra handles complex planning and implementation. Use /agents to manage.
 # - Memory: ~/.pi/agent/memory/*.md, managed through the memory-management
 #   skill.
 # - Skill creation: use the skill-creation skill to draft local skills under
@@ -159,7 +167,10 @@ must not be copied into this repository.
 
 ## Machine-Specific Secrets
 
-Secrets never live in this repo. Each machine has a `~/.zshrc.local` (not committed) that sources credentials from 1Password:
+Raw secrets never live in this repo. Shell-only machine settings belong in
+`~/.zshrc.local` (not committed). Tracked agent configs contain no raw
+credentials. Secret reference files use 1Password item references, and
+launchers resolve their values at runtime.
 
 ```zsh
 # ~/.zshrc.local
@@ -177,7 +188,9 @@ export TG_ROLE_ARN="arn:aws:iam::..."   # non-secret, machine-specific
 ~/.zshrc        →  ~/Repositories/dotfiles/zsh/.zshrc          (real file here)
 ```
 
-So editing `~/.config/tmux/tmux.conf` edits through the symlink directly into the repo. The change is live immediately and already staged — just commit:
+Editing `~/.config/tmux/tmux.conf` edits through the symlink directly in the
+repo. The change is live immediately and appears in the worktree; stage and
+commit it normally:
 
 ```bash
 nvim ~/.config/tmux/tmux.conf   # edits the repo file via symlink

@@ -40,7 +40,7 @@ class AgentWorkflowContract(unittest.TestCase):
         packages = settings["packages"]
         sources = {package_source(entry) for entry in packages}
         self.assertIn("npm:@tintinweb/pi-subagents", sources)
-        self.assertIn("npm:pi-claude-code-provider", sources)
+        self.assertNotIn("npm:pi-claude-code-provider", sources)
         self.assertNotIn("npm:pi-intercom", sources)
 
         superpowers = next(
@@ -105,7 +105,7 @@ class AgentWorkflowContract(unittest.TestCase):
                 False,
             ),
             "researcher.md": (
-                "pi-claude-code-provider/sonnet",
+                "openai-codex/gpt-6-luna",
                 "high",
                 {"read", "grep", "find", "bash"},
                 False,

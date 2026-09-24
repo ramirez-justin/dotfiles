@@ -70,7 +70,7 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
   broad, unfamiliar subsystem.
 - Launch `Plan`, `reviewer`, or `oracle` on Terra with max reasoning for
   detailed planning, independent review, or assumption checks.
-- Launch `researcher` on Claude Sonnet with high reasoning for current external
+- Launch `researcher` on GPT-6 Luna with high reasoning for current external
   evidence.
 - Automatically launch `AstraPlan` for architecture planning when a task has
   either one impact signal plus two structural complexity signals, or at least

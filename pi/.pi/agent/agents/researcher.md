@@ -1,8 +1,8 @@
 ---
 description: Research agent for current external evidence.
-display_name: Researcher (Claude Sonnet)
+display_name: Researcher (Luna)
 tools: read, grep, find, bash
-model: pi-claude-code-provider/sonnet
+model: openai-codex/gpt-6-luna
 thinking: high
 max_turns: 24
 prompt_mode: append

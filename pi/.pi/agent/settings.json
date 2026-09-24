@@ -35,7 +35,6 @@
     "npm:@juicesharp/rpiv-todo",
     "npm:context-mode",
     "npm:pi-lens",
-    "npm:pi-claude-code-provider",
     "npm:@tintinweb/pi-subagents"
   ],
   "env": {

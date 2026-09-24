@@ -38,7 +38,13 @@ check() {
     fi
 }
 
-check "brew bundle" brew bundle check --file={{config_root}}/Brewfile
+check "brew bundle" sh -c '
+brew_prefix=$(brew --prefix)
+PATH="$brew_prefix/bin:$brew_prefix/sbin:$HOME/.cargo/bin:$PATH"
+export PATH
+export HOMEBREW_NO_AUTO_UPDATE=1
+brew bundle check --no-upgrade --file="$1"
+' sh {{config_root}}/Brewfile
 check "stow available" command -v stow
 check "mise available" command -v mise
 check "mise tools installed" mise current
@@ -83,21 +89,31 @@ echo "oh-my-zsh ready"
 """
 
 [tasks.link]
-description = "Stow all topics into $HOME"
-depends = ["brew-install"]
-run = "stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo aws lazygit rectangle sofia"
+description = "Stow all topics into $HOME without installing packages"
+run = """
+set -e
+if ! command -v stow >/dev/null 2>&1; then
+    echo "GNU Stow is required; run 'mise run brew-install' during bootstrap." >&2
+    exit 1
+fi
+stow --dir={{config_root}} --target=$HOME --restow zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo aws lazygit rectangle sofia
+"""
 
 [tasks.unlink]
 description = "Remove all stow symlinks"
 run = "stow --dir={{config_root}} --target=$HOME --delete zsh nvim tmux ghostty gh-dash gh git mise claude pi eza marimo aws lazygit rectangle sofia"
 
 [tasks.update]
-description = "Pull latest dotfiles and re-link"
-run = "git -C {{config_root}} pull --rebase && mise run link"
+description = "Pull latest dotfiles, re-link, and update Pi packages"
+run = "git -C {{config_root}} pull --rebase && mise run link && mise run pi-update"
 
 [tasks.pi-update]
 description = "Update Pi packages/extensions"
 run = "mise exec -- pi update --extensions"
+
+[tasks.check-agent-tiers]
+description = "Verify Pi agent tiers, strict routing, and local workflow skills"
+run = "python3 {{config_root}}/pi/.pi/agent/tests/test_agent_workflow.py -v"
 
 [tasks."hermes:install"]
 description = "Install Hermes Agent using the official installer"

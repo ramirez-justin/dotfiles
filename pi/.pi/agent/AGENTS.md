@@ -2,6 +2,25 @@
 
 Personal preferences that apply across all projects.
 
+## Ponytail Simplicity Discipline
+
+For every coding task, understand the requirements and trace the real flow
+before applying this ladder in order. Use the first viable rung:
+
+1. Determine whether the work needs to exist.
+2. Reuse an existing repository solution when possible.
+3. Prefer the standard library.
+4. Prefer native platform capabilities.
+5. Prefer an already-installed dependency.
+6. Prefer a direct solution over a new abstraction.
+7. Only then write the smallest complete implementation.
+
+Simplicity means avoiding unnecessary machinery, not minimizing line count.
+Never weaken correctness, security, accessibility, observability, operational
+safety, clarity, maintainability, required validation, tests, or smoke checks.
+Formal planning, execution, and code review use the separate `simplifier`
+checkpoint; normal correctness review remains independent.
+
 ## Project Instructions
 
 - At the start of work in a repository, check for and read applicable `CLAUDE.md`
@@ -42,6 +61,47 @@ than mandatory for every message. Prefer explicit workflow prompts for heavier p
 When a skill is used, briefly say which skill you are using and why. If we are
 deviating from an existing skill, suggest updates. If the work seems like a good
 candidate for a skill, suggest creating one.
+
+## Subagent Routing
+
+Use `@tintinweb/pi-subagents` when delegation materially improves the work:
+
+- Launch `Explore` on Luna with max reasoning before planning or debugging a
+  broad, unfamiliar subsystem.
+- Launch `Plan`, `reviewer`, or `oracle` on Terra with max reasoning for
+  detailed planning, independent review, or assumption checks.
+- Launch `researcher` on Claude Sonnet with high reasoning for current external
+  evidence.
+- Automatically launch `AstraPlan` for architecture planning when a task has
+  either one impact signal plus two structural complexity signals, or at least
+  three structural complexity signals. Impact signals are production, data,
+  security, compliance, significant cost, public-contract, hard-to-reverse, or
+  difficult-rollback risk. Structural signals are three or more systems or
+  contracts; migration, backfill, compatibility, cutover, or rollback work;
+  conflicting requirements or multiple viable architectures; or evidence that
+  spans source, history, current documentation, and ownership boundaries.
+- For qualifying tasks, gather missing evidence once with `Explore` or
+  `researcher`, give `AstraPlan` a curated brief and escalation justification,
+  then use Terra `Plan` only to expand the architecture into file-level steps.
+  Skip Terra when architecture and sequencing cannot reasonably be separated.
+- Do not escalate based only on file count, prompt length, or a request for
+  thoroughness. Do not ask multiple agents to recreate the same plan.
+- Launch exactly one `worker` on Sol for routine or mechanical writes, or one
+  `implementer` on Astra with low reasoning for approved, nontrivial
+  implementation work. The delegated agent is the single writer; do not edit
+  the same worktree concurrently in the parent.
+- Launch `verifier` on Luna with max reasoning for independent validation of
+  meaningful changes before claiming completion.
+- Keep direct work in the Sol parent for small, clear tasks where delegation
+  would add more overhead than value.
+
+Explicit per-call model overrides require a task-specific reason and do not
+change the default routing matrix.
+
+The parent remains accountable for routing, scope, decisions, reviewing actual
+changes, and user-facing claims. Keep Notion, SOFIA durable-memory, production,
+cloud, and other external mutations in the parent by default, with all existing
+preview and approval gates.
 
 ## Tool Preferences
 

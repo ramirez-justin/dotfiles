@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.80.3",
+  "lastChangelogVersion": "0.87.1",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.5",
+  "defaultModel": "gpt-6-sol",
   "defaultThinkingLevel": "medium",
   "theme": "rose-pine",
   "powerline": {
@@ -17,8 +17,6 @@
       "source": "git:https://github.com/obra/superpowers.git@v5.0.7",
       "skills": [
         "skills/brainstorming/**",
-        "skills/writing-plans/**",
-        "skills/executing-plans/**",
         "skills/systematic-debugging/**",
         "skills/test-driven-development/**",
         "skills/verification-before-completion/**",
@@ -36,7 +34,9 @@
     "npm:pi-powerline-footer",
     "npm:@juicesharp/rpiv-todo",
     "npm:context-mode",
-    "npm:pi-lens"
+    "npm:pi-lens",
+    "npm:pi-claude-code-provider",
+    "npm:@tintinweb/pi-subagents"
   ],
   "env": {
     "POWERLINE_NERD_FONTS": 1

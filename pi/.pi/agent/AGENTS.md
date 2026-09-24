@@ -98,9 +98,9 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 - Do not escalate based only on file count, prompt length, or a request for
   thoroughness. Do not ask multiple agents to recreate the same plan.
 - Launch exactly one `worker` on Sol for routine or mechanical writes, or one
-  `implementer` on Astra with low reasoning for approved, nontrivial
-  implementation work. Do not edit the same worktree concurrently in the
-  parent.
+  `implementer` on Claude Code Opus with medium reasoning for approved,
+  nontrivial implementation work. Do not edit the same worktree concurrently
+  in the parent.
 - Launch `verifier` on Luna with max reasoning for independent validation of
   meaningful changes before claiming completion.
 - Keep direct work in the Sol parent for small, clear tasks where delegation

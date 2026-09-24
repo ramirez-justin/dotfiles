@@ -1,9 +1,9 @@
 ---
-description: Astra implementation agent for approved nontrivial work.
-display_name: Implementer (Astra)
+description: Opus implementation agent for approved nontrivial work.
+display_name: Implementer (Opus)
 tools: read, grep, find, bash, edit, write
-model: openai-codex/gpt-6-astra
-thinking: low
+model: pi-claude-code-provider/opus
+thinking: medium
 max_turns: 30
 prompt_mode: append
 ---

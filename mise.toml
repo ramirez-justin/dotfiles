@@ -70,7 +70,7 @@ settings_path = root / "pi/.pi/agent/settings.json"
 expected = {
     "AstraPlan.md": ("openai-codex/gpt-6-astra", "max"),
     "Explore.md": ("openai-codex/gpt-6-luna", "max"),
-    "implementer.md": ("openai-codex/gpt-6-astra", "low"),
+    "implementer.md": ("pi-claude-code-provider/opus", "medium"),
     "oracle.md": ("openai-codex/gpt-5.6-terra", "max"),
     "Plan.md": ("openai-codex/gpt-5.6-terra", "max"),
     "researcher.md": (

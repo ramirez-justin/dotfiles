@@ -2,7 +2,7 @@
 description: Balanced single-writer implementation agent.
 display_name: Worker (Sol)
 tools: read, grep, find, bash, edit, write
-model: openai-codex/gpt-5.6-sol
+model: openai-codex/gpt-6-sol
 thinking: medium
 max_turns: 30
 prompt_mode: append

@@ -69,7 +69,7 @@ settings_path = root / "pi/.pi/agent/settings.json"
 
 expected = {
     "AstraPlan.md": ("openai-codex/gpt-6-astra", "max"),
-    "Explore.md": ("openai-codex/gpt-5.6-luna", "max"),
+    "Explore.md": ("openai-codex/gpt-6-luna", "max"),
     "implementer.md": ("openai-codex/gpt-6-astra", "low"),
     "oracle.md": ("openai-codex/gpt-5.6-terra", "max"),
     "Plan.md": ("openai-codex/gpt-5.6-terra", "max"),
@@ -79,8 +79,8 @@ expected = {
     ),
     "reviewer.md": ("openai-codex/gpt-5.6-terra", "max"),
     "simplifier.md": ("openai-codex/gpt-5.6-terra", "max"),
-    "verifier.md": ("openai-codex/gpt-5.6-luna", "max"),
-    "worker.md": ("openai-codex/gpt-5.6-sol", "medium"),
+    "verifier.md": ("openai-codex/gpt-6-luna", "max"),
+    "worker.md": ("openai-codex/gpt-6-sol", "medium"),
 }
 
 
@@ -227,7 +227,7 @@ for name in ("writing-plans", "executing-plans", "ponytail-review"):
 
 required_defaults = {
     "defaultProvider": "openai-codex",
-    "defaultModel": "gpt-5.6-sol",
+    "defaultModel": "gpt-6-sol",
     "defaultThinkingLevel": "medium",
 }
 for key, value in required_defaults.items():

@@ -21,7 +21,8 @@ Keep the existing specialized routing unchanged:
 - planning and review remain on GPT-5.6 Terra;
 - Oracle architecture decisions, complex planning, and implementation remain on
   GPT-6 Astra;
-- external research remains on Claude Sonnet.
+- external research uses GPT-6 Luna while personal Claude access is unavailable;
+  see `2026-09-24-personal-researcher-fallback-design.md`.
 
 Before changing the contract or configuration, confirm both GPT-6 aliases in
 Pi's offline model catalog. Then update the workflow contract before the

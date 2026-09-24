@@ -79,8 +79,10 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
-- Launch `Plan`, `reviewer`, or `oracle` on Terra with max reasoning for
-  detailed planning, independent review, or assumption checks.
+- Launch `Plan` or `reviewer` on Terra with max reasoning for detailed
+  planning or independent review.
+- Launch `oracle` on Astra with high reasoning for hard decisions
+  and assumption checks; give it a specific decision and curated evidence.
 - Launch `researcher` on Claude Sonnet with high reasoning for current external
   evidence.
 - Automatically launch `AstraPlan` for architecture planning when a task has

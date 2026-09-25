@@ -7,7 +7,10 @@ Use `requesting-code-review` for the correctness review and load
 `../skills/ponytail-review/SKILL.md` for the separate simplicity checkpoint.
 Inspect the current diff and relevant files before conclusions.
 
-For every explicitly requested review, including small reviews, launch both:
+For every explicitly requested review, including small reviews, freeze writes
+and capture one complete diff with the identities required by `ponytail-review`.
+Give both agents that same frozen diff and approved requirements, and dispatch
+them concurrently:
 
 - A read-only `reviewer` with `run_in_background: false` for correctness,
   safety, regressions, and test coverage. Explicitly forbid edits.
@@ -15,18 +18,19 @@ For every explicitly requested review, including small reviews, launch both:
   `isolated: true` for unnecessary machinery only, following the complete
   artifact capture and identity contract in `ponytail-review`.
 
-Freeze writes during review. Wait for both completed lifecycle results before
+Keep writes frozen and wait for both completed lifecycle results before
 concluding; neither review substitutes for the other. Validate the simplifier
 report sections and echoed identities. Retry a failed dispatch, collection,
 malformed, substituted, or mismatched simplicity result once, then block unless
 explicitly waived by the user. An incomplete correctness review also blocks
 review completion; never present it as a successful review.
 
-Personally verify findings before posting or acting. Resolve every blocking
-simplicity finding by fixing and reassessing it or rejecting it with recorded
-technical evidence. Never apply findings automatically. Any content change
-requires a fresh simplicity artifact and review; refresh correctness review
-for changed code as well.
+Personally verify both sets of findings before posting or acting. Consolidate
+justified corrections into one pass with the existing writer. Resolve every
+blocking simplicity finding by fixing and reassessing it or rejecting it with
+recorded technical evidence. Never apply findings automatically. Any content
+change requires a fresh simplicity artifact and review; refresh correctness
+review for changed code as well.
 
 Review context:
 

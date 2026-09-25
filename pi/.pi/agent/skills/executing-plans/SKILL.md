@@ -64,14 +64,20 @@ and run its final-diff checkpoint. Freeze the sole writer before capturing
 complete newline-preserved UTF-8 diff bytes, including untracked created files,
 base and head IDs, ordered changed paths, and artifact and path-list SHA-256
 identities. Launch `simplifier` with `run_in_background: false` and
-`isolated: true`; keep writes frozen until it finishes.
+`isolated: true`. If a correctness review is already required or requested,
+launch a read-only `reviewer` with `run_in_background: false` concurrently on
+that same frozen diff and approved requirements; do not add an extra reviewer
+just for this checkpoint. Keep writes frozen until both reviews finish.
 
-Wait for a completed lifecycle result and validate the report sections and
-all echoed identities. Retry once on failure; a second failure blocks this
-workflow unless the user explicitly waives the checkpoint. Fix and reassess
-blocking findings through the same writer, or reject them with recorded
-technical evidence. Rerun after any artifact content change, including changes
-prompted by verification or cleanup; stale reviews cannot satisfy completion.
+Wait for completed lifecycle results and validate the simplifier's report
+sections and echoed identities. Retry a failed simplicity review once; a
+second failure blocks this workflow unless the user explicitly waives the
+checkpoint. A requested correctness review must also complete. Verify all
+findings, then send justified corrections to the same writer in one pass;
+reject findings with recorded technical evidence. Rerun simplicity review
+after any artifact content change, including changes
+prompted by verification or cleanup; refresh correctness review for changed
+code. Unchanged reviews need not be repeated.
 
 ## Parent Review and Completion
 

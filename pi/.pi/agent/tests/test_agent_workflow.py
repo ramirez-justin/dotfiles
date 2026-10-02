@@ -210,6 +210,10 @@ class AgentWorkflowContract(unittest.TestCase):
         config = tomllib.loads((REPO_ROOT / "mise.toml").read_text())
         tasks = config["tasks"]
         self.assertIn("check-agent-tiers", tasks)
+        tier_checks = " ".join(tasks["check-agent-tiers"]["run"])
+        self.assertIn("test_agent_workflow.py", tier_checks)
+        self.assertIn("node --test", tier_checks)
+        self.assertIn("subagent-routing.test.mjs", tier_checks)
         self.assertNotIn("depends", tasks["link"])
         self.assertIn("command -v stow", tasks["link"]["run"])
         self.assertIn("mise run pi-update", tasks["update"]["run"])

@@ -113,7 +113,10 @@ run = "mise exec -- pi update --extensions"
 
 [tasks.check-agent-tiers]
 description = "Verify Pi agent tiers, strict routing, and local workflow skills"
-run = "python3 {{config_root}}/pi/.pi/agent/tests/test_agent_workflow.py -v"
+run = [
+  "python3 {{config_root}}/pi/.pi/agent/tests/test_agent_workflow.py -v",
+  "node --test {{config_root}}/pi/.pi/agent/tests/subagent-routing.test.mjs",
+]
 
 [tasks."hermes:install"]
 description = "Install Hermes Agent using the official installer"

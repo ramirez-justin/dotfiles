@@ -48,7 +48,8 @@ checkpoint; normal correctness review remains independent.
 ## Workflow Skills
 
 Use pi skills when they clearly match the task, but keep them on-demand rather
-than mandatory for every message. Prefer explicit workflow prompts for heavier processes:
+than mandatory for every message. These workflow prompts are optional shortcuts,
+not prerequisites for acting on ordinary requests:
 
 - `/brainstorm` for collaborative design before implementation
 - `/write-plan` for producing an implementation plan
@@ -64,7 +65,9 @@ candidate for a skill, suggest creating one.
 
 ## Subagent Routing
 
-Use `@tintinweb/pi-subagents` when delegation materially improves the work:
+On ordinary requests, automatically evaluate whether delegation improves the work;
+do not wait for a workflow command or ask for permission merely to delegate. Use
+`@tintinweb/pi-subagents` when delegation materially improves the work:
 
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
@@ -94,7 +97,9 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 - Launch `verifier` on Luna with max reasoning for independent validation of
   meaningful changes before claiming completion.
 - Keep direct work in the Sol parent for small, clear tasks where delegation
-  would add more overhead than value.
+  would add more overhead than value. Do not force delegation for conversational
+  or retrieval requests. Use `Agent` for ordinary automatic delegation; reserve
+  `SubagentWorkflow` for explicit opt-in to a scripted workflow.
 
 Explicit per-call model overrides require a task-specific reason and do not
 change the default routing matrix. All models route through the `litellm`

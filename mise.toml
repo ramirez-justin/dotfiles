@@ -452,9 +452,14 @@ run = "git -C {{config_root}} submodule update --remote --merge"
 [tasks.nvim-update]
 description = "Update nvim to latest and commit the pointer"
 run = """
+  set -e
   git -C {{config_root}} submodule update --remote --merge nvim/.config/nvim
-  git -C {{config_root}} add nvim/.config/nvim
-  git -C {{config_root}} commit -m "chore: update nvim to latest"
+  git -C {{config_root}} add -- nvim/.config/nvim
+  if git -C {{config_root}} diff --cached --quiet HEAD -- nvim/.config/nvim; then
+    echo "nvim submodule is already up to date"
+    exit 0
+  fi
+  git -C {{config_root}} commit --only -m "chore(nvim): update config submodule" -- nvim/.config/nvim
 """
 
 [tasks.migrate-agent-secrets]

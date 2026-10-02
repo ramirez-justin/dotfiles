@@ -227,7 +227,7 @@ for name in ("writing-plans", "executing-plans", "ponytail-review"):
 
 required_defaults = {
     "defaultProvider": "openai-codex",
-    "defaultModel": "gpt-6-sol",
+    "defaultModel": "gpt-6.1-sol",
     "defaultThinkingLevel": "medium",
 }
 for key, value in required_defaults.items():

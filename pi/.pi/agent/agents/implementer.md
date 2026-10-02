@@ -1,9 +1,9 @@
 ---
 description: Opus implementation agent for approved nontrivial work.
-display_name: Implementer (Opus)
+display_name: Implementer (Opus 5.5)
 tools: read, grep, find, bash, edit, write
-model: pi-claude-code-provider/opus
-thinking: medium
+model: anthropic/claude-opus-5-5
+thinking: high
 max_turns: 30
 prompt_mode: append
 ---

@@ -26,15 +26,16 @@ Durable workflow conventions for Justin's Pi sessions.
   assumptions need challenge.
 - Use `/finish` before claiming implementation work is complete. Launch
   `verifier` for independent evidence on meaningful changes.
-- Use `@tintinweb/pi-subagents` when delegation adds value: run Luna and Terra
-  agents with max reasoning, `oracle` on Astra with high reasoning,
-  Researcher on Claude Sonnet with high reasoning, Sol with medium reasoning,
-  and `implementer` on Claude Code Opus with medium reasoning for approved
-  nontrivial execution. Reserve `AstraPlan` for the automatic
-  high-complexity gate in `AGENTS.md`. For qualifying tasks, gather
-  evidence once, use Astra for architecture, then use Terra only for file-level
-  expansion unless sequencing is inseparable. The parent remains accountable
-  for routing, decisions, mutations, and claims.
+- Use `@tintinweb/pi-subagents` when delegation adds value: `Explore`,
+  `reviewer`, and `simplifier` run on GPT-6 Luna with max reasoning; `Plan`
+  uses GPT-6.1 Sol with xhigh reasoning; `worker` uses GPT-6.1 Sol with high
+  reasoning; `oracle` and `AdvancedPlan` use Claude Opus 5.5 with max
+  reasoning; `implementer` uses Claude Opus 5.5 with high reasoning; and
+  `researcher` uses Claude Sonnet with high reasoning. Reserve `AdvancedPlan`
+  for the automatic high-complexity gate in `AGENTS.md`. For qualifying tasks,
+  gather evidence once, use `AdvancedPlan` for architecture, then `Plan` only
+  for useful file-level expansion unless sequencing is inseparable. The parent
+  remains accountable for routing, decisions, mutations, and claims.
 - Do not use subagents by default for Linear, Notion, Snowflake, or Cortex
   mutations. Keep preview-before-mutation approval in the parent session.
 - When reviewing PR comments, inspect both GitHub review threads and any linked

@@ -79,13 +79,15 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
-- Launch `Plan` or `reviewer` on Terra with max reasoning for detailed
-  planning or independent review.
-- Launch `oracle` on Astra with high reasoning for hard decisions
-  and assumption checks; give it a specific decision and curated evidence.
+- Launch `Plan` on GPT-6.1 Sol with xhigh reasoning for detailed planning.
+- Launch `reviewer` and `simplifier` on GPT-6 Luna with max reasoning for
+  independent correctness and simplicity review, respectively.
+- Launch `oracle` on Claude Opus 5.5 with max reasoning for hard decisions and
+  assumption checks; give it a specific decision and curated evidence.
 - Launch `researcher` on Claude Sonnet with high reasoning for current external
   evidence.
-- Automatically launch `AstraPlan` for architecture planning when a task has
+- Automatically launch `AdvancedPlan` on Claude Opus 5.5 with max reasoning for
+  architecture planning when a task has
   either one impact signal plus two structural complexity signals, or at least
   three structural complexity signals. Impact signals are production, data,
   security, compliance, significant cost, public-contract, hard-to-reverse, or
@@ -94,15 +96,15 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
   conflicting requirements or multiple viable architectures; or evidence that
   spans source, history, current documentation, and ownership boundaries.
 - For qualifying tasks, gather missing evidence once with `Explore` or
-  `researcher`, give `AstraPlan` a curated brief and escalation justification,
-  then use Terra `Plan` only to expand the architecture into file-level steps.
-  Skip Terra when architecture and sequencing cannot reasonably be separated.
+  `researcher`, give `AdvancedPlan` a curated brief and escalation
+  justification, then use `Plan` only for file-level expansion. Skip `Plan`
+  when architecture and sequencing cannot reasonably be separated.
 - Do not escalate based only on file count, prompt length, or a request for
   thoroughness. Do not ask multiple agents to recreate the same plan.
-- Launch exactly one `worker` on Sol for routine or mechanical writes, or one
-  `implementer` on Claude Code Opus with medium reasoning for approved,
-  nontrivial implementation work. Do not edit the same worktree concurrently
-  in the parent.
+- Launch exactly one `worker` on GPT-6.1 Sol with high reasoning for routine or
+  mechanical writes, or one `implementer` on Claude Opus 5.5 with high
+  reasoning for approved, nontrivial implementation work. Do not edit the same
+  worktree concurrently in the parent.
 - Launch `verifier` on Luna with max reasoning for independent validation of
   meaningful changes before claiming completion.
 - Keep direct work in the Sol parent for small, clear tasks where delegation
@@ -163,8 +165,9 @@ commands, add an idempotent script/task/check in dotfiles when practical.
 ## MCP-backed Workspace Tools
 
 This Pi setup uses `pi-mcp-adapter` for MCP. Do not assume Pi lacks MCP support;
-inspect `~/.pi/agent/mcp.json`, `.mcp.json`, or `.pi/mcp.json` and use the
-adapter's `mcp` proxy/direct tools when relevant servers are configured.
+inspect `~/.pi/agent/mcp-adapter.json`, `.mcp.json`, or
+`.pi/mcp-adapter.json` and use the adapter's `mcp` proxy/direct tools when
+relevant servers are configured.
 
 - Prefer official remote MCP servers over ad hoc scripts for supported workspace
   tools such as Linear and Notion.

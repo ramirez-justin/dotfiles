@@ -68,19 +68,19 @@ agents = root / "pi/.pi/agent/agents"
 settings_path = root / "pi/.pi/agent/settings.json"
 
 expected = {
-    "AstraPlan.md": ("openai-codex/gpt-6-astra", "max"),
+    "AdvancedPlan.md": ("anthropic/claude-opus-5-5", "max"),
     "Explore.md": ("openai-codex/gpt-6-luna", "max"),
-    "implementer.md": ("pi-claude-code-provider/opus", "medium"),
-    "oracle.md": ("openai-codex/gpt-6-astra", "high"),
-    "Plan.md": ("openai-codex/gpt-5.6-terra", "max"),
+    "implementer.md": ("anthropic/claude-opus-5-5", "high"),
+    "oracle.md": ("anthropic/claude-opus-5-5", "max"),
+    "Plan.md": ("openai-codex/gpt-6.1-sol", "xhigh"),
     "researcher.md": (
         "pi-claude-code-provider/sonnet",
         "high",
     ),
-    "reviewer.md": ("openai-codex/gpt-5.6-terra", "max"),
-    "simplifier.md": ("openai-codex/gpt-5.6-terra", "max"),
+    "reviewer.md": ("openai-codex/gpt-6-luna", "max"),
+    "simplifier.md": ("openai-codex/gpt-6-luna", "max"),
     "verifier.md": ("openai-codex/gpt-6-luna", "max"),
-    "worker.md": ("openai-codex/gpt-6-sol", "medium"),
+    "worker.md": ("openai-codex/gpt-6.1-sol", "high"),
 }
 
 

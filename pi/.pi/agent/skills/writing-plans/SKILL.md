@@ -17,8 +17,8 @@ Do not use this workflow for a trivial edit or to invent an unapproved design.
 - Resolve material ambiguity before planning. Keep scope minimal; do not add
   speculative features or unrelated restructuring.
 - Follow the planning escalation gate in `AGENTS.md`. Use `Explore` for broad,
-  unfamiliar code; use `AstraPlan` only when the gate qualifies, with a curated
-  evidence brief. Use Terra `Plan` for useful file-level expansion, not to
+  unfamiliar code; use `AdvancedPlan` only when the gate qualifies, with a
+  curated evidence brief. Use `Plan` for useful file-level expansion, not to
   recreate an architecture or duplicate an earlier planning pass.
 
 ## Write the Plan

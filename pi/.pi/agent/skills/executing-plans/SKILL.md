@@ -27,9 +27,9 @@ for every plan. Preserve unrelated changes and respect branch restrictions.
 
 Automatically choose one writer using the routing definitions in `AGENTS.md`:
 
-- `worker` on Sol for routine or mechanical writes.
-- `implementer` on Claude Code Opus with medium reasoning for approved
-  nontrivial work.
+- `worker` on GPT-6.1 Sol with high reasoning for routine or mechanical writes.
+- `implementer` on Claude Opus 5.5 with high reasoning for approved nontrivial
+  work.
 
 Give the writer the approved plan, evidence, exact scope, constraints,
 and verification commands. Keep the same writer responsible for corrections;

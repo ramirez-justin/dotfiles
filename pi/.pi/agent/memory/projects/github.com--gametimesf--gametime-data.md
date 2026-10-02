@@ -39,6 +39,18 @@ Stable facts for `github.com/gametimesf/gametime-data`.
   future grants for the same object type in that schema. Avoid adding schema
   future grants casually in `RAW_DB` or `SOURCE_DB` because they can bypass
   database-level future-grant expectations.
+- With inherited grants, a role may `SELECT` and `SHOW` schema objects while
+  `INFORMATION_SCHEMA` hides them if the account's `2026_07` behavior bundle
+  is disabled. BCR-2416 fixes that metadata gap. Check the live account,
+  role, bundle status, and metadata counts before refreshing a BI schema
+  model; a hard refresh can remove generated definitions. Enabling a bundle
+  affects unrelated account behavior and requires explicit approval.
+- For Snowflake RBAC migrations, source changes, approved saved plans and
+  strict Terraform before/after checks, grant metadata, and ordinary-role
+  access are separate evidence gates. `snowflake_state_inventory.py` reads
+  state from stdin and counts tracked instances, not live Snowflake objects
+  or effective access. Keep raw state, plans, and grant rows out of Git and
+  chat.
 - Treat all `RFD__*` and `TRF__*` Snowflake schemas as transitional. Their
   models will be migrated or succeeded by new tables, so do not establish them
   as durable consumer contracts; prefer stable ADL products or named successors.

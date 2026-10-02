@@ -157,8 +157,8 @@ Then start a session and verify:
 
 Pi setting | Hermes equivalent
 --- | ---
-`defaultProvider: openai-codex` | `model.provider: openai-codex`
-`defaultModel: gpt-5.5` | `model.default: gpt-5.5`
+`defaultProvider: litellm` | `model.provider: openai-codex`
+`defaultModel: openai/gpt-6.1-sol` | `model.default: gpt-6.1-sol`
 `defaultThinkingLevel: medium` | `agent.reasoning_effort: medium`
 `theme: rose-pine` | `display.skin: rose-pine` + `skins/rose-pine.yaml`
 `pi-mcp-adapter` | Hermes native `mcp_servers`

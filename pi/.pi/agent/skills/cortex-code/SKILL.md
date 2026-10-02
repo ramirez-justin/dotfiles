@@ -38,6 +38,12 @@ Cortex Code also needs a configured Snowflake CLI connection:
 snow connection test -c default
 ```
 
+For either `cortex_run` or the CLI fallback, verify the actual organization,
+account, role, and secondary roles on the connection used for account-specific
+work. A connection test proves reachability, not authority. If the connection
+is wrong or lacks grant visibility, use a separately verified account-specific
+connection instead; never rely on a previous session's authority.
+
 Do not print secrets, private keys, passphrases, decrypted values, or raw
 credential files.
 
@@ -54,7 +60,7 @@ Prefer the `cortex_run` tool when it is available.
 
 Use `envelope: "RO"` for read-only requests:
 
-- `select`
+- ordinary `select`
 - `show`
 - `describe` / `desc`
 - `explain`
@@ -69,6 +75,9 @@ Use `envelope: "RW"` only after explicit user approval for mutations:
 - warehouse resize/suspend/resume
 - task, pipe, stream, dynamic table changes
 
+A `SELECT` that invokes a side-effecting function, such as
+`SYSTEM$ENABLE_BEHAVIOR_CHANGE_BUNDLE`, also requires RW approval.
+
 For follow-up Snowflake questions, set `resumeLast: true` so Cortex keeps prior
 context.
 
@@ -77,14 +86,17 @@ context.
 If the tool is unavailable, run the Snowflake AI Kit wrapper directly:
 
 ```sh
-python3 -u "$SNOWFLAKE_AI_KIT_ROOT/plugins/cortex-code/scripts/router/execute_cortex.py" \
+python3 -u \
+"$SNOWFLAKE_AI_KIT_ROOT/plugins/cortex-code/scripts/router/execute_cortex.py" \
   --prompt "<USER_PROMPT>" \
   --envelope RO \
   --codex
 ```
 
-Add `--resume-last` for follow-up prompts. Use `--envelope RW` only after
-explicit approval.
+For a non-default account, pass `--connection <verified-name>` to the
+wrapper and check authority in that request. Do not silently reuse the
+default connection. Add `--resume-last` for follow-up prompts. Use
+`--envelope RW` only after explicit approval.
 
 ## Safety
 

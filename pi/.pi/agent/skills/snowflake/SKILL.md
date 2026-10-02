@@ -27,6 +27,13 @@ Snowflake username and local key-pair authentication with the private key path
 under `~/.ssh`. Do not print or copy private-key material, passphrases,
 passwords, 1Password values, or decrypted secrets.
 
+Before account-specific work, check `CURRENT_ORGANIZATION_NAME()`,
+`CURRENT_ACCOUNT_NAME()`, `CURRENT_ROLE()`, and `CURRENT_SECONDARY_ROLES()`
+on the connection you will actually use. Do not infer authority from a profile
+name or another session; stop if the account or role is wrong. For grant
+inventories, verify that the role has sufficient visibility and that the
+capture completed without cancellation or omitted sections.
+
 For interactive SSO, use the configured Okta/browser connection. It uses the
 same verified role and warehouse as the default JWT connection:
 
@@ -58,12 +65,14 @@ For read-only troubleshooting, run focused queries with `snowsql -c ssh
 
 Read-only operations are OK without extra approval:
 
-- `select`
+- ordinary `select` (not a call to a side-effecting system function)
 - `show`
 - `describe` / `desc`
 - `explain`
 - `with ... select`
 
+Classify SQL by effect, not its first verb: for example,
+`SELECT SYSTEM$ENABLE_BEHAVIOR_CHANGE_BUNDLE(...)` changes account behavior.
 For anything that mutates data, schema, security, warehouses, tasks, pipes, or
 streams, preview the exact SQL and ask for explicit approval before running it.
 This includes:

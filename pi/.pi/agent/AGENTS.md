@@ -68,8 +68,9 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
 
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
-- Launch `Plan`, `reviewer`, or `oracle` on Terra with max reasoning for
-  detailed planning, independent review, or assumption checks.
+- Launch `Plan` or `reviewer` on Terra with max reasoning for detailed
+  planning or independent review, or `oracle` on Astra with max reasoning for
+  hard decisions and assumption checks.
 - Launch `researcher` on GPT-6 Luna with high reasoning for current external
   evidence.
 - Automatically launch `AstraPlan` for architecture planning when a task has
@@ -96,7 +97,10 @@ Use `@tintinweb/pi-subagents` when delegation materially improves the work:
   would add more overhead than value.
 
 Explicit per-call model overrides require a task-specific reason and do not
-change the default routing matrix.
+change the default routing matrix. All models route through the `litellm`
+provider; pass full IDs such as `litellm/openai/gpt-6-luna` or
+`litellm/anthropic/claude-sonnet-5`. Short names like `gpt-6-luna` can match
+`openai-codex` exactly and bypass the gateway.
 
 The parent remains accountable for routing, scope, decisions, reviewing actual
 changes, and user-facing claims. Keep Notion, SOFIA durable-memory, production,

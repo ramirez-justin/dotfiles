@@ -2,7 +2,7 @@
 description: High-reasoning review agent for diffs, plans, and PRs.
 display_name: Reviewer (Terra)
 tools: read, grep, find, bash
-model: openai-codex/gpt-5.6-terra
+model: litellm/openai/gpt-5.6-terra
 thinking: max
 max_turns: 24
 prompt_mode: append

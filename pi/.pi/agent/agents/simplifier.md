@@ -2,7 +2,7 @@
 description: Read-only Ponytail review for plans and diffs.
 display_name: Simplifier (Terra)
 tools: read, grep, find
-model: openai-codex/gpt-5.6-terra
+model: litellm/openai/gpt-5.6-terra
 thinking: max
 max_turns: 24
 isolated: true

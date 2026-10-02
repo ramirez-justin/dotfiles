@@ -3,7 +3,7 @@ name: AstraPlan
 description: Architecture planning for qualified, highly complex tasks.
 display_name: Astra Plan (GPT-6)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6-astra
+model: litellm/openai/gpt-6-astra
 thinking: max
 max_turns: 20
 isolated: true

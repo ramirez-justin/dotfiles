@@ -2,7 +2,7 @@
 description: Astra implementation agent for approved nontrivial work.
 display_name: Implementer (Astra)
 tools: read, grep, find, bash, edit, write
-model: openai-codex/gpt-6-astra
+model: litellm/openai/gpt-6-astra
 thinking: low
 max_turns: 30
 prompt_mode: append

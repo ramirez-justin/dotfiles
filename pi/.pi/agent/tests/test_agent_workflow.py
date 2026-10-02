@@ -36,7 +36,8 @@ def package_source(entry: object) -> str:
 class AgentWorkflowContract(unittest.TestCase):
     def test_package_selection(self) -> None:
         settings = json.loads((AGENT_ROOT / "settings.json").read_text())
-        self.assertEqual(settings["defaultModel"], "gpt-6-sol")
+        self.assertEqual(settings["defaultProvider"], "litellm")
+        self.assertEqual(settings["defaultModel"], "openai/gpt-6.1-sol")
         packages = settings["packages"]
         sources = {package_source(entry) for entry in packages}
         self.assertIn("npm:@tintinweb/pi-subagents", sources)
@@ -75,61 +76,61 @@ class AgentWorkflowContract(unittest.TestCase):
     def test_agent_role_contracts(self) -> None:
         expected = {
             "AstraPlan.md": (
-                "openai-codex/gpt-6-astra",
+                "litellm/openai/gpt-6-astra",
                 "max",
                 {"read", "grep", "find", "bash"},
                 True,
             ),
             "Explore.md": (
-                "openai-codex/gpt-6-luna",
+                "litellm/openai/gpt-6-luna",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "Plan.md": (
-                "openai-codex/gpt-5.6-terra",
+                "litellm/openai/gpt-5.6-terra",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "implementer.md": (
-                "openai-codex/gpt-6-astra",
+                "litellm/openai/gpt-6-astra",
                 "low",
                 {"read", "grep", "find", "bash", "edit", "write"},
                 False,
             ),
             "oracle.md": (
-                "openai-codex/gpt-6-astra",
+                "litellm/openai/gpt-6-astra",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "researcher.md": (
-                "openai-codex/gpt-6-luna",
+                "litellm/openai/gpt-6-luna",
                 "high",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "reviewer.md": (
-                "openai-codex/gpt-5.6-terra",
+                "litellm/openai/gpt-5.6-terra",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "simplifier.md": (
-                "openai-codex/gpt-5.6-terra",
+                "litellm/openai/gpt-5.6-terra",
                 "max",
                 {"read", "grep", "find"},
                 True,
             ),
             "verifier.md": (
-                "openai-codex/gpt-6-luna",
+                "litellm/openai/gpt-6-luna",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "worker.md": (
-                "openai-codex/gpt-6-sol",
+                "litellm/openai/gpt-6-sol",
                 "medium",
                 {"read", "grep", "find", "bash", "edit", "write"},
                 False,
@@ -152,6 +153,29 @@ class AgentWorkflowContract(unittest.TestCase):
             tools = set(parse_frontmatter(agent_dir / name)["tools"].split(", "))
             if name not in {"worker.md", "implementer.md"}:
                 self.assertTrue({"edit", "write"}.isdisjoint(tools), name)
+
+    def test_litellm_provider_covers_routing(self) -> None:
+        # If a pinned model is missing here, pi-subagents silently fuzzy-matches
+        # it to another provider (e.g. openai-codex) instead of failing.
+        models_json = json.loads((AGENT_ROOT / "models.json").read_text())
+        provider = models_json["providers"]["litellm"]
+        self.assertTrue(provider["apiKey"].startswith("!op read 'op://"))
+        litellm_ids = {model["id"] for model in provider["models"]}
+
+        settings = json.loads((AGENT_ROOT / "settings.json").read_text())
+        self.assertIn(settings["defaultModel"], litellm_ids)
+
+        for path in sorted((AGENT_ROOT / "agents").glob("*.md")):
+            model = parse_frontmatter(path)["model"]
+            provider_id, _, model_id = model.partition("/")
+            self.assertEqual(provider_id, "litellm", path.name)
+            self.assertIn(model_id, litellm_ids, path.name)
+
+        # LiteLLM rejects the inline per-message effort this flag emits.
+        for model in provider["models"]:
+            self.assertNotIn(
+                "supportsMidConvoEffort", model.get("compat", {}), model["id"]
+            )
 
     def test_local_workflow_skills(self) -> None:
         required = {

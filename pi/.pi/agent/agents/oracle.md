@@ -2,7 +2,7 @@
 description: High-reasoning decision and assumption reviewer.
 display_name: Oracle (Astra)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6-astra
+model: litellm/openai/gpt-6-astra
 thinking: max
 max_turns: 20
 prompt_mode: append

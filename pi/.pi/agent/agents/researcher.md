@@ -2,7 +2,7 @@
 description: Research agent for current external evidence.
 display_name: Researcher (Luna)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6-luna
+model: litellm/openai/gpt-6-luna
 thinking: high
 max_turns: 24
 prompt_mode: append

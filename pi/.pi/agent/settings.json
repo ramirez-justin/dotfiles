@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "1.0.0",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-6-sol",
+  "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
   "theme": "rose-pine",
   "powerline": {
@@ -11,13 +11,7 @@
     "enabled": false
   },
   "enableInstallTelemetry": false,
-  "npmCommand": [
-    "mise",
-    "exec",
-    "node@22",
-    "--",
-    "npm"
-  ],
+  "npmCommand": ["mise", "exec", "node@22", "--", "npm"],
   "enableSkillCommands": true,
   "packages": [
     {
@@ -42,9 +36,7 @@
     "npm:@juicesharp/rpiv-todo",
     {
       "source": "npm:context-mode",
-      "skills": [
-        "!skills/UPSTREAM-CREDITS.md"
-      ]
+      "skills": ["!skills/UPSTREAM-CREDITS.md"]
     },
     "npm:pi-lens",
     "npm:pi-claude-code-provider",
@@ -53,5 +45,6 @@
   ],
   "env": {
     "POWERLINE_NERD_FONTS": 1
-  }
+  },
+  "extensions": ["-builtin:mcp"]
 }

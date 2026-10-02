@@ -1,8 +1,8 @@
 ---
 description: High-reasoning implementation planning.
-display_name: Plan (Terra)
+display_name: Plan (GPT-6.1 Sol)
 tools: read, grep, find, bash
-model: litellm/openai/gpt-5.6-terra
+model: litellm/openai/gpt-6.1-sol
 thinking: max
 max_turns: 24
 prompt_mode: append

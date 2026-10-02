@@ -71,12 +71,14 @@ do not wait for a workflow command or ask for permission merely to delegate. Use
 
 - Launch `Explore` on Luna with max reasoning before planning or debugging a
   broad, unfamiliar subsystem.
-- Launch `Plan` or `reviewer` on Terra with max reasoning for detailed
-  planning or independent review, or `oracle` on Astra with max reasoning for
-  hard decisions and assumption checks.
+- Launch `Plan` on GPT-6.1 Sol with max reasoning for detailed planning.
+- Launch `reviewer` on Luna with max reasoning for independent review.
+- Launch `oracle` on Opus 5.5 with max reasoning for hard decisions and
+  assumption checks.
 - Launch `researcher` on GPT-6 Luna with high reasoning for current external
   evidence.
-- Automatically launch `AstraPlan` for architecture planning when a task has
+- Automatically launch `AdvancedPlan` on Opus 5.5 with max reasoning for
+  architecture planning when a task has
   either one impact signal plus two structural complexity signals, or at least
   three structural complexity signals. Impact signals are production, data,
   security, compliance, significant cost, public-contract, hard-to-reverse, or
@@ -85,13 +87,14 @@ do not wait for a workflow command or ask for permission merely to delegate. Use
   conflicting requirements or multiple viable architectures; or evidence that
   spans source, history, current documentation, and ownership boundaries.
 - For qualifying tasks, gather missing evidence once with `Explore` or
-  `researcher`, give `AstraPlan` a curated brief and escalation justification,
-  then use Terra `Plan` only to expand the architecture into file-level steps.
-  Skip Terra when architecture and sequencing cannot reasonably be separated.
+  `researcher`, give `AdvancedPlan` a curated brief and escalation
+  justification, then use `Plan` only to expand the architecture into
+  file-level steps. Skip `Plan` when architecture and sequencing cannot
+  reasonably be separated.
 - Do not escalate based only on file count, prompt length, or a request for
   thoroughness. Do not ask multiple agents to recreate the same plan.
 - Launch exactly one `worker` on Sol for routine or mechanical writes, or one
-  `implementer` on Astra with low reasoning for approved, nontrivial
+  `implementer` on Opus 5.5 with high reasoning for approved, nontrivial
   implementation work. The delegated agent is the single writer; do not edit
   the same worktree concurrently in the parent.
 - Launch `verifier` on Luna with max reasoning for independent validation of

@@ -1,8 +1,8 @@
 ---
 description: High-reasoning decision and assumption reviewer.
-display_name: Oracle (Astra)
+display_name: Oracle (Opus 5.5)
 tools: read, grep, find, bash
-model: litellm/openai/gpt-6-astra
+model: litellm/anthropic/claude-opus-5-5
 thinking: max
 max_turns: 20
 prompt_mode: append

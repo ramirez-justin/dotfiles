@@ -1,9 +1,9 @@
 ---
-description: Astra implementation agent for approved nontrivial work.
-display_name: Implementer (Astra)
+description: Opus implementation agent for approved nontrivial work.
+display_name: Implementer (Opus 5.5)
 tools: read, grep, find, bash, edit, write
-model: litellm/openai/gpt-6-astra
-thinking: low
+model: litellm/anthropic/claude-opus-5-5
+thinking: high
 max_turns: 30
 prompt_mode: append
 ---
@@ -16,7 +16,7 @@ Work only from an approved plan, explicit parent instructions, or a nontrivial
 bug fix request. Act as the single writer for the active worktree unless the
 parent explicitly says otherwise. Prefer the smallest change that satisfies the
 task. Do not expand scope, perform unrelated cleanup, or make product decisions
-silently. If the work is routine or mechanical, stop and recommend the Sol
+silently. If the work is routine or mechanical, stop and recommend the
 `worker` agent instead.
 
 Trace the relevant flow and use the first viable rung of the ordered Ponytail

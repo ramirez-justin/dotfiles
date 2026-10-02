@@ -75,8 +75,8 @@ class AgentWorkflowContract(unittest.TestCase):
 
     def test_agent_role_contracts(self) -> None:
         expected = {
-            "AstraPlan.md": (
-                "litellm/openai/gpt-6-astra",
+            "AdvancedPlan.md": (
+                "litellm/anthropic/claude-opus-5-5",
                 "max",
                 {"read", "grep", "find", "bash"},
                 True,
@@ -88,19 +88,19 @@ class AgentWorkflowContract(unittest.TestCase):
                 False,
             ),
             "Plan.md": (
-                "litellm/openai/gpt-5.6-terra",
+                "litellm/openai/gpt-6.1-sol",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "implementer.md": (
-                "litellm/openai/gpt-6-astra",
-                "low",
+                "litellm/anthropic/claude-opus-5-5",
+                "high",
                 {"read", "grep", "find", "bash", "edit", "write"},
                 False,
             ),
             "oracle.md": (
-                "litellm/openai/gpt-6-astra",
+                "litellm/anthropic/claude-opus-5-5",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
@@ -112,13 +112,13 @@ class AgentWorkflowContract(unittest.TestCase):
                 False,
             ),
             "reviewer.md": (
-                "litellm/openai/gpt-5.6-terra",
+                "litellm/openai/gpt-6-luna",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "simplifier.md": (
-                "litellm/openai/gpt-5.6-terra",
+                "litellm/openai/gpt-6-luna",
                 "max",
                 {"read", "grep", "find"},
                 True,
@@ -147,7 +147,9 @@ class AgentWorkflowContract(unittest.TestCase):
             self.assertEqual(frontmatter.get("isolated") == "true", isolated, name)
 
         oracle = parse_frontmatter(agent_dir / "oracle.md")
-        self.assertEqual(oracle.get("display_name"), "Oracle (Astra)")
+        self.assertEqual(oracle.get("display_name"), "Oracle (Opus 5.5)")
+        advanced = parse_frontmatter(agent_dir / "AdvancedPlan.md")
+        self.assertEqual(advanced.get("name"), "AdvancedPlan")
 
         for name in expected:
             tools = set(parse_frontmatter(agent_dir / name)["tools"].split(", "))

@@ -1,8 +1,8 @@
 ---
 description: High-reasoning review agent for diffs, plans, and PRs.
-display_name: Reviewer (Terra)
+display_name: Reviewer (Luna)
 tools: read, grep, find, bash
-model: litellm/openai/gpt-5.6-terra
+model: litellm/openai/gpt-6-luna
 thinking: max
 max_turns: 24
 prompt_mode: append

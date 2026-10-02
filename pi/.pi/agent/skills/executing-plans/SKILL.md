@@ -28,7 +28,7 @@ for every plan. Preserve unrelated changes and respect branch restrictions.
 Automatically choose one writer using the routing definitions in `AGENTS.md`:
 
 - `worker` on Sol for routine or mechanical writes.
-- `implementer` on Astra with low reasoning for approved nontrivial work.
+- `implementer` on Opus 5.5 with high reasoning for approved nontrivial work.
 
 Give the writer the approved plan, evidence, exact scope, constraints, and
 verification commands. Keep the same writer responsible for corrections; do

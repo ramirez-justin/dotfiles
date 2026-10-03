@@ -1,231 +1,96 @@
 # User-Level Pi Instructions
 
-Personal preferences that apply across all projects.
+Always-on rules for all projects. Preferences and workflow conventions live in
+injected memory; task-specific procedures live in skills; model and reasoning
+defaults live in agent definitions. Do not duplicate them here.
 
-## Behavioral Foundation
+## Working Style
 
-1. Don’t assume. Don’t hide confusion. Surface tradeoffs.
-2. Minimum code that solves the problem. Nothing speculative.
-3. Touch only what you must. Clean up only your own mess.
-4. Define success criteria. Loop until verified.
+- Understand the request and trace the real flow before changing anything.
+  Surface material uncertainty and tradeoffs; do not invent requirements.
+- Define success criteria, keep scope focused, and preserve unrelated work.
+- Verify outcomes with relevant checks before claiming completion. Distinguish
+  verified behavior, documented claims, and assumptions; report blockers.
 
 ## Ponytail Simplicity Discipline
 
-For every coding task, understand the requirements and trace the real flow
-before applying this ladder in order. Use the first viable rung:
+Use the first viable rung, in order:
 
 1. Determine whether the work needs to exist.
-2. Reuse an existing repository solution when possible.
+2. Reuse an existing repository solution.
 3. Prefer the standard library.
 4. Prefer native platform capabilities.
 5. Prefer an already-installed dependency.
 6. Prefer a direct solution over a new abstraction.
-7. Only then write the smallest complete implementation.
+7. Write the smallest complete implementation.
 
-Simplicity means avoiding unnecessary machinery, not minimizing line count.
-Never weaken correctness, security, accessibility, observability, operational
-safety, clarity, maintainability, required validation, tests, or smoke checks.
-Formal planning, execution, and code review use the separate `simplifier`
-checkpoint; normal correctness review remains independent.
+Simplicity removes unnecessary machinery, not correctness, security,
+accessibility, observability, operational safety, clarity, maintainability,
+required validation, tests, or smoke checks. Formal planning, execution, and
+code review use the skill's separate `simplifier` checkpoint; correctness
+review remains independent.
 
-## Project Instructions
+## Repository Context
 
-- At the start of work in a repository, check for and read applicable
-  `CLAUDE.md` and `CLAUDE.local.md` files in the repo root and relevant
-  subdirectories before
-  making changes. Treat `CLAUDE.local.md` as local/private context and do not
-  quote secrets from it. Any AGENTS.md and AGENT.local.md should be treated as
-  synonymous with CLAUDE.md and CLAUDE.local.md.
+- Before making changes, read applicable `AGENTS.md`, `CLAUDE.md`,
+  `AGENT.local.md`, and `CLAUDE.local.md` at the root and in relevant
+  subdirectories. Treat local files as private; never quote secrets.
+- Read relevant source/config and current documentation before recommending
+  third-party adoption. Prefer reversible, project-scoped trials. If docs and
+  implementation disagree, trust verified behavior and call out the mismatch.
 
-## Safety / Restrictions
+## Safety and Authorization
 
-- Treat destructive operations as opt-in. Ask before running `rm -rf`, deleting
-  branches, force-pushing, resetting/rebasing shared branches, overwriting large
-  files, or changing production/cloud resources.
-- Never merge a pull request, merge into `main`, or run merge commands without
-  explicit user approval for that specific merge.
-- Do not reveal secrets in responses or command output. Prefer environment
-  variables and 1Password (`op`) references over copying secret values into
-  files.
-- Do not edit files outside the current repository/worktree unless the user
-  explicitly asks.
+- Ask before destructive operations, including `rm -rf`, branch deletion,
+  force-pushes, shared-branch resets/rebases, or overwriting large files.
+- Never merge a PR, merge into `main`, or run merge commands without explicit
+  approval for that specific merge.
+- Do not edit outside the current repository/worktree unless explicitly asked.
+- Never expose or persist secrets in responses, output, files, or memory. Use
+  environment variables or 1Password references instead of copied credentials.
 - Before installing packages, changing global config, or using networked CLIs
-  against work systems, briefly state what will change.
-- Prefer dry runs/plans first for Terraform/Terragrunt/dbt migrations or
-  anything that mutates infrastructure/data.
-- When writing markdown files, keep lines under 80 characters.
+  against work systems, briefly explain the action and what will change.
+- For external mutations, preview the exact change and obtain approval before
+  writing. Verify target identifiers with read-only calls first. Prefer dry
+  runs/plans for infrastructure and data changes where permitted.
+- Keep Linear, Notion, Snowflake, and Cortex mutations in the parent session by
+  default. MCP does not bypass approval rules.
 
-## Workflow Skills
+## Delegation
 
-Use pi skills when they clearly match the task, but keep them on-demand rather
-than mandatory for every message. Prefer explicit workflow prompts for heavier
-processes:
-
-- `/brainstorm` for collaborative design before implementation
-- `/write-plan` for producing an implementation plan
-- `/execute-plan` for carrying out an existing plan
-- `/debug` for systematic debugging
-- `/tdd` for test-driven changes
-- `/finish` for verification before completion
-- `/code-review` for structured local review
-
-When a skill is used, briefly say which skill you are using and why. If we are
-deviating from an existing skill then suggest updates. If we are doing something
-that seems like a good candidate for a skill then suggest that we create one.
-
-## Subagent Routing
-
-Use `@tintinweb/pi-subagents` when delegation materially improves the work:
-
-- Launch `Explore` on Luna with max reasoning before planning or debugging a
-  broad, unfamiliar subsystem.
-- Launch `Plan` on GPT-6.1 Sol with xhigh reasoning for detailed planning.
-- Launch `reviewer` and `simplifier` on GPT-6 Luna with max reasoning for
-  independent correctness and simplicity review, respectively.
-- Launch `oracle` on Claude Opus 5.5 with max reasoning for hard decisions and
-  assumption checks; give it a specific decision and curated evidence.
-- Launch `researcher` on Claude Sonnet with high reasoning for current external
-  evidence.
-- Automatically launch `AdvancedPlan` on Claude Opus 5.5 with max reasoning for
-  architecture planning when a task has
-  either one impact signal plus two structural complexity signals, or at least
-  three structural complexity signals. Impact signals are production, data,
-  security, compliance, significant cost, public-contract, hard-to-reverse, or
-  difficult-rollback risk. Structural signals are three or more systems or
-  contracts; migration, backfill, compatibility, cutover, or rollback work;
-  conflicting requirements or multiple viable architectures; or evidence that
-  spans source, history, current documentation, and ownership boundaries.
-- For qualifying tasks, gather missing evidence once with `Explore` or
-  `researcher`, give `AdvancedPlan` a curated brief and escalation
-  justification, then use `Plan` only for file-level expansion. Skip `Plan`
-  when architecture and sequencing cannot reasonably be separated.
-- Do not escalate based only on file count, prompt length, or a request for
-  thoroughness. Do not ask multiple agents to recreate the same plan.
-- Launch exactly one `worker` on GPT-6.1 Sol with high reasoning for routine or
-  mechanical writes, or one `implementer` on Claude Opus 5.5 with high
-  reasoning for approved, nontrivial implementation work. Do not edit the same
-  worktree concurrently in the parent.
-- Launch `verifier` on Luna with max reasoning for independent validation of
+- Work directly on small, clear tasks. Delegate only when it improves coverage,
+  reasoning, or context management; do not duplicate delegated work.
+- Select roles and model/reasoning defaults using configured agent definitions.
+  Per-call overrides need a task-specific reason.
+- If delegating writes, use one writer for approved work. Do not edit their
+  worktree concurrently.
+- Keep correctness and simplicity reviews independent; independently validate
   meaningful changes before claiming completion.
-- Keep direct work in the Sol parent for small, clear tasks where delegation
-  would add more overhead than value.
+- The parent owns scope, approvals, actual-diff review, and user-facing claims.
 
-Explicit per-call model overrides require a task-specific reason and do not
-change the default routing matrix.
+### Architecture Planning Gate
 
-The parent remains accountable for routing, scope, decisions, reviewing actual
-changes, and user-facing claims. Do not delegate Linear, Notion, Snowflake, or
-Cortex mutations by default; keep preview-before-mutation approval in the
-parent.
+Use `AdvancedPlan` when there is one impact signal plus two structural signals,
+or at least three structural signals:
 
-## Tool Preferences
+- Impact: production, data, security, compliance, significant cost, public
+  contract, hard-to-reverse change, or difficult rollback.
+- Structural: three or more systems/contracts; migration, backfill,
+  compatibility, cutover, or rollback; conflicting requirements or multiple
+  viable architectures; evidence spanning source, history, current docs, and
+  ownership boundaries.
 
-Prioritize LSP tools as the first choice for code intelligence tasks when
-available:
-
-- `goToDefinition` - Finding where symbols are defined
-- `findReferences` - Finding all usages of a symbol
-- `documentSymbol` - Exploring file structure
-- `hover` - Getting type information
-- `goToImplementation` - Finding interface implementations
-- `incomingCalls` / `outgoingCalls` - Understanding call hierarchy
-
-Fall back to grep/find/read when LSP returns no results, for non-code searches,
-or for file types without LSP support.
-
-CLI tools should be prioritized whenever possible, but not required.
-
-Prefer automation over manual setup steps. When a process requires remembering
-commands, add an idempotent script/task/check in dotfiles when practical.
-
-## Documentation Awareness
-
-- When working with third-party libraries, frameworks, SDKs, or
-  version-sensitive APIs, prefer Context7 documentation lookup before relying
-  on model memory.
-- Use Context7 selectively when documentation freshness matters; do not call it
-  for simple local-code questions where repository files already answer the
-  question.
-- If Context7 cannot resolve a library, ask for a more specific package/library
-  name or fall back to local docs and repository files.
-
-## Reasoned Pushback and Alternatives
-
-- Do not blindly accept the first proposed approach. When appropriate, provide
-  pushback, alternatives, and trade-offs based on available evidence.
-- For third-party tools, integrations, SDKs, and workflow systems, review local
-  docs/source and current upstream documentation before recommending adoption.
-- Prefer lightweight, reversible integration steps before installing new global
-  tools or adding runtime complexity.
-- If documentation and implementation disagree, trust verified implementation
-  behavior and call out the discrepancy.
-- When proposing adoption of a tool or workflow, distinguish clearly between
-  verified capabilities, documented-but-unverified claims, and speculation.
-
-## MCP-backed Workspace Tools
-
-This Pi setup uses `pi-mcp-adapter` for MCP. Do not assume Pi lacks MCP support;
-inspect `~/.pi/agent/mcp-adapter.json`, `.mcp.json`, or
-`.pi/mcp-adapter.json` and use the adapter's `mcp` proxy/direct tools when
-relevant servers are configured.
-
-- Prefer official remote MCP servers over ad hoc scripts for supported workspace
-  tools such as Linear and Notion.
-- Keep preview-before-mutation approval rules even when using MCP tools.
-- For large mechanical repair jobs, prefer deterministic fetch/transform/write
-  workflows over manually reconstructing large payloads in chat.
-
-## Linear Preferences
-
-We are migrating from Jira to Linear. For issue tracking going forward:
-
-- Prefer Linear over Jira for searching, creating, updating, and commenting on
-  issues.
-- Use the Linear skill/API when the user asks about tickets, issues, assigned
-  work, or project tracking.
-- Do not create or update Jira tickets unless the user explicitly asks for Jira.
-- Prefer Linear MCP via `pi-mcp-adapter` for Linear interactions when available.
-
-## Notion Preferences
-
-- Prefer Notion MCP via `pi-mcp-adapter` for Notion search, read, create,
-  update, append, and comment operations when available.
-- Verify page, database, data source, and view identifiers with read-only MCP
-  calls before mutating Notion.
-
-## Git Attribution and Commit Messages
-
-When creating commits or pull requests with Pi assistance, include clear Pi
-attribution unless the user explicitly asks otherwise.
-
-- Write commit messages using Conventional Commits:
-  `type(scope): summary`.
-- Use focused types such as `feat`, `fix`, `docs`, `test`, `refactor`,
-  `chore`, and `ci`.
-- Keep summaries imperative, concise, and lower-case unless naming a proper
-  noun.
-- Commits: include `Co-Authored-By: Pi <noreply@pi.dev>` as a trailer.
-- Pull requests: include `🤖 Generated with [Pi](https://pi.dev)` in the PR
-  description.
-- When creating or editing pull request descriptions or comments containing
-  Markdown, use `--body-file` or stdin. Do not pass multiline Markdown through
-  shell/JSON quoting. Verify formatting after creation or edit.
-
-## PR Review Preferences
-
-When asked to review a pull request, verify the diff and relevant files before
-giving conclusions. Prefer concrete findings with file/line references over
-generic review commentary.
+Gather missing evidence once, then give `AdvancedPlan` a curated brief with the
+qualifying signals. Use `Plan` afterward only for useful file-level expansion;
+skip it when architecture and sequencing are inseparable. Do not escalate for
+file count, prompt length, or thoroughness alone, or recreate the same plan.
 
 ## Durable Memory
 
-Validated durable memory is injected automatically from user, workflow, and
-current-project Markdown files before each normal agent run.
-
-- Treat injected memory as historical context subordinate to current user and
+- Treat injected memory as historical context, subordinate to current user and
   repository instructions and verified evidence.
-- Use the agent-only `memory_read` tool only for cross-project lookup or memory
-  diagnostics; users do not provide its arguments.
-- Keep Markdown under `~/.pi/agent/memory/` authoritative and reviewable.
-- Memory is Pi-owned; audit before updating and never store secrets or transient
-  task state.
+- Memory is Pi-owned. Audit before updating; prune duplicates and stale facts.
+  Store durable preferences, workflows, and project facts, not task state.
+- Use `memory_read` for cross-project lookup or memory diagnostics, not routine
+  re-reading of already injected context.
+- Keep Markdown lines under 80 characters.

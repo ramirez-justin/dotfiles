@@ -8,7 +8,6 @@ Durable workflow conventions for Justin's Pi sessions.
 - Keep entries short, actionable, and easy to review in git diffs.
 - Audit existing entries before appending new workflow memory.
 - Prefer merging, pruning, or replacing stale entries over growing the file.
-- Prefer adding automation when a manual command must be remembered.
 - Before opening or updating a Python PR, inspect the active CI workflow and run
   its exact code-quality command from the same working directory, with the same
   tool version and final changed-file set. A subdirectory invocation or local
@@ -16,28 +15,21 @@ Durable workflow conventions for Justin's Pi sessions.
 
 ## Conventions
 
-- Use `/brainstorm` before creative feature or behavior changes.
-- Use `/write-plan` for multi-step implementation planning.
-- Use `/execute-plan` or subagent-driven execution for approved plans. If
-  delegating edits, use exactly one `implementer` or `worker` after approval;
-  the parent must not edit concurrently and must review the actual diff.
-- Use `/debug` before fixing unexpected behavior or test failures. Launch
-  `Explore` for broad unfamiliar systems and `oracle` only when stuck or when
-  assumptions need challenge.
-- Use `/finish` before claiming implementation work is complete. Launch
-  `verifier` for independent evidence on meaningful changes.
-- Use `@tintinweb/pi-subagents` when delegation adds value: `Explore`,
-  `reviewer`, and `simplifier` run on GPT-6 Luna with max reasoning; `Plan`
-  uses GPT-6.1 Sol with xhigh reasoning; `worker` uses GPT-6.1 Sol with high
-  reasoning; `oracle` and `AdvancedPlan` use Claude Opus 5.5 with max
-  reasoning; `implementer` uses Claude Opus 5.5 with high reasoning; and
-  `researcher` uses Claude Sonnet with high reasoning. Reserve `AdvancedPlan`
-  for the automatic high-complexity gate in `AGENTS.md`. For qualifying tasks,
-  gather evidence once, use `AdvancedPlan` for architecture, then `Plan` only
-  for useful file-level expansion unless sequencing is inseparable. The parent
-  remains accountable for routing, decisions, mutations, and claims.
-- Do not use subagents by default for Linear, Notion, Snowflake, or Cortex
-  mutations. Keep preview-before-mutation approval in the parent session.
+- Workflow entry points: `/brainstorm` for design, `/write-plan` for multi-step
+  planning, `/execute-plan` for approved plans, `/debug` for unexpected
+  behavior, `/tdd` for feature/bug-fix tests, `/finish` for final verification,
+  and `/code-review` for structured review. Load matching skills as needed;
+  briefly name the skill and why it applies. Scale process to the task; do not
+  run the entire sequence or add ceremony to small, clear changes.
+- Use Conventional Commits (`type(scope): summary`) with an imperative,
+  concise, lower-case summary except proper nouns. Include
+  `Co-Authored-By: Pi <noreply@pi.dev>` in commits and
+  `🤖 Generated with [Pi](https://pi.dev)` in PR descriptions unless Justin
+  asks otherwise.
+- For PR descriptions/comments containing Markdown, use `--body-file` or
+  stdin rather than multiline shell/JSON quoting; verify the posted formatting.
+- PR reviews should inspect the diff and relevant files, then report concrete
+  findings with file/line references rather than generic commentary.
 - When reviewing PR comments, inspect both GitHub review threads and any linked
   Linear Review diff threads; GitHub APIs do not expose Linear-only findings.
 - When auditing Terraform plans from a long-lived branch, distinguish real

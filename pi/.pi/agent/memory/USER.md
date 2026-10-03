@@ -15,7 +15,6 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 - Prefer concise responses unless the task requires detail.
 - Prefer reviewing designs and plans interactively in chat rather than being
   asked to review a file separately.
-- Prefer minimum code that solves the problem.
 - For small, focused changes, work directly on a feature branch; use an
   isolated worktree only when isolation materially helps or Justin requests it.
 - When a worktree is needed, use a global isolated location by default (for
@@ -23,8 +22,16 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   choose implementation details unless the tradeoff affects him.
 - Use Neovim rather than VS Code. Do not install or manage VS Code or its
   extensions unless explicitly requested.
-- Prefer explicit success criteria and verified outcomes.
-- Prefer Linear over Jira for new issue-tracking work unless Jira is requested.
+- Prefer Linear over Jira for issue tracking. Do not mutate Jira unless
+  explicitly requested. Prefer configured official MCP servers for Linear and
+  Notion over ad hoc scripts.
+- Prefer LSP for code navigation, with grep/find/read as fallbacks for missing
+  results or unsupported files. Use CLI tools where practical; check installed
+  tool availability rather than assuming it.
+- Consult Context7 for version-sensitive APIs when local evidence is
+  insufficient; avoid lookups for questions the repository already answers.
+- Prefer automating recurring commands with idempotent scripts/tasks over
+  manual setup steps.
 - Do not present PR URLs unless the PR has actually been created and verified.
   If only a GitHub “create PR” URL exists, label it clearly or omit it.
 - Proactively consider memory updates when Justin gives behavioral corrections,
@@ -53,5 +60,3 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   shares one with reservations, treat it as a request for technical feedback
   and tradeoffs, not approval to implement; avoid bot-driven churn unless the
   suggestion is technically justified.
-- Do not assume local tools are installed; check availability before suggesting
-  or using them.

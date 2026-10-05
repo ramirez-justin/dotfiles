@@ -58,13 +58,16 @@ interfaces, and test expectations. Fix defects before handing off.
 ## Mandatory Simplicity Checkpoint
 
 Before presenting a plan for approval or starting execution, load
-`../ponytail-review/SKILL.md` and run its plan checkpoint. Supply the complete
-newline-preserved UTF-8 plan and SHA-256 identity. Freeze writes and launch
-`simplifier` with `run_in_background: false` and `isolated: true`.
+`../ponytail-review/SKILL.md` and run its canonical `capture-plan` helper
+entry path. Freeze writes, capture the complete plan with approved requirements,
+and pin the returned receipt. Verify it before dispatch, then send the complete
+generated prompt verbatim to foreground isolated `simplifier`. Do not manually
+copy the plan or depend on inherited context.
 
-Wait for a completed lifecycle result and validate all report sections and
-identity fields. Retry once on failure; a second failure blocks approval or
-execution unless the user explicitly waives the checkpoint. Fix and reassess
+Verify the packet again before acceptance. Wait for a completed lifecycle
+result and validate all report sections and identity fields. Retry once on
+failure; a second failure blocks approval or execution unless the user
+explicitly waives the checkpoint. Fix and reassess
 blocking findings or reject them with recorded technical evidence. Rerun after
 any plan content change; do not reuse a report for a changed artifact.
 

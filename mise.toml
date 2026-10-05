@@ -265,6 +265,13 @@ print("Pi agent models, defaults, and local workflow skills verified")
 PY
 """
 
+[tasks.check-ponytail]
+description = "Verify frozen Ponytail review capture and freshness"
+run = """
+cd {{config_root}}
+python3 -m unittest discover -s pi/.pi/agent/tests -p test_ponytail_capture.py -v
+"""
+
 [tasks.check-memory]
 description = "Run Pi memory-governor tests"
 run = "mise exec -- bun test ./pi/.pi/agent/extensions/memory-governor"

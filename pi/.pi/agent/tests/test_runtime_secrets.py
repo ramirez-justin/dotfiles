@@ -2,7 +2,6 @@ import json
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).parents[4]
 
 
@@ -15,7 +14,7 @@ def load_json(path: Path) -> dict:
 
 class RuntimeSecretsConfigTests(unittest.TestCase):
     def test_jira_mcp_resolves_its_token_at_startup(self):
-        config = load_json(REPO_ROOT / "pi/.pi/agent/mcp.json")
+        config = load_json(REPO_ROOT / "pi/.pi/agent/mcp-adapter.json")
         command = config["mcpServers"]["jira"]["args"][1]
         launcher = (REPO_ROOT / "pi/.pi/agent/bin/jira-mcp").read_text()
         self.assertIn("jira-mcp", command)
@@ -24,7 +23,7 @@ class RuntimeSecretsConfigTests(unittest.TestCase):
         self.assertNotIn("${JIRA_API_TOKEN}", json.dumps(config["mcpServers"]["jira"]))
 
     def test_jira_mcp_does_not_depend_on_parent_environment(self):
-        config = load_json(REPO_ROOT / "pi/.pi/agent/mcp.json")
+        config = load_json(REPO_ROOT / "pi/.pi/agent/mcp-adapter.json")
         environment = config["mcpServers"]["jira"]["env"]
         self.assertEqual(environment["JIRA_URL"], "https://gametime.atlassian.net")
         self.assertEqual(environment["JIRA_USERNAME"], "justin.ramirez@gametime.co")

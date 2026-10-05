@@ -60,14 +60,16 @@ Do not substitute an agent's completion summary for evidence.
 ## Mandatory Final-Diff Simplicity Checkpoint
 
 Before Luna verification or completion, load `../ponytail-review/SKILL.md`
-and run its final-diff checkpoint. Freeze the sole writer before capturing
-complete newline-preserved UTF-8 diff bytes, including untracked created files,
-base and head IDs, ordered changed paths, and artifact and path-list SHA-256
-identities. Launch `simplifier` with `run_in_background: false` and
-`isolated: true`. If a correctness review is already required or requested,
-launch a read-only `reviewer` with `run_in_background: false` concurrently on
-that same frozen diff and approved requirements; do not add an extra reviewer
-just for this checkpoint. Keep writes frozen until both reviews finish.
+and run its canonical `capture-diff` helper entry path. Freeze the sole writer,
+choose an explicit base covering all implementation changes, and capture the
+working-tree scope with approved requirements, including untracked files. Pin
+the receipt and verify it before dispatch. Send the generated prompt verbatim
+to foreground isolated `simplifier`; do not manually assemble a payload or
+rely on inherited context. If correctness review is already required or
+requested, launch a read-only foreground `reviewer` concurrently, supplying
+that same frozen snapshot and requirements with full-read instructions; do
+not add an extra reviewer just for this checkpoint. Keep writes frozen until
+both reviews finish and the packet is verified again before acceptance.
 
 Wait for completed lifecycle results and validate the simplifier's report
 sections and echoed identities. Retry a failed simplicity review once; a

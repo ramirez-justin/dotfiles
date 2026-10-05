@@ -14,49 +14,69 @@ Never apply findings automatically or treat required tests as bloat.
 
 ## Freeze and Capture
 
-Freeze all writers before capture and keep them frozen until the foreground
-review finishes. Capture the approved scope, not an agent-reconstructed summary.
-Use Python `Path.read_bytes()`, subprocess byte output, and
-`hashlib.sha256(data).hexdigest()` to avoid newline normalization. Decode as
-UTF-8 strictly for the prompt, without trimming, reformatting, or truncation.
-If complete UTF-8 capture is impossible, report the gap and block; do not omit
-unsupported content or pretend a partial artifact is complete.
+Freeze all writers before capture and keep them frozen through acceptance.
+Capture the approved scope, not an agent-reconstructed summary. Use the
+standard-library helper at `scripts/capture.py`, relative to this skill's
+installed directory. Do not manually assemble payloads or depend on prior
+capture output reaching a child. The helper never launches Pi or an Agent.
 
-For a `plan` artifact:
+Put the approved requirements in a strict UTF-8 file. Keep that input outside
+tracked/untracked review scope, for example in Git's private directory. Do not
+put secrets in requirements or review artifacts. Choose the base explicitly;
+never silently assume an unrelated base. For execution review, include all
+implementation changes. From the reviewed repository:
 
-- Read the complete plan bytes, preserving newlines, and compute their SHA-256.
-- Supply `artifact-kind: plan` and `artifact-sha256: <digest>`.
-- Supply the complete plan inside explicit artifact begin/end delimiters.
+```sh
+helper="$HOME/.pi/agent/skills/ponytail-review/scripts/capture.py"
+# Complete changes through the working tree, including untracked files:
+python3 "$helper" capture-diff --repo "$PWD" --base "$base" \
+  --requirements-file "$requirements"
+# Committed changes only (excludes staged, unstaged, and untracked changes):
+python3 "$helper" capture-diff --repo "$PWD" --base "$base" --head "$head" \
+  --requirements-file "$requirements"
+# Complete plan bytes; no newline normalization:
+python3 "$helper" capture-plan --repo "$PWD" --plan "$plan" \
+  --requirements-file "$requirements"
+```
 
-For a `diff` artifact:
+Use exactly one capture command for the intended scope. It returns JSON with
+absolute `packet`, `artifact`, and `prompt` paths plus `packet-sha256`. Retain
+that receipt in the parent; its digest pins the metadata and requirements.
+The helper creates a unique private directory under the repository's Git
+worktree directory, mode 0700, with files mode 0600. Its output cannot enter
+its own untracked diff. Do not edit/rewrite those frozen files. Do not add
+packets to commits or use them as temporary plan/spec files in the worktree.
 
-- Resolve the requested base and head to full commit IDs with
-  `git rev-parse <ref>^{commit}`. Record the review scope: committed changes
-  only, or changes through the current working tree. Never silently assume an
-  unrelated base. For execution review, include all implementation changes.
-- Capture complete diff bytes using `git diff --no-ext-diff --no-textconv
-  --binary <base> <head> --` for committed scope, or the same command with
-  `<head>` omitted for working-tree scope. The latter includes the net staged
-  and unstaged changes against the base. Record current HEAD as `head` in that
-  case; the artifact digest identifies the uncommitted contents.
-- Obtain changed paths with the matching `git diff --name-only -z` scope.
-  For working-tree scope, also use `git ls-files --others --exclude-standard
-  -z` and include each untracked created file. Capture its full addition with
-  `git diff --no-index --no-ext-diff --no-textconv --binary -- /dev/null
-  <path>`; exit 1 means a diff, not a capture failure. Other failures block.
-- Deduplicate and sort the complete changed-path list deterministically. Hash
-  its UTF-8 encoding joined with newline characters, with no final newline.
-  Reject paths containing newlines rather than creating an ambiguous identity.
-- Append untracked addition diffs in that same path order to the tracked diff
-  bytes. Hash the exact combined bytes. Never substitute a diffstat, selected
-  hunks, or only tracked changes for the complete artifact.
-- Supply `artifact-kind: diff`, `artifact-sha256`, `base`, `head`,
-  `paths-sha256`, the ordered path list, and complete diff bytes in explicit
-  artifact begin/end delimiters. Include the scope description.
+The helper enforces this capture contract:
 
-Choose delimiters absent from the artifact. Keep artifact bytes distinct from
-metadata and delimiters; hash only the artifact bytes. Repository reads may
-support evidence but cannot replace the supplied snapshot.
+- Plans use exact `Path.read_bytes()` bytes and SHA-256.
+- Diffs resolve requested refs to full commit IDs. Committed scope captures
+  `git diff --no-ext-diff --no-textconv --binary <base> <head> --`.
+  Working-tree scope omits `<head>` and records current HEAD. The net tracked
+  diff includes staged and unstaged changes against the explicit base.
+  Working-tree capture and verification block if any tracked entry has
+  assume-unchanged or skip-worktree index flags, which can hide edits. Resolve
+  those flags intentionally before retrying; never clear them automatically.
+  Committed scope is unaffected.
+- Changed paths use matching `git diff --name-only -z`. Working-tree scope
+  adds `git ls-files --others --exclude-standard -z`. Each untracked addition
+  uses `git diff --no-index --no-ext-diff --no-textconv --binary -- /dev/null
+  <path>`, allowing exit 1 but blocking other failures.
+- Deduplicated paths are sorted; `paths-sha256` hashes their newline-joined
+  UTF-8 encoding with no final newline. Newline paths are rejected.
+  Untracked addition diffs, including binary patches, are appended in that
+  order. `artifact-sha256` hashes the exact combined bytes, not metadata.
+- Artifact and input decoding is strict UTF-8. No trimming, reformatting,
+  truncation, lossy decoding, selected hunks, or binary omissions are allowed.
+  Unsupported or incomplete capture blocks review.
+
+A supplied frozen file is the complete artifact, not a pointer to reconstruct
+live changes. The generated prompt includes approved requirements, complete
+metadata, exact snapshot path and digest, and full-read continuation guidance.
+Repository reads may support evidence but cannot replace that snapshot.
+Line-based continuation cannot recover a single physical line exceeding the
+read tool's 50 KB output cap. If a line cannot be read completely, report the
+limitation and block review; never infer or skip the missing bytes.
 
 ## Foreground Dispatch and Acceptance
 
@@ -68,10 +88,26 @@ run_in_background: false
 isolated: true
 ```
 
-Supply the frozen artifact, metadata, approved requirements, and the request
-for the report envelope defined in `../../agents/simplifier.md`. Do not permit
-fallback to another agent or replace this review with the parent's self-review.
-Wait for the result before proceeding.
+Before dispatch, verify using the receipt's pinned digest:
+
+```sh
+python3 "$helper" verify --packet "$packet" \
+  --packet-sha256 "$packet_sha256"
+```
+
+Read the complete returned `prompt` file and pass its contents verbatim as the
+Agent prompt with the parameters above. Do not append a generic prompt, copy
+the diff manually, or use inherited context; previous tool output is not a
+supplied artifact. Do not permit fallback to another agent or replace this
+review with the parent's self-review. Wait for the result before proceeding.
+
+Run the same verification command after collection, before acceptance or reuse.
+It checks pinned packet bytes, metadata schema, snapshot bytes/digest, and
+exact generated prompt. It recaptures the declared scope to detect stale
+contents, path lists, or resolved base/head refs. A stale scope requires fresh
+capture and review, not a retry of the obsolete packet. Verification does not
+parse Agent reports, prove an agent read the file, authorize work, or imply
+correctness; those checks remain the parent's responsibility.
 
 Accept only an Agent lifecycle result in the completed state from the resolved
 `simplifier` agent. The report must contain all of:
@@ -113,8 +149,9 @@ blockers stop approval, execution, or completion.
 Send justified changes to the existing sole writer; do not create a competing
 writer. After any artifact content change, capture a new identity and rerun
 this checkpoint, regardless of which review prompted the change. A prior
-successful report is reusable only if kind, artifact digest, and every
-applicable base, head, and path-list identity field remain unchanged.
+successful report is reusable only after helper verification succeeds and
+kind, artifact digest, and every applicable base, head, and path-list identity
+field remain unchanged.
 
 Report the accepted identity, findings and dispositions, verification gaps,
 and any explicit waiver. Keep normal correctness review independent.

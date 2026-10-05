@@ -8,22 +8,24 @@ Use `requesting-code-review` for the correctness review and load
 Inspect the current diff and relevant files before conclusions.
 
 For every explicitly requested review, including small reviews, freeze writes
-and capture one complete diff with the identities required by `ponytail-review`.
-Give both agents that same frozen diff and approved requirements, and dispatch
-them concurrently:
+and use `ponytail-review`'s canonical `capture-diff` helper with an explicit
+base and approved requirements. Pin the receipt and verify before dispatch.
+Give both agents the same frozen snapshot, identities, and requirements with
+full-read continuation instructions, and dispatch them concurrently:
 
 - A read-only `reviewer` with `run_in_background: false` for correctness,
   safety, regressions, and test coverage. Explicitly forbid edits.
 - An isolated `simplifier` with `run_in_background: false` and
-  `isolated: true` for unnecessary machinery only, following the complete
-  artifact capture and identity contract in `ponytail-review`.
+  `isolated: true` for unnecessary machinery only. Send the helper-generated
+  prompt verbatim, following `ponytail-review`'s capture/verification contract.
+  Do not manually reconstruct payloads or depend on inherited context.
 
-Keep writes frozen and wait for both completed lifecycle results before
-concluding; neither review substitutes for the other. Validate the simplifier
-report sections and echoed identities. Retry a failed dispatch, collection,
-malformed, substituted, or mismatched simplicity result once, then block unless
-explicitly waived by the user. An incomplete correctness review also blocks
-review completion; never present it as a successful review.
+Keep writes frozen, wait for both completed lifecycle results, and verify the
+packet again before concluding; neither review substitutes for the other.
+Validate the simplifier report sections and echoed identities. Retry a failed
+dispatch, collection, malformed, substituted, or mismatched simplicity result
+once, then block unless explicitly waived by the user. An incomplete
+correctness review also blocks completion; never present it as successful.
 
 Personally verify both sets of findings before posting or acting. Consolidate
 justified corrections into one pass with the existing writer. Resolve every

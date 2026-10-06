@@ -1,6 +1,7 @@
 # dotfiles
 
-Personal macOS development environment managed with mise + GNU Stow + Homebrew + 1Password.
+Personal macOS development environment managed with mise + GNU Stow +
+Homebrew + 1Password.
 
 ## Stack
 
@@ -19,7 +20,8 @@ Personal macOS development environment managed with mise + GNU Stow + Homebrew +
 
 ## Structure
 
-Topic-based layout — each folder mirrors `$HOME`. Stow creates symlinks from the repo into the live system.
+Topic-based layout — each folder mirrors `$HOME`. Stow creates symlinks from
+the repo into the live system.
 
 ```
 dotfiles/
@@ -46,7 +48,8 @@ dotfiles/
 
 ```bash
 # 1. Homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+/bin/bash -c "$(curl -fsSL \
+  https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # 2. mise (official installer)
@@ -54,7 +57,8 @@ curl https://mise.run | sh
 eval "$(~/.local/bin/mise activate zsh)"
 
 # 3. Clone (with submodules)
-git clone --recurse-submodules git@github.com:ramirez-justin/dotfiles.git ~/Repositories/dotfiles
+git clone --recurse-submodules git@github.com:ramirez-justin/dotfiles.git \
+  ~/Repositories/dotfiles
 cd ~/Repositories/dotfiles
 git checkout gametime  # work machine — skip for personal
 
@@ -102,12 +106,15 @@ git merge main
 ```bash
 mise run link            # re-stow all topics without package changes
 mise run update          # git pull --rebase + re-link + Pi package updates
+mise run check           # Pi validation + full Python and Bun test suites
+mise run doctor          # machine health and offline Pi startup
 
 # Agent integrations resolve credentials from 1Password at runtime.
 # Authenticate op before launching Pi or Claude Code.
 # After updating a legacy machine, run: mise run migrate-agent-secrets
 
-mise run snowflake-ai-kit-install  # install/update Cortex Code for Pi Snowflake work
+# Install/update Cortex Code for Pi Snowflake work
+mise run snowflake-ai-kit-install
 mise run chalk-install  # install/update Chalk CLI without full bootstrap
 
 # Local Pi workflow with selected Superpowers engineering practices:
@@ -123,7 +130,8 @@ mise run chalk-install  # install/update Chalk CLI without full bootstrap
 # - Skill creation: use the skill-creation skill to draft local skills under
 #   pi/.pi/agent/skills/.
 mise run brew-dump       # regenerate Brewfile after installing new packages
-mise run nvim-update     # pull latest nvim config and commit the submodule pointer
+# Pull latest nvim config and commit the submodule pointer
+mise run nvim-update
 mise run submodule-update # update all submodules to latest
 
 dots                     # cd ~/Repositories/dotfiles
@@ -143,8 +151,10 @@ are temporary unless explicitly retained.
 The unpinned Superpowers package still supplies selected engineering practices,
 including brainstorming, TDD, debugging, and verification. Its writing-plans
 and executing-plans skills are excluded to avoid local name collisions.
-Run `mise run check-agent-tiers` to check agent routing defaults and the local
-workflow skill configuration.
+Run `mise run check` for agent configuration validation and the full Python
+and Bun suites. Use `mise run check-agent-tiers`, `mise run check-ponytail`,
+and `mise run check-memory` for focused debugging. `mise run doctor` checks
+machine health separately.
 
 ## Chalk and Pi
 
@@ -181,7 +191,8 @@ export TG_ROLE_ARN="arn:aws:iam::..."   # non-secret, machine-specific
 
 ## Editing a Config
 
-**Repo files are real. `~/.config/...` paths are symlinks pointing into the repo.**
+**Repo files are real. `~/.config/...` paths are symlinks pointing into the
+repo.**
 
 ```
 ~/.config/tmux  →  ~/Repositories/dotfiles/tmux/.config/tmux  (real files here)

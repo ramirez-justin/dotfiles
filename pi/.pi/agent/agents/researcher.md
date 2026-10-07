@@ -2,7 +2,7 @@
 description: Research agent for current external evidence.
 display_name: Researcher (Claude Sonnet)
 tools: read, grep, find, bash
-model: pi-claude-code-provider/sonnet
+model: anthropic/claude-sonnet-5-5
 thinking: high
 max_turns: 24
 prompt_mode: append

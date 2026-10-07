@@ -14,10 +14,10 @@ expected = {
     "oracle.md": ("anthropic/claude-opus-5-5", "max"),
     "Plan.md": ("openai-codex/gpt-6.1-sol", "xhigh"),
     "researcher.md": (
-        "pi-claude-code-provider/sonnet",
+        "anthropic/claude-sonnet-5-5",
         "high",
     ),
-    "reviewer.md": ("openai-codex/gpt-6-luna", "max"),
+    "reviewer.md": ("anthropic/claude-sonnet-5-5", "max"),
     "simplifier.md": ("openai-codex/gpt-6-luna", "max"),
     "verifier.md": ("openai-codex/gpt-6-luna", "max"),
     "worker.md": ("openai-codex/gpt-6.1-sol", "high"),

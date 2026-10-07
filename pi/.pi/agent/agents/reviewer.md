@@ -1,8 +1,8 @@
 ---
 description: High-reasoning review agent for diffs, plans, and PRs.
-display_name: Reviewer (GPT-6 Luna)
+display_name: Reviewer (Claude Sonnet 5.5)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6-luna
+model: anthropic/claude-sonnet-5-5
 thinking: max
 max_turns: 24
 prompt_mode: append

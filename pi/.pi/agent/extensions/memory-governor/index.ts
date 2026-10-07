@@ -220,19 +220,46 @@ export function createMemoryGovernor(
 		};
 	}
 
+	// Explicit Remember outcomes must stay observable without a UI (print/RPC),
+	// so they fall back to a displayed session message. Notices carry only
+	// generic reasons and file labels, never the remembered content.
+	function reportOutcome(
+		ctx: { hasUI: boolean; ui: { notify(text: string, level: string): void } },
+		text: string,
+		level: "info" | "warning" | "error",
+	): void {
+		if (ctx.hasUI) {
+			ctx.ui.notify(text, level);
+			return;
+		}
+		pi.sendMessage({
+			customType: "memory-governor-notice",
+			display: true,
+			content: text,
+		});
+	}
+
 	pi.on("input", async (event, ctx) => {
 		if (event.source === "extension") return { action: "continue" };
 		const candidate = deps.detectCandidate(event.text);
 		if (!candidate) return { action: "continue" };
+		if (candidate.rejection) {
+			reportOutcome(ctx, `Memory rejected: ${candidate.rejection}`, "warning");
+			return { action: "continue" };
+		}
 
 		if (!candidate.autoWrite) {
 			pendingAdvisory = candidate;
 			return { action: "continue" };
 		}
 
-		const rejection = shouldRejectMemory(candidate.content, "");
+		// Only explicit Remember commands auto-write; carry that intent to every
+		// rejection check so task-like durable facts are not discarded.
+		const rejection = shouldRejectMemory(candidate.content, "", {
+			explicit: true,
+		});
 		if (rejection) {
-			if (ctx.hasUI) ctx.ui.notify(`Memory rejected: ${rejection}`, "warning");
+			reportOutcome(ctx, `Memory rejected: ${rejection}`, "warning");
 			return { action: "continue" };
 		}
 
@@ -247,12 +274,11 @@ export function createMemoryGovernor(
 					existingText,
 					section: target.section,
 					maxChars: target.spec.normalMaxChars,
+					explicit: true,
 				}),
 		});
-		if (ctx.hasUI) {
-			const notice = mutationNotice(result, target.label);
-			ctx.ui.notify(notice.text, notice.level);
-		}
+		const notice = mutationNotice(result, target.label);
+		reportOutcome(ctx, notice.text, notice.level);
 		return { action: "continue" };
 	});
 

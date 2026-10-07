@@ -4,10 +4,7 @@ Stable facts for `github.com/gametimesf/snowflake-objects`.
 
 ## Rules
 
-- Do not store secrets, credentials, transient state, or unverified
-  guesses.
-- Keep facts stable, actionable, and specific to this repository.
-- Audit existing facts before adding or changing entries.
+- Store only stable facts specific to this repository.
 
 ## Facts
 

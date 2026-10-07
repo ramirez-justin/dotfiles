@@ -376,6 +376,60 @@ describe("explicit memory writes", () => {
 		expect(harness.mutations[0].text).toContain("- Prefer concise answers.");
 	});
 
+	test("persists explicit durable facts that look like task context", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input("Remember: Run the script before committing.");
+
+		expect(harness.notifications).toEqual([
+			{ text: "Memory updated: USER.md", level: "info" },
+		]);
+		expect(harness.memory.get("/memory/USER.md")).toContain(
+			"- Run the script before committing.\n",
+		);
+	});
+
+	test("visibly rejects oversized explicit input without writing", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+
+		await harness.input(`Remember: ${"Prefer direct answers. ".repeat(200)}`);
+
+		expect(harness.mutations).toEqual([]);
+		expect(harness.notifications).toHaveLength(1);
+		expect(harness.notifications[0]).toMatchObject({ level: "warning" });
+		expect(harness.notifications[0].text).toMatch(
+			/^Memory rejected: .*4000-character/,
+		);
+	});
+
+	test("reports explicit outcomes without UI as session messages", async () => {
+		const harness = createExtensionHarness();
+		createMemoryGovernor(harness.pi, harness.deps);
+		const oversized = `Remember: ${"Prefer direct answers. ".repeat(200)}`;
+
+		await harness.input(oversized, { hasUI: false });
+		await harness.input("Remember: API_KEY=abc", { hasUI: false });
+		await harness.input("Remember: Prefer direct answers.", { hasUI: false });
+
+		expect(harness.notifications).toEqual([]);
+		expect(harness.mutations).toHaveLength(1);
+		const contents = harness.sentMessages.map((message) => message.content);
+		expect(contents).toHaveLength(3);
+		expect(contents[0]).toMatch(/^Memory rejected: .*4000-character/);
+		expect(contents[1]).toBe("Memory rejected: secret-like content");
+		expect(contents[2]).toBe("Memory updated: USER.md");
+		for (const message of harness.sentMessages) {
+			expect(message).toMatchObject({
+				customType: "memory-governor-notice",
+				display: true,
+			});
+			expect(message.content).not.toContain("Prefer direct");
+			expect(message.content).not.toContain("abc");
+		}
+	});
+
 	test("routes workflow, project, and unscoped candidates safely", async () => {
 		let inferred: MemoryCandidate | undefined;
 		const harness = createExtensionHarness({
@@ -448,6 +502,9 @@ describe("explicit memory writes", () => {
 		createMemoryGovernor(noUi.pi, noUi.deps);
 		await noUi.input("Remember: Prefer concise answers.", { hasUI: false });
 		expect(noUi.notifications).toEqual([]);
+		expect(noUi.sentMessages.map((message) => message.content)).toEqual([
+			"Memory rejected: USER.md (unsafe content)",
+		]);
 	});
 });
 

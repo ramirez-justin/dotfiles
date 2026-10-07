@@ -25,7 +25,8 @@ for every plan. Preserve unrelated changes and respect branch restrictions.
 
 ## Route Exactly One Writer
 
-Automatically choose one writer using the routing definitions in `AGENTS.md`:
+Automatically choose one writer. Agent definitions in `agents/` select tiers
+and reasoning; `extensions/model-tiers.json` resolves the tier models:
 
 - `worker` for routine or mechanical writes.
 - `implementer` for approved nontrivial work.
@@ -58,27 +59,22 @@ Do not substitute an agent's completion summary for evidence.
 
 ## Mandatory Final-Diff Simplicity Checkpoint
 
-Before verification or completion, load `../ponytail-review/SKILL.md`
-and run its canonical `capture-diff` helper entry path. Freeze the sole writer,
-choose an explicit base covering all implementation changes, and capture the
-working-tree scope with approved requirements, including untracked files. Pin
-the receipt and verify it before dispatch. Send the generated prompt verbatim
-to foreground isolated `simplifier`; do not manually assemble a payload or
-rely on inherited context. If correctness review is already required or
-requested, launch a read-only foreground `reviewer` concurrently, supplying
-that same frozen snapshot and requirements with full-read instructions; do
-not add an extra reviewer just for this checkpoint. Keep writes frozen until
-both reviews finish and the packet is verified again before acceptance.
+Before independent verification or completion, freeze the sole writer and run
+the `ponytail-review` checkpoint (`../ponytail-review/SKILL.md`) with
+`capture-diff`: an explicit base covering all implementation changes, the
+working-tree scope including untracked files, and the approved requirements.
+That skill owns capture, verification, dispatch, retry, and acceptance.
 
-Wait for completed lifecycle results and validate the simplifier's report
-sections and echoed identities. Retry a failed simplicity review once; a
-second failure blocks this workflow unless the user explicitly waives the
-checkpoint. A requested correctness review must also complete. Verify all
-findings, then send justified corrections to the same writer in one pass;
-reject findings with recorded technical evidence. Rerun simplicity review
-after any artifact content change, including changes
-prompted by verification or cleanup; refresh correctness review for changed
-code. Unchanged reviews need not be repeated.
+If correctness review is required or requested, run a read-only foreground
+`reviewer` concurrently on the same frozen snapshot, identities, and
+requirements with full-read instructions; do not add a reviewer only for this
+checkpoint. A requested correctness review must
+complete. Keep writes frozen until both finish. Verify all findings, send
+justified corrections to the same writer in one pass, and reject others with
+recorded technical evidence. After any content change, including fixes from
+verification or cleanup, rerun simplicity review and refresh correctness
+review for changed code. An unresolved blocker or second failed simplicity
+review blocks completion unless the user explicitly waives the checkpoint.
 
 ## Parent Review and Completion
 
@@ -88,8 +84,8 @@ to independent verification.
 
 The parent inspects the actual diff, changed files, and verification output
 against the approved design, including unintended changes and missing tests.
-For meaningful changes, launch `verifier` for
-independent validation before claiming completion. Send justified corrections
+For meaningful changes, launch `verifier` for independent validation before
+claiming completion. Send justified corrections
 back to the single writer and reverify the final state.
 
 Use `verification-before-completion`. Report exact checks, their outcomes,

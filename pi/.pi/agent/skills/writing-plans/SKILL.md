@@ -57,23 +57,20 @@ interfaces, and test expectations. Fix defects before handing off.
 
 ## Mandatory Simplicity Checkpoint
 
-Before presenting a plan for approval or starting execution, load
-`../ponytail-review/SKILL.md` and run its canonical `capture-plan` helper
-entry path. Freeze writes, capture the complete plan with approved requirements,
-and pin the returned receipt. Verify it before dispatch, then send the complete
-generated prompt verbatim to foreground isolated `simplifier`. Do not manually
-copy the plan or depend on inherited context.
+Before presenting a plan for approval or starting execution, run the
+`ponytail-review` checkpoint (`../ponytail-review/SKILL.md`) on the complete
+plan with `capture-plan` and the approved requirements. That skill owns the
+capture, verification, dispatch, retry, and acceptance rules.
 
-Verify the packet again before acceptance. Wait for a completed lifecycle
-result and validate all report sections and identity fields. Retry once on
-failure; a second failure blocks approval or execution unless the user
-explicitly waives the checkpoint. Fix and reassess
-blocking findings or reject them with recorded technical evidence. Rerun after
-any plan content change; do not reuse a report for a changed artifact.
+An unresolved blocker or a second failed review blocks approval and execution
+unless the user explicitly waives the checkpoint. Rerun it after any plan
+content change.
 
 ## Approval and Automatic Handoff
 
 Summarize the plan in chat so the user need not review a file separately.
+This local handoff replaces upstream execution-method menus and file-only
+review gates, including those in `brainstorming`.
 Ask for plan approval only if approval is not already established. Approval
 must cover the work being planned; do not treat new scope as pre-approved.
 

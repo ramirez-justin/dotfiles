@@ -4,11 +4,8 @@ Durable preferences about Justin. This file is versioned in dotfiles.
 
 ## Rules
 
-- Do not store secrets, tokens, private keys, passphrases, or raw credentials.
-- Do not store transient session details or one-off mistakes.
-- Prefer stable preferences that should affect future sessions.
-- Memory is Pi-owned and does not require approval before updating.
-- Audit existing memory before adding entries; prune stale or duplicate facts.
+- Store only stable preferences about Justin that affect future sessions.
+  Common memory policy lives in `AGENTS.md` and `memory-management`.
 
 ## Preferences
 

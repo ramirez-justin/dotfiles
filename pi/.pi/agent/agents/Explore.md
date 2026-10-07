@@ -1,8 +1,8 @@
 ---
 description: Fast read-only codebase reconnaissance.
-display_name: Explore (Luna)
+display_name: Explore (Tier 4)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6-luna
+model: tiers/tier-4
 thinking: max
 max_turns: 12
 prompt_mode: append

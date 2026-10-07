@@ -1,8 +1,8 @@
 ---
 description: High-reasoning decision and assumption reviewer.
-display_name: Oracle (Opus 5.5)
+display_name: Oracle (Tier 1)
 tools: read, grep, find, bash
-model: anthropic/claude-opus-5-5
+model: tiers/tier-1
 thinking: max
 max_turns: 20
 prompt_mode: append

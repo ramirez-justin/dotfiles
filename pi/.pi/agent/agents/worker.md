@@ -1,8 +1,8 @@
 ---
 description: Balanced single-writer implementation agent.
-display_name: Worker (GPT-6.1 Sol)
+display_name: Worker (Tier 2)
 tools: read, grep, find, bash, edit, write
-model: openai-codex/gpt-6.1-sol
+model: tiers/tier-2
 thinking: high
 max_turns: 30
 prompt_mode: append

@@ -122,9 +122,10 @@ mise run chalk-install  # install/update Chalk CLI without full bootstrap
 
 # Pi personal workflows:
 # - Subagents: npm:@tintinweb/pi-subagents with model-tiered agents.
-#   Sol handles routine work; Luna handles exploration and verification;
-#   Terra handles planning and review; Claude Sonnet handles research; and
-#   Astra handles complex planning and implementation. Use /agents to manage.
+#   Agents select tiers/tier-1 to tier-4; edit only
+#   pi/.pi/agent/extensions/model-tiers.json to change a tier's model, then
+#   /reload or restart Pi before spawning agents (an unloaded alias falls back
+#   to the parent model). Use /agents to manage.
 # - Memory: ~/.pi/agent/memory/*.md, managed through the memory-management
 #   skill.
 # - Skill creation: use the skill-creation skill to draft local skills under

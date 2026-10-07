@@ -1,26 +1,27 @@
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
 root = pathlib.Path.cwd()
 agents = root / "pi/.pi/agent/agents"
 settings_path = root / "pi/.pi/agent/settings.json"
+# Agents use tier aliases; this mapping alone selects their physical models.
+mapping_path = root / "pi/.pi/agent/extensions/model-tiers.json"
+tier_extension = root / "pi/.pi/agent/extensions/model-tiers.ts"
 
 expected = {
-    "AdvancedPlan.md": ("anthropic/claude-opus-5-5", "max"),
-    "Explore.md": ("openai-codex/gpt-6-luna", "max"),
-    "implementer.md": ("anthropic/claude-opus-5-5", "high"),
-    "oracle.md": ("anthropic/claude-opus-5-5", "max"),
-    "Plan.md": ("openai-codex/gpt-6.1-sol", "xhigh"),
-    "researcher.md": (
-        "anthropic/claude-sonnet-5-5",
-        "high",
-    ),
-    "reviewer.md": ("anthropic/claude-sonnet-5-5", "max"),
-    "simplifier.md": ("openai-codex/gpt-6-luna", "max"),
-    "verifier.md": ("openai-codex/gpt-6-luna", "max"),
-    "worker.md": ("openai-codex/gpt-6.1-sol", "high"),
+    "AdvancedPlan.md": ("tiers/tier-1", "max"),
+    "Explore.md": ("tiers/tier-4", "max"),
+    "implementer.md": ("tiers/tier-1", "high"),
+    "oracle.md": ("tiers/tier-1", "max"),
+    "Plan.md": ("tiers/tier-2", "xhigh"),
+    "researcher.md": ("tiers/tier-3", "high"),
+    "reviewer.md": ("tiers/tier-3", "max"),
+    "simplifier.md": ("tiers/tier-4", "max"),
+    "verifier.md": ("tiers/tier-4", "max"),
+    "worker.md": ("tiers/tier-2", "high"),
 }
 
 
@@ -53,6 +54,21 @@ for name, (model, thinking) in expected.items():
         errors.append(
             f"{path}: expected thinking {thinking}, got "
             f"{values.get('thinking')}"
+        )
+
+mapping = json.loads(mapping_path.read_text())
+tiers = {model.removeprefix("tiers/") for model, _thinking in expected.values()}
+if not isinstance(mapping, dict) or set(mapping) != tiers:
+    errors.append(f"{mapping_path}: expected exactly {sorted(tiers)}")
+    mapping = {}
+for tier, target in mapping.items():
+    if (
+        not isinstance(target, str)
+        or not re.fullmatch(r"[^/\s]+/\S+", target)
+        or target.startswith("tiers/")
+    ):
+        errors.append(
+            f"{mapping_path}: {tier} must map to a physical provider/model"
         )
 
 simplifier = agents / "simplifier.md"
@@ -182,7 +198,10 @@ if errors:
     raise SystemExit(1)
 
 result = subprocess.run(
-    ["mise", "exec", "--", "pi", "--offline", "--list-models"],
+    [
+        "mise", "exec", "--", "pi", "--offline",
+        "-e", str(tier_extension), "--list-models",
+    ],
     check=True,
     capture_output=True,
     text=True,
@@ -192,7 +211,7 @@ catalog = {
     for line in result.stdout.splitlines()
     if len(parts := line.split()) >= 2
 }
-for model, _thinking in expected.values():
+for model in sorted({*mapping.values(), *(m for m, _t in expected.values())}):
     provider, model_id = model.split("/", 1)
     if (provider, model_id) not in catalog:
         errors.append(f"Pi model catalog does not contain {model}")

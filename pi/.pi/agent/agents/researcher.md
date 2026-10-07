@@ -1,8 +1,8 @@
 ---
 description: Research agent for current external evidence.
-display_name: Researcher (Claude Sonnet)
+display_name: Researcher (Tier 3)
 tools: read, grep, find, bash
-model: anthropic/claude-sonnet-5-5
+model: tiers/tier-3
 thinking: high
 max_turns: 24
 prompt_mode: append

@@ -1,8 +1,8 @@
 ---
 description: High-reasoning review agent for diffs, plans, and PRs.
-display_name: Reviewer (Claude Sonnet 5.5)
+display_name: Reviewer (Tier 3)
 tools: read, grep, find, bash
-model: anthropic/claude-sonnet-5-5
+model: tiers/tier-3
 thinking: max
 max_turns: 24
 prompt_mode: append

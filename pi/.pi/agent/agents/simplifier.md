@@ -1,8 +1,8 @@
 ---
 description: Read-only Ponytail review for plans and diffs.
-display_name: Simplifier (GPT-6 Luna)
+display_name: Simplifier (Tier 4)
 tools: read, grep, find
-model: openai-codex/gpt-6-luna
+model: tiers/tier-4
 thinking: max
 max_turns: 24
 isolated: true

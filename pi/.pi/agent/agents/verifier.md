@@ -1,8 +1,8 @@
 ---
 description: Cheap evidence-focused validation agent.
-display_name: Verifier (Luna)
+display_name: Verifier (Tier 4)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6-luna
+model: tiers/tier-4
 thinking: max
 max_turns: 16
 prompt_mode: append

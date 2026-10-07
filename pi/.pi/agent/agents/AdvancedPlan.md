@@ -1,9 +1,9 @@
 ---
 name: AdvancedPlan
 description: Architecture planning for qualified, highly complex tasks.
-display_name: Advanced Plan (Opus 5.5)
+display_name: Advanced Plan (Tier 1)
 tools: read, grep, find, bash
-model: anthropic/claude-opus-5-5
+model: tiers/tier-1
 thinking: max
 max_turns: 20
 isolated: true

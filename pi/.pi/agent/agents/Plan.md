@@ -1,8 +1,8 @@
 ---
 description: High-reasoning implementation planning.
-display_name: Plan (GPT-6.1 Sol)
+display_name: Plan (Tier 2)
 tools: read, grep, find, bash
-model: openai-codex/gpt-6.1-sol
+model: tiers/tier-2
 thinking: xhigh
 max_turns: 24
 prompt_mode: append

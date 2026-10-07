@@ -26,9 +26,20 @@ Use the first viable rung, in order:
 
 Simplicity removes unnecessary machinery, not correctness, security,
 accessibility, observability, operational safety, clarity, maintainability,
-required validation, tests, or smoke checks. Formal planning, execution, and
-code review use the skill's separate `simplifier` checkpoint; correctness
-review remains independent.
+required validation, tests, or smoke checks. `ponytail-review` owns the
+separate `simplifier` checkpoint used by formal planning, execution, and code
+review; correctness review remains independent.
+
+## Workflow Ownership
+
+- Local `writing-plans` and `executing-plans` own planning, approval handoff,
+  and execution. Local prompts own review dispatch. Upstream Superpowers skills
+  supply engineering practices only; ignore their execution-method menus,
+  `general-purpose` reviewer dispatch, and file-only review gates.
+- Satisfy design and plan approval gates in chat; a written spec or plan does
+  not need a separate file-review step.
+- Canonical simplicity capture, verification, retry, and acceptance rules live
+  only in `ponytail-review`; callers state checkpoint timing and scope.
 
 ## Repository Context
 
@@ -89,8 +100,11 @@ file count, prompt length, or thoroughness alone, or recreate the same plan.
 
 - Treat injected memory as historical context, subordinate to current user and
   repository instructions and verified evidence.
-- Memory is Pi-owned. Audit before updating; prune duplicates and stale facts.
-  Store durable preferences, workflows, and project facts, not task state.
+- Memory is Pi-owned. Audit before updating; prefer merging, replacing, or
+  pruning over appending. Store durable preferences, workflows, and project
+  facts, not task state, one-off mistakes, or unverified assumptions.
+- Curated memory files are the durable authority. Context-mode session history
+  is searchable historical evidence, not a source of durable preferences.
 - Use `memory_read` for cross-project lookup or memory diagnostics, not routine
   re-reading of already injected context.
 - Keep Markdown lines under 80 characters.

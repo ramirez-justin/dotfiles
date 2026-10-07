@@ -21,10 +21,7 @@ export interface ProjectIndexEntry {
 const INDEX_ENTRY =
 	/-\s+`([^`]+)`\s+→\s*(?:\r?\n\s*)?`([^`]+)`/g;
 
-const scopedRules = `- Do not store secrets, credentials, transient state, or unverified
-  guesses.
-- Keep facts stable, actionable, and specific to this repository.
-- Audit existing facts before adding or changing entries.`;
+const scopedRules = "- Store only stable facts specific to this repository.";
 
 const emptyIndexText = `# Project Memory
 
@@ -32,9 +29,9 @@ Repository-scoped memory index and unscoped fallback.
 
 ## Rules
 
-- Do not store secrets, credentials, transient state, or unverified guesses.
-- Keep repository coordinates and scoped paths deterministic.
-- Audit existing entries before adding or changing them.
+- Index scoped project files; keep coordinates and paths deterministic.
+- Put repository facts in the scoped file. Use Unscoped Facts only for stable
+  project facts with no repository identity.
 
 ## Scoped Projects
 

@@ -4,17 +4,15 @@ Durable workflow conventions for Justin's Pi sessions.
 
 ## Rules
 
-- Do not store secrets or transient command output.
-- Keep entries short, actionable, and easy to review in git diffs.
-- Audit existing entries before appending new workflow memory.
-- Prefer merging, pruning, or replacing stale entries over growing the file.
+- Store only reusable, cross-project workflow conventions. Common memory
+  policy lives in `AGENTS.md` and `memory-management`.
+
+## Conventions
+
 - Before opening or updating a Python PR, inspect the active CI workflow and run
   its exact code-quality command from the same working directory, with the same
   tool version and final changed-file set. A subdirectory invocation or local
   pre-commit result is not equivalent evidence.
-
-## Conventions
-
 - Workflow entry points: `/brainstorm` for design, `/write-plan` for multi-step
   planning, `/execute-plan` for approved plans, `/debug` for unexpected
   behavior, `/tdd` for feature/bug-fix tests, `/finish` for final verification,

@@ -121,12 +121,10 @@ mise run chalk-install  # install/update Chalk CLI without full bootstrap
 # /brainstorm, /write-plan, /execute-plan, /debug, /tdd, /finish, /code-review
 
 # Pi personal workflows:
-# - Subagents: npm:@tintinweb/pi-subagents with model-tiered agents.
-#   Sol handles routine work; Luna handles exploration and verification;
-#   Terra handles planning and review; Claude Sonnet handles research; and
-#   Astra handles complex planning and implementation. Use /agents to manage.
-# - Memory: ~/.pi/agent/memory/*.md, managed through the memory-management
-#   skill.
+# - Subagents: npm:@tintinweb/pi-subagents with model-tiered agents. Agent
+#   frontmatter in pi/.pi/agent/agents/ is the source of truth for each
+#   role's model and reasoning. Use /agents to manage.
+# - Memory: see "Pi Memory" below.
 # - Skill creation: use the skill-creation skill to draft local skills under
 #   pi/.pi/agent/skills/.
 mise run brew-dump       # regenerate Brewfile after installing new packages
@@ -155,6 +153,24 @@ Run `mise run check` for agent configuration validation and the full Python
 and Bun suites. Use `mise run check-agent-tiers`, `mise run check-ponytail`,
 and `mise run check-memory` for focused debugging. `mise run doctor` checks
 machine health separately.
+
+## Pi Memory
+
+Pi has two separate memory systems:
+
+- **Curated durable memory** is the authority for preferences and facts. It is
+  Markdown under `pi/.pi/agent/memory/`, governed by the `memory-governor`
+  extension and the `memory-management` skill. `USER.md` holds preferences,
+  `WORKFLOWS.md` holds workflow conventions, and `PROJECTS.md` indexes
+  per-repository files in `memory/projects/` (named from the `origin` remote,
+  such as `github.com--owner--repo.md`) plus a small unscoped fallback.
+  User, workflow, and current-project memory are injected each run;
+  `memory_read` reads other indexed projects. Only an explicit `Remember`
+  prefix (colon optional, followed by whitespace and content) writes
+  automatically; `/memory-audit` removes exact duplicate bullets.
+- **Context-mode history** (`ctx_search`, stored in SQLite) is searchable
+  session evidence, not curated preference authority. Promote durable lessons
+  into the Markdown files instead of relying on history.
 
 ## Chalk and Pi
 

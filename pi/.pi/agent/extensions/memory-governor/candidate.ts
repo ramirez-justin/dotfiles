@@ -5,6 +5,15 @@ export interface MemoryCandidate {
 	reason: "explicit-memory" | "workflow-rule" | "behavioral-correction";
 	scope: MemoryScope;
 	autoWrite: boolean;
+	/** Visible reason an explicit Remember command cannot be persisted. */
+	rejection?: string;
+}
+
+export const MAX_MEMORY_INPUT_CHARS = 4_000;
+
+export interface MemoryRejectionOptions {
+	/** Explicit Remember intent may persist content that looks task-specific. */
+	explicit?: boolean;
 }
 
 export interface MemoryAdditionInput {
@@ -12,6 +21,7 @@ export interface MemoryAdditionInput {
 	existingText: string;
 	section: string;
 	maxChars: number;
+	explicit?: boolean;
 }
 
 export interface MemoryAdditionResult {
@@ -101,18 +111,41 @@ function classifyMemoryScope(text: string): MemoryScope {
 	if (
 		/\b(this repo|repository|project|dotfiles|mise|stow|in this repo|gametime|pi memory|memory governor|markdown files|database)\b/.test(
 			lower,
-		)
+		) ||
+		// Relative paths may follow whitespace or common Markdown delimiters.
+		/(?:^|[\s"'`(\[])[\w-]+(?:\/[\w.-]+)+\.[a-z0-9]+\b/.test(lower)
 	) {
 		return "project";
 	}
 	return "user";
 }
 
-function extractExplicitMemory(text: string): string | undefined {
-	const match = text.replace(/\s+/g, " ").trim().match(/^remember:?\s+(.{3,220})/i);
-	if (!match) return undefined;
-	const remembered = match[1].trim();
-	return isLowQualityMemoryContent(remembered) ? undefined : sentence(remembered);
+function detectExplicitMemory(text: string): MemoryCandidate {
+	const scope = classifyMemoryScope(text);
+	const candidate = (content: string, rejection?: string): MemoryCandidate => ({
+		content,
+		reason: "explicit-memory",
+		scope,
+		autoWrite: true,
+		...(rejection ? { rejection } : {}),
+	});
+	if (text.length > MAX_MEMORY_INPUT_CHARS) {
+		return candidate(
+			"",
+			`input exceeds the ${MAX_MEMORY_INPUT_CHARS}-character memory input limit`,
+		);
+	}
+	if (isEphemeralInstruction(text)) return candidate("", "ephemeral instruction");
+
+	const remembered = text
+		.replace(/\s+/g, " ")
+		.trim()
+		.replace(/^remember:?\s+/i, "");
+	if (remembered.length < 3) return candidate("", "content is too short");
+	if (isLowQualityMemoryContent(remembered)) {
+		return candidate("", "raw question or conversational fragment");
+	}
+	return candidate(sentence(remembered));
 }
 
 function extractStrongInference(text: string): string | undefined {
@@ -138,40 +171,36 @@ function extractStrongInference(text: string): string | undefined {
 export function detectMemoryCandidate(
 	text: string,
 ): MemoryCandidate | undefined {
-	if (!text || text.length > 4_000 || isEphemeralInstruction(text)) {
+	if (!text) return undefined;
+	if (hasExplicitRememberCommand(text)) return detectExplicitMemory(text);
+	if (text.length > MAX_MEMORY_INPUT_CHARS || isEphemeralInstruction(text)) {
 		return undefined;
 	}
+	if (/\?/.test(text) || isTaskContext(text)) return undefined;
 
-	const explicit = hasExplicitRememberCommand(text);
-	if (/\?/.test(text) && !explicit) return undefined;
-	if (isTaskContext(text) && !explicit) return undefined;
-
-	const content = explicit
-		? extractExplicitMemory(text)
-		: extractStrongInference(text);
+	const content = extractStrongInference(text);
 	if (!content) return undefined;
 
 	const scope = classifyMemoryScope(text);
 	const behavioralCorrection =
-		!explicit && /^\s*you\s+(?:keep|always|forgot|missed|do not|don'?t)\b/i.test(text);
+		/^\s*you\s+(?:keep|always|forgot|missed|do not|don'?t)\b/i.test(text);
 
 	return {
 		content,
-		reason: explicit
-			? "explicit-memory"
-			: behavioralCorrection
-				? "behavioral-correction"
-				: scope === "workflow"
-					? "workflow-rule"
-					: "explicit-memory",
+		reason: behavioralCorrection
+			? "behavioral-correction"
+			: scope === "workflow"
+				? "workflow-rule"
+				: "explicit-memory",
 		scope,
-		autoWrite: explicit,
+		autoWrite: false,
 	};
 }
 
 export function shouldRejectMemory(
 	content: string,
 	existingText: string,
+	options: MemoryRejectionOptions = {},
 ): string | undefined {
 	if (/begin (rsa |openssh |ec |)?private key/i.test(content)) {
 		return "secret-like content";
@@ -180,6 +209,14 @@ export function shouldRejectMemory(
 		return "secret-like content";
 	}
 	if (/op:\/\//i.test(content)) return "secret-like content";
+	if (
+		/[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:[^\s/@]+@/i.test(content) ||
+		/\b(?:gh[pousr]_[a-z0-9]{36}|github_pat_[a-z0-9]{22}_[a-z0-9]{59})\b/i.test(content) ||
+		/\bauthorization\s*:?\s*bearer\s+[a-z0-9._~+/-]{16,}={0,2}\b/i.test(content) ||
+		/\beyJ[a-z0-9_-]{8,}\.eyJ[a-z0-9_-]{8,}\.[a-z0-9_-]{16,}\b/i.test(content)
+	) {
+		return "secret-like content";
+	}
 	if (
 		/ignore (all )?(previous|prior) instructions|system prompt|developer message/i.test(
 			content,
@@ -201,7 +238,7 @@ export function shouldRejectMemory(
 	if (isLowQualityMemoryContent(content)) {
 		return "raw question or conversational fragment";
 	}
-	if (isTaskContext(content) && !hasExplicitRememberCommand(content)) {
+	if (isTaskContext(content) && !options.explicit) {
 		return "transient task context";
 	}
 
@@ -217,20 +254,45 @@ export function shouldRejectMemory(
 	return undefined;
 }
 
+/**
+ * Remove exact duplicate logical bullets within each section. A logical bullet
+ * is its bullet line plus following lines indented deeper than its marker, so
+ * wrapping differences are ignored but every other character must match.
+ */
 export function auditMemoryText(text: string): MemoryAuditResult {
-	const seenBullets = new Set<string>();
+	const lines = text.split("\n");
+	const audited: string[] = [];
+	let seenBullets = new Set<string>();
 	let removedDuplicates = 0;
-	const audited = text.split("\n").filter((line) => {
-		if (!/^\s*-\s+/.test(line)) return true;
-		const key = normalize(stripBullet(line));
-		if (!key) return true;
+	let index = 0;
+	while (index < lines.length) {
+		const line = lines[index];
+		const marker = line.match(/^(\s*)-\s+\S/);
+		if (!marker) {
+			if (/^#{1,6}\s/.test(line)) seenBullets = new Set();
+			audited.push(line);
+			index += 1;
+			continue;
+		}
+
+		let end = index + 1;
+		while (
+			end < lines.length &&
+			lines[end].trim() !== "" &&
+			(lines[end].match(/^\s*/)?.[0].length ?? 0) > marker[1].length
+		) {
+			end += 1;
+		}
+		const bullet = lines.slice(index, end);
+		const key = bullet.join(" ").replace(/\s+/g, " ").trim();
 		if (seenBullets.has(key)) {
 			removedDuplicates += 1;
-			return false;
+		} else {
+			seenBullets.add(key);
+			audited.push(...bullet);
 		}
-		seenBullets.add(key);
-		return true;
-	});
+		index = end;
+	}
 	return { text: audited.join("\n"), removedDuplicates };
 }
 
@@ -262,7 +324,9 @@ function insertBullet(text: string, section: string, content: string): string {
 export function applyMemoryAddition(
 	input: MemoryAdditionInput,
 ): MemoryAdditionResult {
-	const rejection = shouldRejectMemory(input.content, input.existingText);
+	const rejection = shouldRejectMemory(input.content, input.existingText, {
+		explicit: input.explicit,
+	});
 	if (rejection) {
 		return {
 			changed: false,

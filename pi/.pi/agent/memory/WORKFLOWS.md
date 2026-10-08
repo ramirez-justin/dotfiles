@@ -27,7 +27,13 @@ Durable workflow conventions for Justin's Pi sessions.
 - For PR descriptions/comments containing Markdown, use `--body-file` or
   stdin rather than multiline shell/JSON quoting; verify the posted formatting.
 - PR reviews should inspect the diff and relevant files, then report concrete
-  findings with file/line references rather than generic commentary.
+  findings with file/line references rather than generic commentary. For PRs
+  Justin does not own, run the reviewer in the background while the main agent
+  gives a few-sentence, plain-language orientation and interactively explains
+  choices, tradeoffs, and alternatives. Then present verified findings tied to
+  that discussion, not a long description followed by findings. No extra
+  explainer agent or mandatory Q&A; move straight to findings if the gist is
+  enough. Separate optional alternatives from defects; do not invent rationale.
 - When reviewing PR comments, inspect both GitHub review threads and any linked
   Linear Review diff threads; GitHub APIs do not expose Linear-only findings.
 - When auditing Terraform plans from a long-lived branch, distinguish real

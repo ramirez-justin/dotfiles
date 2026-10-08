@@ -1,8 +1,8 @@
 ---
 description: Read-only Ponytail review for plans and diffs.
-display_name: Simplifier (Tier 4)
+display_name: Simplifier (Tier 3)
 tools: read, grep, find
-model: tiers/tier-4
+model: tiers/tier-3
 thinking: max
 max_turns: 24
 isolated: true

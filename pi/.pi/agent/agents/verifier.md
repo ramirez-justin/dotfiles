@@ -1,8 +1,8 @@
 ---
-description: Cheap evidence-focused validation agent.
-display_name: Verifier (Tier 4)
+description: Evidence-focused validation agent.
+display_name: Verifier (Tier 3)
 tools: read, grep, find, bash
-model: tiers/tier-4
+model: tiers/tier-3
 thinking: max
 max_turns: 16
 prompt_mode: append

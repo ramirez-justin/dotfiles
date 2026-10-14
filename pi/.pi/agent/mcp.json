@@ -18,6 +18,15 @@
       "url": "https://mcp.notion.com/mcp",
       "auth": "oauth",
       "lifecycle": "lazy"
+    },
+    "google-docs": {
+      "command": "op",
+      "args": ["run", "--no-masking", "--", "uvx", "workspace-mcp@2.1.0", "--single-user", "--permissions", "docs:full"],
+      "env": {
+        "GOOGLE_OAUTH_CLIENT_ID": "op://dev_vault/s3546ldcf62uuc4kmr5jn5nsna/add more/Client ID",
+        "GOOGLE_OAUTH_CLIENT_SECRET": "op://dev_vault/s3546ldcf62uuc4kmr5jn5nsna/add more/Client secret"
+      },
+      "lifecycle": "lazy"
     }
   }
 }

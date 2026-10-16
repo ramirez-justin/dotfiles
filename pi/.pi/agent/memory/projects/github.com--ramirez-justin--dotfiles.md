@@ -8,6 +8,8 @@ Stable facts for `github.com/ramirez-justin/dotfiles`.
 
 ## Facts
 
+- On this machine, work directly on the `gametime` branch by default; do not
+  create a feature branch for routine work in this repository.
 - The dotfiles repository uses GNU Stow topic directories.
 - The `pi/` topic maps to `~/.pi/agent`.
 - `mise.toml` is the task runner entry point for setup and verification.

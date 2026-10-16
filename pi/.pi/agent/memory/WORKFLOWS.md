@@ -23,7 +23,10 @@ Durable workflow conventions for Justin's Pi sessions.
   concise, lower-case summary except proper nouns. Include
   `Co-Authored-By: Pi <noreply@pi.dev>` in commits and
   `🤖 Generated with [Pi](https://pi.dev)` in PR descriptions unless Justin
-  asks otherwise.
+  asks otherwise. Approval to implement a fix covers its local commit and
+  pushing it to the existing PR branch after verification; do not add separate
+  approval gates. Other external mutations and destructive operations still
+  require their applicable approval.
 - For PR descriptions/comments containing Markdown, use `--body-file` or
   stdin rather than multiline shell/JSON quoting; verify the posted formatting.
 - PR reviews should inspect the diff and relevant files, then report concrete
@@ -34,6 +37,12 @@ Durable workflow conventions for Justin's Pi sessions.
   that discussion, not a long description followed by findings. No extra
   explainer agent or mandatory Q&A; move straight to findings if the gist is
   enough. Separate optional alternatives from defects; do not invent rationale.
+- When reviewing or changing Airflow DAGs, trace related external code through
+  the actual execution path, including notebooks, shared helpers, SDKs, and
+  downstream services. Verify deployed versions, request limits, batching,
+  and write behavior; parameter compatibility alone is not enough. Do not
+  treat PR descriptions or stubbed tests as proof of production contracts.
+  Report inaccessible external code or unverified contracts as evidence gaps.
 - When reviewing PR comments, inspect both GitHub review threads and any linked
   Linear Review diff threads; GitHub APIs do not expose Linear-only findings.
 - When auditing Terraform plans from a long-lived branch, distinguish real

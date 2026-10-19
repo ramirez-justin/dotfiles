@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "1.2.0",
   "defaultProvider": "litellm",
   "defaultModel": "openai/gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
@@ -39,5 +39,8 @@
   ],
   "env": {
     "POWERLINE_NERD_FONTS": 1
-  }
+  },
+  "extensions": [
+    "-builtin:mcp"
+  ]
 }

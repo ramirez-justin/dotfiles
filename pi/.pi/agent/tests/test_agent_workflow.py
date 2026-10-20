@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 import unittest
 from pathlib import Path
-
-import tomllib
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 AGENT_ROOT = REPO_ROOT / "pi/.pi/agent"
@@ -76,62 +75,62 @@ class AgentWorkflowContract(unittest.TestCase):
     def test_agent_role_contracts(self) -> None:
         expected = {
             "AdvancedPlan.md": (
-                "litellm/anthropic/claude-opus-5-5",
+                "tiers/tier-1",
                 "max",
                 {"read", "grep", "find", "bash"},
                 True,
             ),
             "Explore.md": (
-                "litellm/openai/gpt-6-luna",
+                "tiers/tier-4",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "Plan.md": (
-                "litellm/openai/gpt-6.1-sol",
-                "max",
+                "tiers/tier-2",
+                "xhigh",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "implementer.md": (
-                "litellm/anthropic/claude-opus-5-5",
+                "tiers/tier-1",
                 "high",
                 {"read", "grep", "find", "bash", "edit", "write"},
                 False,
             ),
             "oracle.md": (
-                "litellm/anthropic/claude-opus-5-5",
+                "tiers/tier-1",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "researcher.md": (
-                "litellm/openai/gpt-6-luna",
+                "tiers/tier-3",
                 "high",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "reviewer.md": (
-                "litellm/openai/gpt-6-luna",
+                "tiers/tier-3",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "simplifier.md": (
-                "litellm/openai/gpt-6-luna",
+                "tiers/tier-3",
                 "max",
                 {"read", "grep", "find"},
                 True,
             ),
             "verifier.md": (
-                "litellm/openai/gpt-6-luna",
+                "tiers/tier-3",
                 "max",
                 {"read", "grep", "find", "bash"},
                 False,
             ),
             "worker.md": (
-                "litellm/openai/gpt-6-sol",
-                "medium",
+                "tiers/tier-2",
+                "high",
                 {"read", "grep", "find", "bash", "edit", "write"},
                 False,
             ),
@@ -147,7 +146,7 @@ class AgentWorkflowContract(unittest.TestCase):
             self.assertEqual(frontmatter.get("isolated") == "true", isolated, name)
 
         oracle = parse_frontmatter(agent_dir / "oracle.md")
-        self.assertEqual(oracle.get("display_name"), "Oracle (Opus 5.5)")
+        self.assertEqual(oracle.get("display_name"), "Oracle (Tier 1)")
         advanced = parse_frontmatter(agent_dir / "AdvancedPlan.md")
         self.assertEqual(advanced.get("name"), "AdvancedPlan")
 
@@ -167,11 +166,36 @@ class AgentWorkflowContract(unittest.TestCase):
         settings = json.loads((AGENT_ROOT / "settings.json").read_text())
         self.assertIn(settings["defaultModel"], litellm_ids)
 
+        # Agents select tier aliases; each alias maps to a LiteLLM catalog model.
+        mapping = json.loads((AGENT_ROOT / "extensions/model-tiers.json").read_text())
+        self.assertEqual(
+            mapping,
+            {
+                "tier-1": "litellm/anthropic/claude-opus-5-5",
+                "tier-2": "litellm/openai/gpt-6.1-sol",
+                "tier-3": "litellm/anthropic/claude-sonnet-5-5",
+                "tier-4": "litellm/openai/gpt-6-luna",
+            },
+        )
+        models = {model["id"]: model for model in provider["models"]}
+        for target in mapping.values():
+            provider_id, _, model_id = target.partition("/")
+            self.assertEqual(provider_id, "litellm", target)
+            self.assertIn(model_id, litellm_ids, target)
+
+        # Each agent's thinking level must survive Pi's clamp to the physical model.
         for path in sorted((AGENT_ROOT / "agents").glob("*.md")):
-            model = parse_frontmatter(path)["model"]
-            provider_id, _, model_id = model.partition("/")
-            self.assertEqual(provider_id, "litellm", path.name)
-            self.assertIn(model_id, litellm_ids, path.name)
+            frontmatter = parse_frontmatter(path)
+            alias, _, tier = frontmatter["model"].partition("/")
+            self.assertEqual(alias, "tiers", path.name)
+            model = models[mapping[tier].partition("/")[2]]
+            self.assertIs(model.get("reasoning"), True, path.name)
+            thinking = frontmatter["thinking"]
+            levels = model.get("thinkingLevelMap", {})
+            if thinking in {"xhigh", "max"}:
+                self.assertTrue(levels.get(thinking), path.name)
+            else:
+                self.assertIsNotNone(levels.get(thinking, thinking), path.name)
 
         # LiteLLM rejects the inline per-message effort this flag emits.
         for model in provider["models"]:
@@ -216,6 +240,8 @@ class AgentWorkflowContract(unittest.TestCase):
         self.assertIn("test_agent_workflow.py", tier_checks)
         self.assertIn("node --test", tier_checks)
         self.assertIn("subagent-routing.test.mjs", tier_checks)
+        self.assertIn("bun test", tier_checks)
+        self.assertIn("model-tiers.test.ts", tier_checks)
         self.assertNotIn("depends", tasks["link"])
         self.assertIn("command -v stow", tasks["link"]["run"])
         self.assertIn("mise run pi-update", tasks["update"]["run"])

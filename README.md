@@ -127,6 +127,35 @@ git commit -m "feat(tmux): ..."
 git push
 ```
 
+## Pi Agent Model Tiers
+
+Pi subagents in `pi/.pi/agent/agents/` select `tiers/tier-1` to `tiers/tier-4`
+plus a thinking level. `pi/.pi/agent/extensions/model-tiers.json` maps each tier
+to an exact physical LiteLLM model:
+
+| Tier | Model | Agents |
+|---|---|---|
+| 1 | `litellm/anthropic/claude-opus-5-5` | AdvancedPlan, oracle (max); implementer (high) |
+| 2 | `litellm/openai/gpt-6.1-sol` | Plan (xhigh); worker (high) |
+| 3 | `litellm/anthropic/claude-sonnet-5-5` | researcher (high); reviewer, simplifier, verifier (max) |
+| 4 | `litellm/openai/gpt-6-luna` | Explore (max) |
+
+- To change a tier's physical model, edit the mapping file, update this table
+  and the expected mapping in `test_agent_workflow.py` and
+  `model-tiers.test.ts`, then run `mise run check-agent-tiers`. Run `/reload`
+  or restart Pi before spawning agents.
+- A registered alias rejects missing, virtual, or credential-less targets
+  instead of falling back. The aliases exist only while
+  `extensions/model-tiers.ts` loads successfully. If it is disabled or a
+  missing/malformed mapping prevents loading, pi-subagents may silently fall
+  back to the parent model. Resolve extension-load diagnostics and validate
+  the tier configuration before spawning agents.
+- Startup defaults in `settings.json` are unchanged; the parent still starts on
+  `litellm/openai/gpt-6.1-sol`.
+- Pi clamps each agent's thinking level to the physical model. All four
+  current targets support every assigned level, including `max`.
+- `mise run check-agent-tiers` verifies the matrix offline.
+
 ## Adding a New Topic
 
 ```bash

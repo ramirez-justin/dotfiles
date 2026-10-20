@@ -1,0 +1,6 @@
+{
+  "tier-1": "litellm/anthropic/claude-opus-5-5",
+  "tier-2": "litellm/openai/gpt-6.1-sol",
+  "tier-3": "litellm/anthropic/claude-sonnet-5-5",
+  "tier-4": "litellm/openai/gpt-6-luna"
+}

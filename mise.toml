@@ -116,6 +116,7 @@ description = "Verify Pi agent tiers, strict routing, and local workflow skills"
 run = [
   "python3 {{config_root}}/pi/.pi/agent/tests/test_agent_workflow.py -v",
   "node --test {{config_root}}/pi/.pi/agent/tests/subagent-routing.test.mjs",
+  "PI_OFFLINE=1 bun test {{config_root}}/pi/.pi/agent/tests/model-tiers.test.ts",
 ]
 
 [tasks."hermes:install"]

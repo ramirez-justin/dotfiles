@@ -1,9 +1,9 @@
 ---
 description: Balanced single-writer implementation agent.
-display_name: Worker (Sol)
+display_name: Worker (Tier 2)
 tools: read, grep, find, bash, edit, write
-model: litellm/openai/gpt-6-sol
-thinking: medium
+model: tiers/tier-2
+thinking: high
 max_turns: 30
 prompt_mode: append
 ---
@@ -21,8 +21,10 @@ ladder in `AGENTS.md`. Avoid unsupported abstractions and speculative machinery.
 Preserve required tests, validation, and operational safeguards; fewer lines
 are not a reason to weaken clarity or maintainability.
 
-Before editing, state the files you expect to touch. After editing, run the most
-relevant validation you can safely run.
+Before editing, state the files you expect to touch. After editing, run focused
+tests for changed behavior and, when cheap, lint or format checks on touched
+files. Leave broad suites, CI/PR checks, and independent reviews to the parent.
+Do not chase unrelated failures without parent direction.
 
 Report:
 

@@ -69,16 +69,12 @@ On ordinary requests, automatically evaluate whether delegation improves the wor
 do not wait for a workflow command or ask for permission merely to delegate. Use
 `@tintinweb/pi-subagents` when delegation materially improves the work:
 
-- Launch `Explore` on Luna with max reasoning before planning or debugging a
-  broad, unfamiliar subsystem.
-- Launch `Plan` on GPT-6.1 Sol with max reasoning for detailed planning.
-- Launch `reviewer` on Luna with max reasoning for independent review.
-- Launch `oracle` on Opus 5.5 with max reasoning for hard decisions and
-  assumption checks.
-- Launch `researcher` on GPT-6 Luna with high reasoning for current external
-  evidence.
-- Automatically launch `AdvancedPlan` on Opus 5.5 with max reasoning for
-  architecture planning when a task has
+- Launch `Explore` before planning or debugging a broad, unfamiliar subsystem.
+- Launch `Plan` for detailed planning.
+- Launch `reviewer` for independent review.
+- Launch `oracle` for hard decisions and assumption checks.
+- Launch `researcher` for current external evidence.
+- Automatically launch `AdvancedPlan` for architecture planning when a task has
   either one impact signal plus two structural complexity signals, or at least
   three structural complexity signals. Impact signals are production, data,
   security, compliance, significant cost, public-contract, hard-to-reverse, or
@@ -93,16 +89,22 @@ do not wait for a workflow command or ask for permission merely to delegate. Use
   reasonably be separated.
 - Do not escalate based only on file count, prompt length, or a request for
   thoroughness. Do not ask multiple agents to recreate the same plan.
-- Launch exactly one `worker` on Sol for routine or mechanical writes, or one
-  `implementer` on Opus 5.5 with high reasoning for approved, nontrivial
-  implementation work. The delegated agent is the single writer; do not edit
+- Launch exactly one `worker` for routine or mechanical writes, or one
+  `implementer` for approved, nontrivial implementation work. The delegated agent is the single writer; do not edit
   the same worktree concurrently in the parent.
-- Launch `verifier` on Luna with max reasoning for independent validation of
-  meaningful changes before claiming completion.
-- Keep direct work in the Sol parent for small, clear tasks where delegation
+- Launch `verifier` for independent validation of meaningful changes before
+  claiming completion.
+- Keep direct work in the parent for small, clear tasks where delegation
   would add more overhead than value. Do not force delegation for conversational
   or retrieval requests. Use `Agent` for ordinary automatic delegation; reserve
   `SubagentWorkflow` for explicit opt-in to a scripted workflow.
+
+Each agent's frontmatter selects a tier alias (`tiers/tier-1` to `tiers/tier-4`)
+and its thinking level. `extensions/model-tiers.json` maps each tier to a
+physical LiteLLM model; change model selection there, not in agent files or
+here. Update the expected mappings in both tier test suites and the README
+model table when changing a tier, then run `mise run check-agent-tiers` and
+reload Pi before spawning agents.
 
 Explicit per-call model overrides require a task-specific reason and do not
 change the default routing matrix. All models route through the `litellm`

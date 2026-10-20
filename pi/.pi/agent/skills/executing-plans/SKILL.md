@@ -27,8 +27,8 @@ for every plan. Preserve unrelated changes and respect branch restrictions.
 
 Automatically choose one writer using the routing definitions in `AGENTS.md`:
 
-- `worker` on Sol for routine or mechanical writes.
-- `implementer` on Opus 5.5 with high reasoning for approved nontrivial work.
+- `worker` for routine or mechanical writes.
+- `implementer` for approved nontrivial work.
 
 Give the writer the approved plan, evidence, exact scope, constraints, and
 verification commands. Keep the same writer responsible for corrections; do
@@ -58,7 +58,7 @@ Do not substitute an agent's completion summary for evidence.
 
 ## Mandatory Final-Diff Simplicity Checkpoint
 
-Before Luna verification or completion, load `../ponytail-review/SKILL.md` and
+Before verification or completion, load `../ponytail-review/SKILL.md` and
 run its final-diff checkpoint. Freeze the sole writer before capturing complete
 newline-preserved UTF-8 diff bytes, including untracked created files, base and
 head IDs, ordered changed paths, and artifact and path-list SHA-256 identities.
@@ -80,7 +80,7 @@ to independent verification.
 
 The parent inspects the actual diff, changed files, and verification output
 against the approved design, including unintended changes and missing tests.
-For meaningful changes, launch `verifier` on Luna with max reasoning for
+For meaningful changes, launch `verifier` for
 independent validation before claiming completion. Send justified corrections
 back to the single writer and reverify the final state.
 

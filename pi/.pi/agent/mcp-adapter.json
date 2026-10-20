@@ -32,7 +32,9 @@
         "workspace-mcp@2.1.0",
         "--single-user",
         "--permissions",
-        "docs:full"
+        "docs:full",
+        "sheets:full",
+        "drive:readonly"
       ],
       "env": {
         "GOOGLE_OAUTH_CLIENT_ID": "op://dev_vault/s3546ldcf62uuc4kmr5jn5nsna/add more/Client ID",

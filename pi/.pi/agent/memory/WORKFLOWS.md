@@ -9,16 +9,16 @@ Durable workflow conventions for Justin's Pi sessions.
 
 ## Conventions
 
-- Before opening or updating a Python PR, inspect the active CI workflow and run
-  its exact code-quality command from the same working directory, with the same
-  tool version and final changed-file set. A subdirectory invocation or local
-  pre-commit result is not equivalent evidence.
-- Workflow entry points: `/brainstorm` for design, `/write-plan` for multi-step
-  planning, `/execute-plan` for approved plans, `/debug` for unexpected
-  behavior, `/tdd` for feature/bug-fix tests, `/finish` for final verification,
-  and `/code-review` for structured review. Load matching skills as needed;
-  briefly name the skill and why it applies. Scale process to the task; do not
-  run the entire sequence or add ceremony to small, clear changes.
+- Before opening/updating Python PRs, inspect the active CI workflow. Run its
+  exact code-quality command with the same cwd, tool version, and final
+  changed-file set. Subdirectory runs or local pre-commit results are not
+  equivalent evidence.
+- Entry points: `/brainstorm` design; `/write-plan` multi-step planning;
+  `/execute-plan` approved plans; `/debug` unexpected behavior; `/tdd`
+  feature/bug-fix tests; `/finish` final verification; `/code-review`
+  structured review. Load matching skills as needed; briefly name them and why.
+  Scale to the task: no full sequence or extra ceremony for small, clear
+  changes.
 - Use Conventional Commits (`type(scope): summary`) with an imperative,
   concise, lower-case summary except proper nouns. Include
   `Co-Authored-By: Pi <noreply@pi.dev>` in commits and
@@ -29,14 +29,14 @@ Durable workflow conventions for Justin's Pi sessions.
   require their applicable approval.
 - For PR descriptions/comments containing Markdown, use `--body-file` or
   stdin rather than multiline shell/JSON quoting; verify the posted formatting.
-- PR reviews should inspect the diff and relevant files, then report concrete
-  findings with file/line references rather than generic commentary. For PRs
-  Justin does not own, run the reviewer in the background while the main agent
-  gives a few-sentence, plain-language orientation and interactively explains
-  choices, tradeoffs, and alternatives. Then present verified findings tied to
-  that discussion, not a long description followed by findings. No extra
-  explainer agent or mandatory Q&A; move straight to findings if the gist is
-  enough. Separate optional alternatives from defects; do not invent rationale.
+- Inspect PR diffs and relevant files; report concrete, verified findings
+  with file/line references, not generic commentary. For PRs Justin does not
+  own, run the reviewer in background while the main agent gives a
+  few-sentence plain-language orientation and interactively discusses intent,
+  choices, tradeoffs, and alternatives. Tie findings to that discussion, not a
+  long preamble. No extra explainer agent or mandatory Q&A; go straight to
+  findings if the gist suffices. Separate optional alternatives from defects;
+  never invent rationale.
 - When reviewing or changing Airflow DAGs, trace related external code through
   the actual execution path, including notebooks, shared helpers, SDKs, and
   downstream services. Verify deployed versions, request limits, batching,
@@ -57,7 +57,7 @@ Durable workflow conventions for Justin's Pi sessions.
 - For Astro production task logs, use the `Data Eng` 1Password item named
   `astro production starship api token` as a bearer token for the deployment's
   Airflow REST API. Never print or persist the token.
-- Specs and plans may be committed while work is active. Remove task-specific
-  design, specification, and implementation-plan artifacts when the work is
-  complete. Before creating or finalizing a PR, verify they are absent from both
-  the worktree and final diff unless Justin explicitly asks to retain them.
+- Specs/plans may be committed while active. At completion, remove
+  task-specific designs/specs/implementation plans. Before PR
+  creation/finalization, verify absence from BOTH worktree and final diff
+  unless Justin explicitly requests retention.

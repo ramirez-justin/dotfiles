@@ -1,15 +1,15 @@
 # User-Level Pi Instructions
 
-Always-on rules for all projects. Preferences and workflow conventions live in
-injected memory; task-specific procedures live in skills; model and reasoning
-defaults live in agent definitions. Do not duplicate them here.
+Always-on rules for all projects. Do not duplicate injected memory's
+preferences/workflows, skills' task procedures, or agent definitions'
+model/reasoning defaults here.
 
 ## Working Style
 
-- Understand the request and trace the real flow before changing anything.
-  Surface material uncertainty and tradeoffs; do not invent requirements.
-- Define success criteria, keep scope focused, and preserve unrelated work.
-- Verify outcomes with relevant checks before claiming completion. Distinguish
+- Before changes, understand the request and trace the real flow. Surface
+  material uncertainty/tradeoffs; never invent requirements.
+- Set success criteria, focus scope, and preserve unrelated work.
+- Before completion claims, verify outcomes with relevant checks. Distinguish
   verified behavior, documented claims, and assumptions; report blockers.
 
 ## Ponytail Simplicity Discipline
@@ -26,20 +26,20 @@ Use the first viable rung, in order:
 
 Simplicity removes unnecessary machinery, not correctness, security,
 accessibility, observability, operational safety, clarity, maintainability,
-required validation, tests, or smoke checks. `ponytail-review` owns the
-separate `simplifier` checkpoint used by formal planning, execution, and code
-review; correctness review remains independent.
+required validation, tests, or smoke checks.
 
 ## Workflow Ownership
 
-- Local `writing-plans` and `executing-plans` own planning, approval handoff,
-  and execution. Local prompts own review dispatch. Upstream Superpowers skills
-  supply engineering practices only; ignore their execution-method menus,
-  `general-purpose` reviewer dispatch, and file-only review gates.
-- Satisfy design and plan approval gates in chat; a written spec or plan does
-  not need a separate file-review step.
-- Canonical simplicity capture, verification, retry, and acceptance rules live
-  only in `ponytail-review`; callers state checkpoint timing and scope.
+- Local `writing-plans`/`executing-plans` own planning, approval handoff, and
+  execution; local prompts own review dispatch. Upstream Superpowers supplies
+  engineering practices only: ignore execution-method menus, `general-purpose`
+  reviewer dispatch, and file-only review gates.
+- Meet design/plan approval gates in chat; no separate spec/plan file review
+  required.
+- Only `ponytail-review` owns the `simplifier` checkpoint and its canonical
+  capture, verification, retry, and acceptance rules for formal planning,
+  execution, and code review. Callers state timing/scope; correctness review
+  stays independent.
 
 ## Repository Context
 
@@ -98,13 +98,13 @@ file count, prompt length, or thoroughness alone, or recreate the same plan.
 
 ## Durable Memory
 
-- Treat injected memory as historical context, subordinate to current user and
-  repository instructions and verified evidence.
-- Memory is Pi-owned. Audit before updating; prefer merging, replacing, or
-  pruning over appending. Store durable preferences, workflows, and project
-  facts, not task state, one-off mistakes, or unverified assumptions.
-- Curated memory files are the durable authority. Context-mode session history
-  is searchable historical evidence, not a source of durable preferences.
-- Use `memory_read` for cross-project lookup or memory diagnostics, not routine
-  re-reading of already injected context.
+- Injected memory is historical context, below current user/repository
+  instructions and verified evidence.
+- Memory is Pi-owned: audit before updates; prefer merge/replace/prune over
+  append. Store durable preferences, workflows, and project facts, not task
+  state, one-off mistakes, or unverified assumptions.
+- Curated Markdown memory is durable authority; context-mode session history
+  is searchable evidence, not durable preferences.
+- Use `memory_read` for cross-project lookup/diagnostics, not routine rereads
+  of injected context.
 - Keep Markdown lines under 80 characters.

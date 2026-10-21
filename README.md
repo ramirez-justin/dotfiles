@@ -174,6 +174,48 @@ Pi has two separate memory systems:
   session evidence, not curated preference authority. Promote durable lessons
   into the Markdown files instead of relying on history.
 
+## Pi Command Guardrails
+
+The `tool-rules` extension
+(`pi/.pi/agent/extensions/tool-rules/`) checks shell text just before a tool
+runs. The fixed table is `RULES` in `rules.ts`:
+
+| Rule | Action |
+| --- | --- |
+| `snowflake-terraform`: Terraform/Terragrunt plan/apply | Block in scope |
+| `uv-dbt`: `uv dbt`, `uv run dbt` | Block; use installed dbt |
+| `git-merge`: `git merge`, `gh pr merge` | Confirm |
+| `force-push`: `-f`, `--force[-with-lease]`, `+refspec` | Confirm |
+| `recursive-force-rm`: `rm` with recursive and force | Confirm |
+
+- **Producers:** `bash` (`command`, session cwd), context-mode
+  `ctx_execute` with `language: shell` (`code`), and `ctx_batch_execute`
+  (`commands[].command`), raw or `context_mode_`-prefixed. Malformed shell
+  payloads, including empty batches, are blocked. Other tools and
+  JS/Python code are not inspected.
+- **Snowflake scope:** a cwd path component exactly `snowflake-objects` (or
+  a descendant). This is a path heuristic, not provider identity.
+  Context-mode resolves omitted or relative cwd elsewhere, so Terraform plan
+  or apply there is blocked until an absolute cwd is supplied.
+- **Decisions:** every batch item is classified first; any block wins.
+  Confirm shows one dialog per call (tool, cwd, exact commands). Dialogs
+  are serialized, and no approval is cached. No UI (print/JSON or SDK),
+  refusal, cancellation, or dialog failure blocks. Reasons never echo the
+  command.
+- **Limits:** regexes match text, not shell semantics. Quoted examples such
+  as `printf 'uv run dbt'` or `rg "rm -rf"` match on purpose. Aliases,
+  scripts, dynamically built commands, `cd` or `-chdir` into a new scope,
+  JS/Python child processes, isolated subagents, extension child processes,
+  other executors, and later trusted `tool_call` handlers that mutate input
+  are not covered. It is not a sandbox or permission boundary; broader
+  safety instructions still apply.
+- **Activation:** `~/.pi/agent/extensions` links to this repository, so run
+  `/reload` or start a new Pi session after changes.
+- **Rollback:** add `"-extensions/tool-rules/index.ts"` to `extensions` in
+  `pi/.pi/agent/settings.json`, then `/reload`; no files need deleting.
+
+Test: `mise exec -- bun test ./pi/.pi/agent/tests/tool-rules.test.ts`.
+
 ## Chalk and Pi
 
 Pi reaches Chalk through the hosted MCP server using personal credentials from

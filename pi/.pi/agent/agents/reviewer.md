@@ -1,8 +1,8 @@
 ---
 description: High-reasoning review agent for diffs, plans, and PRs.
-display_name: Reviewer (Tier 3)
+display_name: Reviewer (Tier 2)
 tools: read, grep, find, bash
-model: tiers/tier-3
+model: tiers/tier-2
 thinking: max
 max_turns: 24
 prompt_mode: append

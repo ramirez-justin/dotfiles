@@ -49,6 +49,8 @@ const SDK_ENTRIES: Record<string, string> = {
 	"@earendil-works/pi-coding-agent": PI_ENTRY,
 	"@earendil-works/pi-ai": PI_AI_ENTRY,
 	"@earendil-works/pi-tui": PI_TUI_ENTRY,
+	// pi-subagents declares TypeBox as a peer that Pi's loader supplies.
+	typebox: realpathSync(Bun.resolveSync("typebox", PI_ENTRY)),
 };
 Bun.plugin({
 	name: "installed-pi-sdk",
@@ -91,14 +93,17 @@ function writeMapping(mapping: unknown) {
 	writeFileSync(fixtureMapping, JSON.stringify(mapping));
 }
 
-async function createParent() {
+type Respond = (messages: { role: string; content: unknown }[]) => unknown;
+
+async function createParent(respond?: Respond) {
 	const { createFauxCore, fauxAssistantMessage } = ai;
 	const ids = ["parent", "model-1", "model-2", "model-3", "model-4"];
 	const faux = createFauxCore({ api: "fixture-api", provider: "fixture" });
 	faux.setResponses(
-		Array.from({ length: 50 }, () => (_context, options, _state, model) => {
+		Array.from({ length: 50 }, () => (context, options, _state, model) => {
 			requests.push({ model: model.id, reasoning: options?.reasoning });
-			return fauxAssistantMessage("fixture response");
+			return (respond?.(context.messages) ??
+				fauxAssistantMessage("fixture response")) as never;
 		}),
 	);
 	const modelRuntime = await sdk.ModelRuntime.create({
@@ -359,6 +364,123 @@ describe("model tier aliases", () => {
 			);
 		} finally {
 			for (const child of children) child.dispose();
+			session.dispose();
+		}
+	}, 60_000);
+});
+
+describe("simplifier review contract", () => {
+	const PARENT = "PARENT_WORKFLOW_SENTINEL: run the whole parent workflow.";
+	const ENV = { isGitRepo: false, branch: "", platform: "test" };
+
+	async function loadSimplifier() {
+		const custom = await import(join(SUBAGENTS, "src/custom-agents.ts"));
+		const agents = custom.loadCustomAgents(project, true);
+		const simplifier = agents.get("simplifier");
+		if (!simplifier) throw new Error("simplifier agent was not loaded");
+		return { agents, simplifier };
+	}
+
+	test("pinned turn limit outranks caller max_turns", async () => {
+		const { simplifier } = await loadSimplifier();
+		const invocation = await import(join(SUBAGENTS, "src/invocation-config.ts"));
+		const resolve = (config: unknown, params: object) =>
+			invocation.resolveAgentInvocationConfig(config, params).maxTurns;
+		expect(simplifier.maxTurns).toBe(24);
+		for (const params of [{ max_turns: 8 }, { max_turns: 48 }, {}]) {
+			expect(resolve(simplifier, params)).toBe(24);
+		}
+		const unpinned = { ...simplifier, maxTurns: undefined };
+		expect(resolve(unpinned, { max_turns: 8 })).toBe(8);
+	});
+
+	test("child prompt is standalone and keeps its own safeguards", async () => {
+		const { simplifier } = await loadSimplifier();
+		const prompts = await import(join(SUBAGENTS, "src/prompts.ts"));
+		const build = (config: unknown) =>
+			prompts.buildAgentPrompt(config, project, ENV, PARENT, {});
+		expect(simplifier.promptMode).toBe("replace");
+		expect(simplifier.skills).toBe(false);
+		expect(simplifier.isolated).toBe(true);
+		const childPrompt = build(simplifier);
+		expect(childPrompt).not.toContain("PARENT_WORKFLOW_SENTINEL");
+		expect(childPrompt).toContain(simplifier.systemPrompt);
+		// Append mode would inherit the parent; the sentinel check is meaningful.
+		expect(build({ ...simplifier, promptMode: "append" })).toContain(
+			"PARENT_WORKFLOW_SENTINEL",
+		);
+		const contract = simplifier.systemPrompt.toLowerCase().replace(/\s+/g, " ");
+		for (const pattern of [
+			/confidential/, // no inherited secret-handling policy
+			/do not (edit|write)/,
+			/external mutation/,
+			/untrusted/,
+			/offset.*limit/,
+			/eof/,
+			/never sample or truncate/,
+			/do not inventory the repository/,
+			/at most 8 supporting tool calls/,
+			/final 4 of the configured 24 model turns/,
+			/not permission to omit/,
+			/report immediately/,
+			/evidence gap/,
+		]) {
+			expect(contract).toMatch(pattern);
+		}
+		for (const field of [
+			"state: completed",
+			"artifact-sha256:",
+			"paths-sha256:",
+			"status: lean|changes-required",
+			"blocking-findings:",
+			"evidence-gaps:",
+		]) {
+			expect(contract).toContain(field);
+		}
+	});
+
+	test("a run steered at the pinned limit is reported as steered", async () => {
+		writeMapping({ "tier-3": "fixture/model-3" });
+		const { fauxAssistantMessage, fauxToolCall } = ai;
+		const harmless = join(project, "harmless.txt");
+		writeFileSync(harmless, "harmless\n");
+		let reads = 0;
+		// Keep reading until steered, then claim completion in the final text.
+		const respond: Respond = (messages) => {
+			const last = messages.at(-1);
+			if (last?.role === "user" && JSON.stringify(last).includes("turn limit")) {
+				return fauxAssistantMessage("state: completed\nstatus: lean");
+			}
+			reads++;
+			return fauxAssistantMessage(fauxToolCall("read", { path: harmless }), {
+				stopReason: "toolUse",
+			});
+		};
+		const runner = await import(join(SUBAGENTS, "src/agent-runner.ts"));
+		const types = await import(join(SUBAGENTS, "src/agent-types.ts"));
+		const invocation = await import(join(SUBAGENTS, "src/invocation-config.ts"));
+		const { agents, simplifier } = await loadSimplifier();
+		types.registerAgents(agents);
+		const resolved = invocation.resolveAgentInvocationConfig(simplifier, {
+			max_turns: 8,
+		});
+		const { session, modelRuntime, pi, ctx } = await createParent(respond);
+		let child: { dispose(): void } | undefined;
+		try {
+			const result = await runner.runAgent(ctx, "simplifier", "Review.", {
+				pi,
+				model: modelRuntime.getModel("tiers", "tier-3"),
+				thinkingLevel: resolved.thinking,
+				isolated: resolved.isolated,
+				maxTurns: resolved.maxTurns,
+			});
+			child = result.session;
+			expect(reads).toBe(24);
+			expect(result.responseText).toContain("state: completed");
+			expect(result.steered).toBe(true);
+			expect(result.aborted).toBe(false);
+		} finally {
+			child?.dispose();
 			session.dispose();
 		}
 	}, 60_000);

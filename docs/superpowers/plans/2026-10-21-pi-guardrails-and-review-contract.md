@@ -1,12 +1,11 @@
 # Pi guardrails and review contract
 
-Draft: not approved for execution. Both simplicity-review attempts exhausted
-their turn limits. The following revision incorporates verified reductions
-from their feedback; an explicit waiver of the plan checkpoint is required
-before approval/execution under the current workflow. The user subsequently
-requested diagnosis and a planned repair, not a waiver. Deliverable 0A below
-addresses that failure before the remaining configuration improvements.
-Implementation review gates remain unchanged.
+Status: Deliverables 0 and 0A approved and implemented locally; the user
+explicitly waived the twice-failed plan-only Ponytail checkpoint for that
+scope only. Both 0A plan pilots completed normally. Final acceptance is
+tracked outside this active roadmap against the exact frozen diff and check
+results. Deliverables 1-3 are roadmap-sized and not approved for
+implementation; plan each in detail before execution.
 
 ## Goal and approved scope
 
@@ -75,17 +74,17 @@ All paths below are relative to `pi/.pi/agent/` unless stated otherwise.
 Modify `bin/check-agent-tiers.py`, `tests/test_check_agent_tiers.py`, and
 `tests/model-tiers.test.ts`.
 
-- [ ] Run the current focused Python checker suite and save its failing exit.
-- [ ] Change only these expected model entries, keeping reasoning unchanged:
+- [x] Run the current focused Python checker suite and save its failing exit.
+- [x] Change only these expected model entries, keeping reasoning unchanged:
 
 ```python
 "simplifier.md": ("tiers/tier-3", "max"),
 "verifier.md": ("tiers/tier-3", "max"),
 ```
 
-- [ ] Add regression cases rejecting drift of each agent back to tier 4;
+- [x] Add regression cases rejecting drift of each agent back to tier 4;
   retain current valid-configuration and unrelated-validation tests.
-- [ ] Extend the existing Bun SDK-resolution mapping with Pi's real TypeBox
+- [x] Extend the existing Bun SDK-resolution mapping with Pi's real TypeBox
   modules. Installed subagents 0.22.0 declares TypeBox as a peer; Pi's loader
   supplies these aliases, but the test currently omits them. Use:
 
@@ -96,7 +95,7 @@ Modify `bin/check-agent-tiers.py`, `tests/test_check_agent_tiers.py`, and
   Keep real validation and agent execution. Do not stub validation, skip the
   integration test, patch installed packages, or install a second SDK. Stop
   on any remaining baseline failure rather than expanding dependency scope.
-- [ ] From repository root, run:
+- [x] From repository root, run:
 
 ```sh
 python3 -m unittest discover -s pi/.pi/agent/tests \
@@ -112,8 +111,8 @@ through the installed runner, and existing isolation assertions retained.
 
 Prioritize this immediately after the baseline repair and before guardrails.
 The fix targets review scope and context, not larger budgets or relaxed gates.
-Only this plan changes now; implement the repair after approval of its scope
-and resolution of the existing checkpoint blocker. No waiver is inferred.
+Implemented after approval with the plan checkpoint waived for 0/0A only.
+Verified pilot results are recorded in the verification section below.
 
 ### Diagnosis: observed behavior versus hypotheses
 
@@ -170,15 +169,15 @@ Modify these existing paths; do not add a dispatcher, watchdog, or new agent:
 - `tests/test_ponytail_capture.py`
 - `bin/check-agent-tiers.py` and `tests/test_check_agent_tiers.py`
 
-- [ ] Write failing semantic tests for the new role/prompt contract first.
+- [x] Write failing semantic tests for the new role/prompt contract first.
   Keep all existing capture, freshness, tamper, full-read, and identity tests.
-- [ ] Make the simplifier standalone with `prompt_mode: replace` and
+- [x] Make the simplifier standalone with `prompt_mode: replace` and
   `skills: false`. Preserve read-only tools, isolation, tier 3, max thinking,
   and `max_turns: 24` initially. Explicitly include confidentiality, untrusted
   artifact handling, no writes, no external mutations, and the existing
   identity/report contract in its own instructions; do not rely on inherited
   parent policy for these safeguards.
-- [ ] Give the role this bounded process, for plans and diffs alike:
+- [x] Give the role this bounded process, for plans and diffs alike:
 
 ```text
 Read the complete supplied artifact first; never sample or truncate it.
@@ -195,25 +194,25 @@ Once the artifact is fully assessed and candidate reductions are resolved,
 report immediately. Do not seek extra findings or audit optional follow-ups.
 ```
 
-- [ ] Update `prompt_for` to carry that scope and finish condition in the
+- [x] Update `prompt_for` to carry that scope and finish condition in the
   canonical generated prompt, not a parent-added suffix. Keep source bytes,
   artifact identity, required report fields, and explicit requirements intact.
   Adjust the capture skill so supporting evidence means a hypothesis-directed
   check, not a requirement to reproduce all implementation verification.
-- [ ] Add a parent planning check in `writing-plans`: the active milestone
+- [x] Add a parent planning check in `writing-plans`: the active milestone
   gets detailed executable steps; later milestones stay roadmap-sized. Resolve
   important API uncertainties before review, so simplicity review need not
   discover an architecture. Preserve source-backed blockers and cross-step
   simplifications; do not cap the count of legitimate findings.
-- [ ] Keep effective-limit policy explicit: the configured 24 is authoritative
+- [x] Keep effective-limit policy explicit: the configured 24 is authoritative
   in this package version. Do not attempt a caller-only limit override or
   assume `isolated` strips inherited instructions. No global default changes,
   package patch, or automatic budget increases are needed for this repair.
-- [ ] Retain strict acceptance: a steered/aborted lifecycle is incomplete even
+- [x] Retain strict acceptance: a steered/aborted lifecycle is incomplete even
   when its text says `state: completed`. Unread artifact bytes or unresolved
   essential approval evidence still block. Optional implementation research
   left to execution is not by itself an incomplete simplicity review.
-- [ ] Bound recovery without hiding incompleteness. Before any permitted
+- [x] Bound recovery without hiding incompleteness. Before any permitted
   retry, diagnose failure category and verify the same capture. A retry must
   not pretend a caller parameter overrides a pinned config. Preserve the
   current one-retry/second-failure gate; changing that policy needs separate
@@ -239,20 +238,20 @@ expect(childPrompt).not.toContain("PARENT_WORKFLOW_SENTINEL");
 expect(childPrompt).toContain(simplifier.systemPrompt);
 ```
 
-- [ ] Assert configured 24 also outranks caller 48. Assert replace-mode output
+- [x] Assert configured 24 also outranks caller 48. Assert replace-mode output
   retains the complete simplifier contract and strips the synthetic parent's
   workflow marker; do not merely assert a frontmatter string changed.
-- [ ] Extend checker invariants for standalone prompt mode and disabled skill
+- [x] Extend checker invariants for standalone prompt mode and disabled skill
   inheritance, keeping its read-only and isolation invariants intact.
-- [ ] Extend capture CLI tests: generated prompts carry the artifact-first,
+- [x] Extend capture CLI tests: generated prompts carry the artifact-first,
   bounded-support, finish/report instructions and all required identity
   sections; capture/verify still detects prompt tampering and stale plans.
   Use behavioral/structural assertions, not exact prose snapshots.
-- [ ] Confirm failure semantics in an offline faux-provider run that keeps
+- [x] Confirm failure semantics in an offline faux-provider run that keeps
   requesting harmless reads until the pinned soft limit. Verify the installed
   runner returns `steered: true`, not a clean result merely because a final
   report says completed. No live provider or dangerous commands required.
-- [ ] Run from repository root:
+- [x] Run from repository root:
 
 ```sh
 python3 -m unittest discover -s pi/.pi/agent/tests \
@@ -263,264 +262,66 @@ mise exec -- bun test ./pi/.pi/agent/tests/model-tiers.test.ts
 mise run check
 ```
 
-- [ ] After the fix is approved and active, request one small-plan pilot and
-  one representative-plan pilot, recording real lifecycle state, effective
-  limit, turns, tool calls, coverage gaps, and duration. Obtain approval for
-  those model-backed trials; no trial occurs as part of this planning-only
-  update. Compare with the two baseline traces, not just report wording.
-  Success: both complete without a turn-limit steer, preserve full artifact
-  reading and justified findings, and do not rediscover unrelated runtime
-  details. A forced-stop pilot is a remaining blocker, not a waived pass.
+- [x] Run the approved repair's small-plan and representative-plan pilots.
+  Record real lifecycle state, effective limit, turns, tool calls, coverage
+  gaps, and duration. Compare with the two baseline traces, not just report
+  wording. Both must complete without a turn-limit steer, preserve full
+  artifact reading and justified findings, and avoid unrelated runtime
+  investigation. A forced-stop pilot remains a blocker, not a waived pass.
+
+Verified live pilot results: small plan completed lean in 5 model turns,
+7 tool calls, 196.6 seconds; representative plan completed lean in 4 model
+turns, 9 tool calls, 276.5 seconds. Both used the pinned 24-turn configuration,
+read the full frozen artifact, passed before/after receipt verification, and
+had no forced wrap-up steer. Neither produced a blocking finding. A suggested
+optional pilot consolidation was not adopted: both artifact sizes were part
+of this repair's approved validation. These are completion-reliability
+results, not proof that latency is solved.
 
 The observed timings are baselines, not an invented universal latency SLA.
 If bounded remit alone is insufficient, inspect the pilot traces before a
 separate model/effort experiment. Never respond with a blanket larger limit.
 
-## Deliverable 1: small, explicit tool-call guardrails
+## Deliverable 1 (roadmap): small, explicit tool-call guardrails
 
-Create `extensions/tool-rules/index.ts`,
-`extensions/tool-rules/rules.ts`, and `tests/tool-rules.test.ts`.
-Use a typed constant table for the five rules, not a Markdown configuration
-format, loader, or new dependency. Add brief operational documentation to
-root `README.md`, linking to the rule definitions instead of duplicating them.
+Not approved for implementation. Goal: a dotfiles-owned TypeScript rule
+table enforced through Pi 1.3.0 `tool_call` hooks in
+`extensions/tool-rules/`, documented in root `README.md`. Best-effort
+guardrail, not a sandbox or shell parser; keep semantic approval and
+secret-handling instructions in context.
 
-### Rule interface
+Seed rules: block Snowflake Terraform/Terragrunt plan/apply under
+`snowflake-objects`; block `uv dbt`/`uv run dbt`; confirm `git merge`,
+`gh pr merge`, force pushes, and recursive force deletes. Block wins over
+confirm; consent applies to one exact call; headless calls fail closed; no
+session-wide allow switch; never log command text or secrets.
 
-One regex per rule, applied to normalized shell-command strings. No
-config parser, templating, inheritance, project overrides, live watcher,
-AST matching, output filtering, stream interruption, or automatic rewrites.
+Before detailed planning, verify producer tool names and cwd behavior for
+Bash and context-mode shell inputs. Verification scope: pure matching tests
+with real producer shapes, wrappers, chains, benign commands, documented
+gaps, concurrent dialogs, and an offline faux-provider session proving a
+blocked call never runs. No dangerous commands in tests.
 
-Normalize only these known executable surfaces into Bash-shaped calls:
-`bash.input.command`, `ctx_execute.input.code` when language is `shell`, and
-`ctx_batch_execute.input.commands[].command`. Confirm the installed tools'
-registered names before binding adapters; do not guess namespace aliases.
-Keep rules defined once against normalized shell commands. Other languages
-and arbitrary nested input are not scanned. A matching batch blocks
-or confirms the entire exact invocation; consent is never reused per item.
-Derive effective cwd from each producer's verified execution behavior and
-explicit cwd argument, not blindly from the parent session. Test overrides
-and relative paths; if cwd cannot be established, retain the scoped-policy
-evidence gap rather than silently asserting the Snowflake rule covers it.
+## Deliverable 2 (roadmap): concise, explicit reviewer reporting
 
-```typescript
-export interface Rule {
-  name: string;
-  condition: RegExp;
-  cwd?: RegExp;
-  action: "block" | "confirm";
-  message: string;
-}
+Not approved for implementation. Goal: a fixed reviewer report contract in
+`agents/reviewer.md` and a shorter `prompts/code-review.md`, preserving the
+reviewer tier-2 model. Distinguish completed/incomplete, severity and
+confidence, verified findings versus unverified pre-merge concerns,
+evidence, checks, coverage, and gaps. Instruction-level contract only; the
+parent validates lifecycle and identity and never infers success from a
+report's own state field. Verification scope: parseable examples, semantic
+checks, and a labeled manual live smoke check.
 
-export interface Call {
-  toolName: string;
-  input: Record<string, unknown>;
-}
+## Deliverable 3 (roadmap): prune memory without weakening policy
 
-export function matchingRules(
-  rules: readonly Rule[], call: Call, cwd: string,
-): Rule[];
-```
-
-Example fixed rule entry in `rules.ts`:
-
-```typescript
-const uvDbt: Rule = {
-  name: "uv-dbt",
-  action: "block",
-  condition: /\buv\s+(?:run\s+)?dbt\b/,
-  message: "Use installed dbt, not uv. Missing local profiles or " +
-    "packages alone is not a reason to skip dbt Cloud parse.",
-};
-```
-
-- [ ] Define all five entries in `export const RULES: readonly Rule[]`.
-  Validate the shipped table's count and unique names in tests. Keep regexes
-  non-stateful (`g`/`y` forbidden) and reload changes with Pi `/reload`.
-- [ ] Write pure matching tests with real producer shapes:
-
-```typescript
-const call = {
-  toolName: "bash", input: { command: "uv run dbt parse" },
-};
-expect(matchingRules(rules, call, "/repo").map(r => r.name))
-  .toContain("uv-dbt");
-expect(matchingRules(rules, {
-  toolName: "bash", input: { command: "dbt parse" },
-}, "/repo")).toEqual([]);
-```
-
-- [ ] Implement deterministic matching of the selected string field and cwd.
-  Add explicit normalization tests for each supported producer, including
-  whole-batch decisions, missing/malformed fields, and JavaScript/Python
-  context-mode calls that are deliberately outside this coverage. Never
-  stringify entire tool inputs or recursively inspect arbitrary data.
-- [ ] Add the five fixed rules and the following behavior cases. Use bounded,
-  reviewed regexes for this finite set, not a new shell parsing framework.
-  Broad raw-command matching may flag quoted examples. Document that limit;
-  do not promise complete command semantics or bypass-proof detection.
-
-| Rule name | Scope and expected behavior |
-| --- | --- |
-| `snowflake-terraform` | Block Terraform/Terragrunt plan/apply in cwd |
-| | named `snowflake-objects` or a descendant; message: Justin runs these. |
-| `uv-dbt` | Block `uv dbt`, `uv run dbt`; suggest installed `dbt`. |
-| `merge` | Confirm `git merge` and `gh pr merge`, including options. |
-| `force-push` | Confirm `git push -f`, `--force`, `--force-with-lease`. |
-| `recursive-force-delete` | Confirm `rm -rf`, `-fr`, `-r -f`, long flags. |
-
-Tests must include executable absolute paths, `git -C`, environment prefixes,
-newline/semicolon/AND chains, and `zsh -ic`/`bash -lc` wrappers for the seed
-operations. Include `terraform -chdir=... plan` within scoped cwd. Allow
-`git status`, `git diff`, ordinary `git push`, `gh pr view`, `dbt parse`,
-`uv run pytest`, `rm file`, and Terraform outside the defined cwd scope.
-Explicit gaps: directory changes inside a command, targeting Snowflake from
-other cwd paths, aliases, script bodies, dynamic/eval execution, other tool
-executors, and isolated subagents. Retain instructions for these cases.
-
-### Extension lifecycle and per-call approval
-
-- [ ] Test the registered hook with a fake Pi/context before implementation:
-  no match passes unchanged; block returns `{ block: true, reason }`; approval
-  accepts only affirmative consent, cancel/refusal blocks; no UI blocks;
-  missing command field is handled safely; a block wins over confirmations.
-- [ ] Resolve matching rules, then apply the strongest action. A prohibited
-  match never becomes confirmable merely because another rule matches.
-  Aggregate approval-required matches into one dialog for the exact call.
-- [ ] Use `ctx.hasUI` and the host's supported confirmation dialog. Never
-  infer approval from model-authored arguments or remembered chat text.
-  Headless results tell the user to perform the operation manually or rerun
-  interactively; there is no persistent override or permit-next mechanism.
-- [ ] Serialize simultaneous confirmation dialogs using a small promise
-  queue, not a new task scheduler. Consent belongs to only the shown call.
-  Test two concurrent calls with opposite answers and rejection cleanup.
-- [ ] Never log/persist command text, matched input, or secret values in rule
-  errors or telemetry. No secret scanner is promised. The ordinary host
-  transcript and user-controlled dialog remain subject to existing policy.
-  Include tool, cwd, and exact invocation in confirmation, not in extra
-  stored messages. Later extension handlers can mutate inputs, so do not
-  claim immutable-call enforcement against other trusted extensions.
-- [ ] Dialog exceptions block the call and release the queue. No runtime
-  policy loader or separate failed-load recovery state is needed.
-- [ ] Test a real offline Pi session with a faux provider and a harmless Bash
-  sentinel: an attempted matched operation is blocked before the underlying
-  tool runs. Use mocked confirmation for affirmative/negative paths; never
-  execute real deletion, merges, force pushes, Terraform, or dbt in tests.
-  Reuse the SDK-loading pattern in `tests/model-tiers.test.ts` without
-  extracting a new shared test framework.
-- [ ] Document trust scope, the five rules, confirmation/headless behavior,
-  reload instructions, regex limits, and extension-removal rollback in README.
-  Document that direct child-process execution inside extensions and tools
-  is not automatically intercepted by the parent's Bash hook.
-
-Run from repository root:
-
-```sh
-mise exec -- bun test ./pi/.pi/agent/tests/tool-rules.test.ts
-mise run check
-```
-
-Expected: all behavior cases pass with no provider requests or unsafe calls.
-Fold automatic extension discovery into that real-session test using a
-temporary Stow-like agent directory. Do not add a separate discovery test,
-restow, or change live package settings just to make tests pass.
-
-## Deliverable 2: concise, explicit reviewer reporting
-
-Modify `agents/reviewer.md` and `prompts/code-review.md`. Preserve reviewer
-model/display name tier 2. No undocumented agent frontmatter fields, package
-patches, mandatory workflow orchestration, or additional reviewer agent.
-
-- [ ] Replace the existing Report section with this fixed output contract.
-  The reviewer emits one JSON object, not a fenced code block or extra prose.
-  It is an instruction-level contract; the parent still validates the result.
-
-```json
-{
-  "state": "completed",
-  "verdict": "no-confirmed-findings",
-  "snapshot": null,
-  "confidence": 0.8,
-  "findings": [],
-  "pre_merge_checks": [],
-  "suggestions": [],
-  "coverage": ["paths and execution flows inspected"],
-  "checks": [{"command": "actual command", "result": "actual result"}],
-  "evidence_gaps": []
-}
-```
-
-`state`: completed or incomplete. `verdict`: changes-required,
-no-confirmed-findings, or inconclusive. An incomplete lifecycle always means
-inconclusive, never a clean result. `snapshot` is null only when no identity
-is supplied. Otherwise it echoes `artifact_sha256`, `base`, `head`, and
-`paths_sha256` from the supplied capture; fields not applicable to a plan
-capture are null. The parent verifies every applicable identity field against
-the frozen snapshot. Confidence is numeric 0..1, not a correctness guarantee.
-
-Each verified finding has `title`, `priority` (P0..P3), `confidence`, `path`,
-`line_start`, `line_end`, `impact`, `evidence`, and `recommendation`. Require
-positive, ordered line numbers and the smallest relevant range, normally at
-most 10 lines; wider context belongs in evidence. Priorities: P0 urgent,
-P1 high, P2 normal, P3 low. Sort by severity, not confidence.
-
-Each unverified `pre_merge_checks` item has `concern`, `priority`,
-`confidence`, `missing_evidence`, and `verification_step`. Optional suggestions
-are explicitly non-blocking. Serious plausible concerns stay visible even
-with low confidence. No findings does not prove correctness.
-
-- [ ] Shorten duplicated investigation wording in the slash prompt by
-  delegating investigation/report details to reviewer.md. Retain dispatch
-  ownership, frozen identity, independent correctness/simplicity checks,
-  freshness, personal verification, retry/acceptance, and incomplete handling.
-- [ ] Parent acceptance: require a completed Agent lifecycle result and
-  well-formed contract; reject missing/invalid fields or mismatched identity.
-  Request one corrected report; if unavailable/malformed again, report an
-  incomplete review. Never infer success from a JSON `state` field alone.
-- [ ] Validate Markdown/frontmatter and the example with JSON.parse.
-  Reuse existing all-agent dispatch tests for loading; do not add canned
-  report-transport tests that pass even if the contract text disappears.
-  Keep parent acceptance explicit, without a new JSON schema runtime.
-- [ ] Verify both severity and confidence, a serious unverified concern,
-  empty findings with evidence gaps, and incomplete status survive the
-  report examples and parent instructions. Use semantic checks and manual
-  inspection, not exact prose snapshots.
-
-Run `mise run check` from repository root. Live model report compliance
-remains a labeled manual smoke check, not a claimed automated guarantee.
-
-## Deliverable 3: prune memory without weakening policy
-
-Modify `memory/USER.md`, `memory/WORKFLOWS.md`,
-`skills/snowflake/SKILL.md`, and `skills/cortex-code/SKILL.md`.
-Reread each immediately before editing.
-
-- [ ] Remove only the approved final `- that.` bullet from USER.md.
-- [ ] Preserve the Snowflake Terraform preference, installed-dbt preference,
-  dbt Cloud explanation, and all broad safety/approval instructions. Bash
-  matching does not cover every execution path, so these are not redundant.
-- [ ] Move the detailed Cortex-to-Snowflake staging key-pair fallback from
-  WORKFLOWS.md into a `Cortex authentication fallback` section in the
-  Snowflake skill. Preserve the account, environment-variable names,
-  interactive zsh requirement, in-memory credentials, and authority checks;
-  add no credential values. In the Cortex skill, add a short pointer to that
-  Snowflake section so the fallback is discoverable for Cortex failures.
-- [ ] Replace the original workflow bullet with:
-
-```markdown
-- If Cortex cannot access Snowflake, use the existing 1Password key-pair
-  fallback in the `snowflake` skill; do not rely only on saved CLI profiles.
-```
-
-- [ ] Validate budgets using character counts, not bytes; USER/WORKFLOWS must
-  each be <=4,000 characters and retain exactly one copy of required headings.
-  Read final diffs to verify there was no loss of safety or procedural detail.
-- [ ] Run the memory-governor suite and the full check. Report paths, moved
-  content, and why it no longer needs always-on injection.
-
-```sh
-mise run check-memory
-mise run check
-```
+Not approved for implementation. Remove only the approved stray `- that.`
+bullet from `memory/USER.md`. Move the detailed Cortex key-pair fallback
+from WORKFLOWS.md into the `snowflake` skill with a Cortex skill pointer,
+preserving environment names, interactive zsh, in-memory credentials, and
+authority checks. Keep safety, Snowflake Terraform, and dbt preferences.
+Verification scope: character budgets (<=4,000 each), headings, diff
+inspection, `mise run check-memory`, and `mise run check`.
 
 ## Final verification and handoff
 

@@ -18,9 +18,9 @@ expected = {
     "oracle.md": ("tiers/tier-1", "max"),
     "Plan.md": ("tiers/tier-2", "xhigh"),
     "researcher.md": ("tiers/tier-3", "high"),
-    "reviewer.md": ("tiers/tier-3", "max"),
-    "simplifier.md": ("tiers/tier-4", "max"),
-    "verifier.md": ("tiers/tier-4", "max"),
+    "reviewer.md": ("tiers/tier-2", "max"),
+    "simplifier.md": ("tiers/tier-3", "max"),
+    "verifier.md": ("tiers/tier-3", "max"),
     "worker.md": ("tiers/tier-2", "high"),
 }
 
@@ -74,7 +74,13 @@ for tier, target in mapping.items():
 simplifier = agents / "simplifier.md"
 if simplifier.is_file():
     values = frontmatter(simplifier)
-    for key, value in {"tools": "read, grep, find", "isolated": "true"}.items():
+    # Standalone prompt: inherited parent workflow broadens the review remit.
+    for key, value in {
+        "tools": "read, grep, find",
+        "isolated": "true",
+        "prompt_mode": "replace",
+        "skills": "false",
+    }.items():
         if values.get(key) != value:
             errors.append(f"{simplifier}: expected {key}={value}")
 

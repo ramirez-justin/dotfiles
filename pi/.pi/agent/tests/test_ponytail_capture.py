@@ -262,6 +262,49 @@ class CaptureTests(unittest.TestCase):
         self.assertNotIn("+large payload", prompt)
         self.assertLess(len(prompt), 5000)
 
+    def test_prompt_bounds_supporting_research_and_finish_for_each_kind(self):
+        # A remit without a finish trigger turns review into reimplementation.
+        plan = self.repo / "plan.md"
+        plan.write_bytes(b"# Plan\n")
+        (self.repo / "new.txt").write_bytes(b"new\n")
+        for kind, extra in (("plan", ("--plan", plan)), ("diff", ())):
+            with self.subTest(kind):
+                receipt, packet = self.capture(kind, *extra)
+                prompt = Path(receipt["prompt"]).read_text()
+                lower = " ".join(prompt.lower().split())
+                full_read = lower.index("read that exact file completely")
+                self.assertLess(full_read, lower.index("supporting"))
+                for phrase in (
+                    "never sample or truncate",
+                    "specific candidate reduction",
+                    "do not inventory the repository",
+                    "at most 8 supporting tool calls",
+                    "final 4 of the configured 24 model turns",
+                    "not permission to omit",
+                    "evidence gap",
+                    "report immediately",
+                ):
+                    self.assertIn(phrase, lower)
+                identity = ["artifact-kind:", "artifact-sha256:"]
+                diff_only = ["base:", "head:", "paths-sha256:"]
+                report = prompt[prompt.index("state: completed"):]
+                for field in identity + [
+                    "status: lean|changes-required",
+                    "blocking-findings:",
+                    "non-blocking-findings:",
+                    "rejected-simplifications:",
+                    "verification-performed:",
+                    "evidence-gaps:",
+                ]:
+                    self.assertIn(field, report)
+                for field in diff_only:
+                    if kind == "diff":
+                        self.assertIn(field, report)
+                    else:
+                        self.assertNotIn(f"\n{field}", report)
+                self.assertIn(packet["artifact-sha256"], report)
+                self.assertEqual(self.verify(receipt).returncode, 0)
+
     def test_artifact_tampering_is_rejected(self):
         receipt, _ = self.capture()
         Path(receipt["artifact"]).write_bytes(b"replacement")

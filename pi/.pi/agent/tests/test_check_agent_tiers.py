@@ -131,6 +131,13 @@ class CheckAgentTiersTests(unittest.TestCase):
         self.assertIn("worker.md: expected model tiers/tier-2", result.stderr)
         self.assertIn("Plan.md: expected thinking xhigh", result.stderr)
 
+    def test_rejects_review_agent_drift_back_to_tier_4(self):
+        for name in ("simplifier.md", "verifier.md"):
+            with self.subTest(name):
+                self.edit_agent(name, "model: tiers/tier-3", "model: tiers/tier-4")
+                self.assert_fails(f"{name}: expected model tiers/tier-3")
+                self.edit_agent(name, "model: tiers/tier-4", "model: tiers/tier-3")
+
     def test_rejects_invalid_mapping(self):
         mapping = self.mapping()
         for name, invalid in {
@@ -160,6 +167,17 @@ class CheckAgentTiersTests(unittest.TestCase):
     def test_retains_unrelated_validation(self):
         self.edit_agent("simplifier.md", "isolated: true", "isolated: false")
         self.assert_fails("expected isolated=true")
+
+    def test_rejects_inherited_simplifier_prompt_or_skills(self):
+        # Append mode or inherited skills would reintroduce the parent remit.
+        for old, new, message in (
+            ("prompt_mode: replace", "prompt_mode: append", "prompt_mode=replace"),
+            ("skills: false", "skills: true", "skills=false"),
+        ):
+            with self.subTest(message):
+                self.edit_agent("simplifier.md", old, new)
+                self.assert_fails(f"expected {message}")
+                self.edit_agent("simplifier.md", new, old)
 
 
 if __name__ == "__main__":

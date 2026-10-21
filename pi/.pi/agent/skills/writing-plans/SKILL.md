@@ -42,6 +42,11 @@ Break work into independently testable deliverables with checkbox steps:
 - Use small actions: write the failing test, confirm its intended failure,
   implement the minimum change, and rerun the test. Use the
   `test-driven-development` skill for feature and bug-fix work.
+- Detail only the active milestone with executable steps; keep later
+  milestones roadmap-sized (goal, safeguards, seed behaviors, verification
+  scope). Resolve important API uncertainties before review so simplicity
+  review need not discover an architecture. This does not cap legitimate
+  findings or drop source-backed blockers and cross-step simplifications.
 - For documentation or configuration, specify deterministic checks rather
   than inventing irrelevant unit tests.
 - Give exact verification commands, working directories, and expected results.

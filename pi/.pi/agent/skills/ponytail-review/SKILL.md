@@ -74,11 +74,19 @@ A supplied frozen file is the complete artifact, not a pointer to reconstruct
 live changes. The generated prompt includes approved requirements, complete
 metadata, exact snapshot path and digest, and full-read continuation guidance.
 Repository reads may support evidence but cannot replace that snapshot.
+The prompt bounds that support to hypothesis-directed checks of specific
+candidate reductions, with a finish condition; simplicity review does not
+reproduce implementation verification. Do not append parent suffixes.
 Line-based continuation cannot recover a single physical line exceeding the
 read tool's 50 KB output cap. If a line cannot be read completely, report the
 limitation and block review; never infer or skip the missing bytes.
 
 ## Foreground Dispatch and Acceptance
+
+`simplifier` is standalone (`prompt_mode: replace`, `skills: false`) and
+pins `max_turns: 24`. In the installed pi-subagents, the agent's configured
+limit overrides a caller `max_turns`, and `isolated` alone does not strip an
+inherited parent prompt. Do not rely on a caller limit override.
 
 Call the Agent tool with these explicit parameters:
 
@@ -134,6 +142,11 @@ A report's `state` field alone is not proof of completed Agent lifecycle state.
 
 Dispatch errors, unavailable tools, failed collection, blank, aborted,
 malformed, substituted-agent, or identity-mismatched results are failures.
+A steered or turn-limited run is incomplete even if its text says
+`state: completed`. Unread artifact bytes or unresolved essential approval
+evidence still block; optional implementation research left to execution
+does not by itself make a review incomplete. Before retrying, record the
+diagnosed failure category and verify the same capture.
 Retry once with the same frozen artifact and explicit parameters. A second
 failure blocks the formal workflow unless the user explicitly waives the
 checkpoint; record any waiver and its scope. Never silently continue.

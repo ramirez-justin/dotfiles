@@ -48,17 +48,56 @@ do not expand into a repository-wide documentation audit.
 
 ## Report
 
-Separate severity from confidence and verification status. Retain serious,
-plausible concerns as explicitly unverified pre-merge checks with the missing
-evidence and how to resolve them; neither assert them as defects nor silently
-filter them out. Withdraw findings contradicted by evidence.
+Return exactly one raw JSON object with these nine fields, without surrounding
+Markdown fences or prose. This is a reporting contract, not runtime schema
+enforcement. Illustrative incomplete example; no review or checks performed:
 
-Report concisely:
+```json
+{
+  "state": "incomplete",
+  "verdict": "inconclusive",
+  "snapshot": null,
+  "findings": [],
+  "pre_merge_checks": [],
+  "suggestions": [],
+  "coverage": [],
+  "checks": [],
+  "evidence_gaps": ["Illustrative format only; no review performed."]
+}
+```
 
-- findings with concrete impact, file:line and supporting evidence (or an
-  explicit evidence gap), severity, confidence, and fix/check recommendation
-- blockers, non-blocking suggestions, and feedback to ignore or defer with
-  rationale, without treating optional alternatives as defects
-- coverage and checks actually performed, results, and remaining gaps
-- completed or incomplete status and what remains; an aborted or turn-limited
-  review is not a pass, and no findings is not proof of correctness
+- `state`: `completed` or `incomplete`. Aborted or turn-limited reviews are
+  incomplete, never passes; retain any already verified findings.
+- `verdict`: `changes-required`, `no-confirmed-findings`, or `inconclusive`.
+  Incomplete always means inconclusive. Use inconclusive when essential
+  evidence is missing. Otherwise, verified findings mean changes-required;
+  no-confirmed-findings is not proof of correctness.
+- `snapshot`: an object with `artifact_kind`, `artifact_sha256`, `base`,
+  `head`, and `paths_sha256`, copied exactly from the supplied captured
+  identity. For captured diffs, every field must match. Never calculate
+  substitute values or invent digests. Use null only for absent/non-applicable
+  values, or for the whole snapshot when no identity was supplied.
+- `findings`: confirmed defects, sorted by priority. Each object has `title`,
+  `priority` (`P0` critical, `P1` high, `P2` medium, `P3` low), `confidence`
+  (number 0..1), `path`, `line_start`, `line_end`, `impact`, `evidence`, and
+  `recommendation`. Lines are positive integers with line_start <= line_end;
+  keep ranges normally <=10 lines. Describe concrete impact and supporting
+  evidence, not speculation. Severity and confidence are separate;
+  self-assessed confidence is not a correctness guarantee. Withdraw findings
+  contradicted by evidence.
+- `pre_merge_checks`: serious, plausible but unverified concerns, never
+  silently filtered out or asserted as confirmed defects. Each object has
+  `concern`, `priority` (P0-P3), `confidence` (number 0..1),
+  `missing_evidence`, and `verification_step`. Keep serious low-confidence
+  concerns visible here.
+- `suggestions`: strings for non-blocking alternatives, not defects; include
+  rationale for feedback to ignore or defer.
+- `coverage`: strings naming actual paths/flows investigated, not planned work.
+- `checks`: objects with `command` (command or check performed) and `result`
+  (actual outcome). Do not report planned checks as executed.
+- `evidence_gaps`: strings naming remaining unavailable evidence and limits;
+  essential gaps prevent a clean verdict, even with no confirmed findings.
+
+Keep reports concise. Never include secrets, credentials, or confidential
+payloads in any field. The parent validates report shape, identity, lifecycle,
+coverage/check evidence, and gaps before accepting the result.

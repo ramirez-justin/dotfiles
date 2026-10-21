@@ -51,6 +51,16 @@ snowsql -a gametime-prod -u JUSTIN_RAMIREZ \
 SnowSQL may prompt for the encrypted private key passphrase. Do not ask the user
 to paste the passphrase into chat.
 
+## Cortex authentication fallback
+
+If Cortex cannot access Snowflake, use the existing 1Password key-pair
+helper, not just saved CLI profiles. For staging, invoke
+`set_snowflake_creds staging` through interactive zsh, then use a temporary
+CLI connection to `GAMETIME-STAGING` with `SNOWFLAKE_USER`. Map the helper's
+key/passphrase variables to `SNOWFLAKE_PRIVATE_KEY_RAW` and
+`PRIVATE_KEY_PASSPHRASE` only in process memory. Verify account and role;
+never print or persist credentials. The helper needs a signed-in op session.
+
 ## Subagent use
 
 Do not use subagents by default for Snowflake queries or mutations. Keep

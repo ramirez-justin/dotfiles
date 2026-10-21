@@ -49,13 +49,8 @@ Durable workflow conventions for Justin's Pi sessions.
   state drift from branch-relative differences by checking changes merged after
   the branch point. Deduplicate findings against Linear and separate
   destructive or irreversible changes from state-only moves before ticketing.
-- If Cortex cannot access Snowflake, use the existing 1Password key-pair
-  helper, not just saved CLI profiles. For staging, invoke
-  `set_snowflake_creds staging` through interactive zsh, then use a temporary
-  CLI connection to `GAMETIME-STAGING` with `SNOWFLAKE_USER`. Map the helper's
-  key/passphrase variables to `SNOWFLAKE_PRIVATE_KEY_RAW` and
-  `PRIVATE_KEY_PASSPHRASE` only in process memory. Verify account and role;
-  never print or persist credentials. The helper needs a signed-in op session.
+- If Cortex cannot access Snowflake, use the key-pair fallback in the
+  `snowflake` skill, not saved CLI profiles alone.
 - Justin's `aws-me` AWS session helper is a zsh alias; from Pi shell tools,
   invoke it through interactive zsh, for example
   `zsh -ic 'aws-me -- <command>'`.

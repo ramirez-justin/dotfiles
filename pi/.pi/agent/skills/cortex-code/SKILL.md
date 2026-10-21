@@ -44,6 +44,11 @@ work. A connection test proves reachability, not authority. If the connection
 is wrong or lacks grant visibility, use a separately verified account-specific
 connection instead; never rely on a previous session's authority.
 
+If Cortex cannot access Snowflake, follow the Snowflake skill's
+[Cortex authentication fallback][fallback], not saved CLI profiles alone.
+
+[fallback]: ../snowflake/SKILL.md#cortex-authentication-fallback
+
 Do not print secrets, private keys, passphrases, decrypted values, or raw
 credential files.
 

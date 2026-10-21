@@ -3,7 +3,10 @@
 Draft: not approved for execution. Both simplicity-review attempts exhausted
 their turn limits. The following revision incorporates verified reductions
 from their feedback; an explicit waiver of the plan checkpoint is required
-before approval/execution. Implementation review gates remain unchanged.
+before approval/execution under the current workflow. The user subsequently
+requested diagnosis and a planned repair, not a waiver. Deliverable 0A below
+addresses that failure before the remaining configuration improvements.
+Implementation review gates remain unchanged.
 
 ## Goal and approved scope
 
@@ -62,6 +65,10 @@ All paths below are relative to `pi/.pi/agent/` unless stated otherwise.
    verified findings/unverified concerns, evidence, checks, and coverage gaps.
 6. Memory sections remain valid; USER and WORKFLOWS fit 4,000 characters each.
    Broad safety instructions and dbt Cloud behavior remain available.
+7. Simplicity review has a bounded, artifact-first remit and an explicit
+   finish condition; its actual prompt/limit behavior is covered by tests.
+   Representative pilot reviews finish without a turn-limit steer, or remain
+   explicitly blocked. An incomplete review never becomes a pass.
 
 ## Deliverable 0: restore a trustworthy baseline
 
@@ -100,6 +107,174 @@ mise run check
 
 Expected: zero exit codes; tier drift rejected, all agents still dispatched
 through the installed runner, and existing isolation assertions retained.
+
+## Deliverable 0A: make simplicity reviews finish reliably
+
+Prioritize this immediately after the baseline repair and before guardrails.
+The fix targets review scope and context, not larger budgets or relaxed gates.
+Only this plan changes now; implement the repair after approval of its scope
+and resolution of the existing checkpoint blocker. No waiver is inferred.
+
+### Diagnosis: observed behavior versus hypotheses
+
+Assessed the two local runs for the same 21,839-byte frozen plan. This is
+verified for these runs, not a claim about every historical review.
+
+| Run | Model turns before limit | Tool calls | Duration |
+| --- | --- | --- | --- |
+| First review | 24 | 51 | 428 seconds |
+| Retry, caller requested 8 turns | 24 | 45 | 335 seconds |
+
+Both read the complete artifact in their first tool batch. They then made
+49 and 43 further tool calls across repository files, dependency discovery,
+Pi runtime, UI internals, context-mode, and the subagents package. The limit
+was consumed by supporting investigation, not recovering a truncated artifact.
+
+Installed subagents 0.22.0 confirms these configuration semantics:
+
+- `invocation-config.ts:139` resolves
+  `agentConfig?.maxTurns ?? params.max_turns`. The agent file's 24 overrides
+  caller values of 8 or 48. A real offline resolver probe returned 24 for
+  both, and 8 only when the agent's configured limit was absent.
+- `agent-runner.ts:1146-1164` counts model turns, not tool calls, sends the
+  wrap-up steer at the effective limit, then aborts after grace turns.
+  Thus 45 or 51 tools do not mean a 24-turn ceiling was ignored.
+- `prompts.ts:101-131` includes the full parent system prompt in append mode.
+  `isolated: true` does not remove that inherited prompt. An offline marker
+  probe confirmed append includes it and replace excludes it.
+- `agents/simplifier.md` currently combines append mode, maximum thinking,
+  a hard-pinned 24-turn limit, broad "trace the relevant real flow" wording,
+  and no investigation budget or report-reservation rule.
+- The generated capture prompt requires full-artifact reading but supplies
+  no stopping condition for supporting research. A fresh retry repeats the
+  same broad contract and rediscovers much of the same evidence.
+
+Root mechanism: the simplicity role becomes a second implementation/runtime
+investigation, then reports only when the runner forces it to stop. Parent
+workflow inheritance reinforces the broad remit. The ignored caller limit is
+an independently reproduced configuration trap, not a reason to retry with a
+different number. Maximum thinking may add latency, but no controlled trial
+establishes it as the cause; do not change model/effort in the first repair.
+The long plan also broadens the search surface; keep later execution plans
+focused on the active milestone, with short roadmap descriptions.
+
+### Concrete changes
+
+Modify these existing paths; do not add a dispatcher, watchdog, or new agent:
+
+- `agents/simplifier.md`
+- `skills/ponytail-review/SKILL.md`
+- `skills/ponytail-review/scripts/capture.py`, specifically `prompt_for`
+- `skills/writing-plans/SKILL.md`
+- `tests/model-tiers.test.ts`
+- `tests/test_ponytail_capture.py`
+- `bin/check-agent-tiers.py` and `tests/test_check_agent_tiers.py`
+
+- [ ] Write failing semantic tests for the new role/prompt contract first.
+  Keep all existing capture, freshness, tamper, full-read, and identity tests.
+- [ ] Make the simplifier standalone with `prompt_mode: replace` and
+  `skills: false`. Preserve read-only tools, isolation, tier 3, max thinking,
+  and `max_turns: 24` initially. Explicitly include confidentiality, untrusted
+  artifact handling, no writes, no external mutations, and the existing
+  identity/report contract in its own instructions; do not rely on inherited
+  parent policy for these safeguards.
+- [ ] Give the role this bounded process, for plans and diffs alike:
+
+```text
+Read the complete supplied artifact first; never sample or truncate it.
+Assess requirements and unnecessary machinery from that artifact.
+Use supporting reads/searches only to test a specific candidate reduction.
+Do not inventory the repository, resolve every plan API, or audit runtime,
+UI, dependency, correctness, and test contracts as a second implementation.
+Normally use at most 8 supporting tool calls after the full artifact read.
+Reserve the final 4 of the configured 24 model turns for synthesis/reporting.
+These are planning targets, not permission to omit required artifact bytes.
+If a simpler replacement cannot be verified within that scope, report the
+specific evidence gap; do not promote it to a blocking finding.
+Once the artifact is fully assessed and candidate reductions are resolved,
+report immediately. Do not seek extra findings or audit optional follow-ups.
+```
+
+- [ ] Update `prompt_for` to carry that scope and finish condition in the
+  canonical generated prompt, not a parent-added suffix. Keep source bytes,
+  artifact identity, required report fields, and explicit requirements intact.
+  Adjust the capture skill so supporting evidence means a hypothesis-directed
+  check, not a requirement to reproduce all implementation verification.
+- [ ] Add a parent planning check in `writing-plans`: the active milestone
+  gets detailed executable steps; later milestones stay roadmap-sized. Resolve
+  important API uncertainties before review, so simplicity review need not
+  discover an architecture. Preserve source-backed blockers and cross-step
+  simplifications; do not cap the count of legitimate findings.
+- [ ] Keep effective-limit policy explicit: the configured 24 is authoritative
+  in this package version. Do not attempt a caller-only limit override or
+  assume `isolated` strips inherited instructions. No global default changes,
+  package patch, or automatic budget increases are needed for this repair.
+- [ ] Retain strict acceptance: a steered/aborted lifecycle is incomplete even
+  when its text says `state: completed`. Unread artifact bytes or unresolved
+  essential approval evidence still block. Optional implementation research
+  left to execution is not by itself an incomplete simplicity review.
+- [ ] Bound recovery without hiding incompleteness. Before any permitted
+  retry, diagnose failure category and verify the same capture. A retry must
+  not pretend a caller parameter overrides a pinned config. Preserve the
+  current one-retry/second-failure gate; changing that policy needs separate
+  explicit approval. Do not automatically rerun the blocked current plan.
+
+### Verification and success criteria
+
+Extend existing real installed-package tests rather than introducing a new
+review-runner wrapper. Use host-resolved TypeBox from Deliverable 0.
+
+```typescript
+// Installed package precedence is pinned so caller assumptions cannot drift.
+expect(resolveAgentInvocationConfig(
+  { ...config, maxTurns: 24 }, { max_turns: 8 },
+).maxTurns).toBe(24);
+expect(resolveAgentInvocationConfig(
+  { ...config, maxTurns: undefined }, { max_turns: 8 },
+).maxTurns).toBe(8);
+
+// Use buildAgentPrompt with the actual loaded simplifier configuration.
+expect(simplifier.promptMode).toBe("replace");
+expect(childPrompt).not.toContain("PARENT_WORKFLOW_SENTINEL");
+expect(childPrompt).toContain(simplifier.systemPrompt);
+```
+
+- [ ] Assert configured 24 also outranks caller 48. Assert replace-mode output
+  retains the complete simplifier contract and strips the synthetic parent's
+  workflow marker; do not merely assert a frontmatter string changed.
+- [ ] Extend checker invariants for standalone prompt mode and disabled skill
+  inheritance, keeping its read-only and isolation invariants intact.
+- [ ] Extend capture CLI tests: generated prompts carry the artifact-first,
+  bounded-support, finish/report instructions and all required identity
+  sections; capture/verify still detects prompt tampering and stale plans.
+  Use behavioral/structural assertions, not exact prose snapshots.
+- [ ] Confirm failure semantics in an offline faux-provider run that keeps
+  requesting harmless reads until the pinned soft limit. Verify the installed
+  runner returns `steered: true`, not a clean result merely because a final
+  report says completed. No live provider or dangerous commands required.
+- [ ] Run from repository root:
+
+```sh
+python3 -m unittest discover -s pi/.pi/agent/tests \
+  -p test_ponytail_capture.py -v
+python3 -m unittest discover -s pi/.pi/agent/tests \
+  -p test_check_agent_tiers.py -v
+mise exec -- bun test ./pi/.pi/agent/tests/model-tiers.test.ts
+mise run check
+```
+
+- [ ] After the fix is approved and active, request one small-plan pilot and
+  one representative-plan pilot, recording real lifecycle state, effective
+  limit, turns, tool calls, coverage gaps, and duration. Obtain approval for
+  those model-backed trials; no trial occurs as part of this planning-only
+  update. Compare with the two baseline traces, not just report wording.
+  Success: both complete without a turn-limit steer, preserve full artifact
+  reading and justified findings, and do not rediscover unrelated runtime
+  details. A forced-stop pilot is a remaining blocker, not a waived pass.
+
+The observed timings are baselines, not an invented universal latency SLA.
+If bounded remit alone is insufficient, inspect the pilot traces before a
+separate model/effort experiment. Never respond with a blanket larger limit.
 
 ## Deliverable 1: small, explicit tool-call guardrails
 
@@ -360,7 +535,8 @@ mise run check
   must be included in final diff capture/verification. Keep stable README
   documentation, tests, and operational policy only.
 - [ ] User authorized local commits at completion. Group baseline/tier fixes,
-  guardrails, reviewer reporting, and memory cleanup into coherent commits
+  review-reliability repair, guardrails, reviewer reporting, and memory
+  cleanup into coherent commits
   after verification; include `Co-Authored-By: Pi <noreply@pi.dev>`. Preserve
   prior reviewer tier-2 edits in the tier-fix commit. Do not push or merge.
 - [ ] Summarize test evidence, coverage gaps, rollback (remove extension/rules

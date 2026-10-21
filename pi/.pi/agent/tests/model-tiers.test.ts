@@ -369,6 +369,94 @@ describe("model tier aliases", () => {
 	}, 60_000);
 });
 
+describe("bounded reader contracts", () => {
+	const PARENT = "PARENT_READER_SENTINEL: execute the entire parent workflow.";
+	const ENV = { isGitRepo: false, branch: "", platform: "test" };
+
+	async function loadReader(name: string) {
+		const custom = await import(join(SUBAGENTS, "src/custom-agents.ts"));
+		const agent = custom.loadCustomAgents(project, true).get(name);
+		if (!agent) throw new Error(`${name} agent was not loaded`);
+		return agent;
+	}
+
+	for (const [name, tier, turns] of [
+		["verifier", "tier-3", 16],
+		["Explore", "tier-4", 12],
+	] as const) {
+		test(`${name} keeps its model, effort, tools and pinned turn limit`, async () => {
+			const agent = await loadReader(name);
+			const invocation = await import(join(SUBAGENTS, "src/invocation-config.ts"));
+			expect(agent.model).toBe(`tiers/${tier}`);
+			expect(agent.thinking).toBe("max");
+			expect(agent.maxTurns).toBe(turns);
+			expect(agent.builtinToolNames.sort()).toEqual([
+				"bash", "find", "grep", "read",
+			]);
+			expect(agent.isolated).not.toBe(true);
+			for (const params of [{ max_turns: 1 }, { max_turns: 48 }, {}]) {
+				const resolved = invocation.resolveAgentInvocationConfig(agent, params);
+				expect(resolved.maxTurns).toBe(turns);
+				expect(resolved.isolated).toBe(false);
+			}
+		});
+
+		test(`${name} builds a standalone child prompt with its own contract`, async () => {
+			const agent = await loadReader(name);
+			const prompts = await import(join(SUBAGENTS, "src/prompts.ts"));
+			const build = (config: unknown) =>
+				prompts.buildAgentPrompt(config, project, ENV, PARENT, {});
+			expect(agent.promptMode).toBe("replace");
+			expect(agent.skills).toBe(false);
+			const childPrompt = build(agent);
+			expect(childPrompt).not.toContain("PARENT_READER_SENTINEL");
+			expect(childPrompt).toContain(agent.systemPrompt);
+			// Positive control: the real builder inherits the marker in append mode.
+			expect(build({ ...agent, promptMode: "append" })).toContain(
+				"PARENT_READER_SENTINEL",
+			);
+		});
+
+		test(`${name} carries safety, evidence and bounded reporting guidance`, async () => {
+			const agent = await loadReader(name);
+			const contract = agent.systemPrompt.toLowerCase().replace(/\s+/g, " ");
+			for (const pattern of [
+				/confidential/,
+				/do not (edit|write)/,
+				/external mutation/,
+				/untrusted/,
+				/offset.*limit/,
+				/eof/,
+				/never sample or truncate/,
+				/never fabricate/,
+				/incomplete/,
+				/evidence gap/,
+				/reserve.*report/,
+				/not permission to omit/,
+				/stop/,
+			]) {
+				expect(contract).toMatch(pattern);
+			}
+			const rolePatterns = name === "verifier" ? [
+				/completion claims/,
+				/assigned commands/,
+				/fresh evidence/,
+				/not.*another correctness or simplicity review/,
+				/mutation.*sandbox.*benchmark.*revert/,
+				/explicit.*material.*failure hypothesis/,
+				/never mutate live source/,
+				/exact.*checks.*outcomes/,
+			] : [
+				/reconnaissance questions/,
+				/paths.*evidence/,
+				/do not.*plan.*implement/,
+				/full.suite.*runtime experiments.*unless.*asked/,
+			];
+			for (const pattern of rolePatterns) expect(contract).toMatch(pattern);
+		});
+	}
+});
+
 describe("simplifier review contract", () => {
 	const PARENT = "PARENT_WORKFLOW_SENTINEL: run the whole parent workflow.";
 	const ENV = { isGitRepo: false, branch: "", platform: "test" };

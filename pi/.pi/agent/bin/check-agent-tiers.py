@@ -71,18 +71,25 @@ for tier, target in mapping.items():
             f"{mapping_path}: {tier} must map to a physical provider/model"
         )
 
-simplifier = agents / "simplifier.md"
-if simplifier.is_file():
-    values = frontmatter(simplifier)
-    # Standalone prompt: inherited parent workflow broadens the review remit.
-    for key, value in {
+# Standalone prompts prevent inherited parent workflows broadening the remit.
+agent_invariants = {
+    "simplifier.md": {
         "tools": "read, grep, find",
         "isolated": "true",
         "prompt_mode": "replace",
         "skills": "false",
-    }.items():
+    },
+    "verifier.md": {"prompt_mode": "replace", "skills": "false"},
+    "Explore.md": {"prompt_mode": "replace", "skills": "false"},
+}
+for name, invariants in agent_invariants.items():
+    path = agents / name
+    if not path.is_file():
+        continue
+    values = frontmatter(path)
+    for key, value in invariants.items():
         if values.get(key) != value:
-            errors.append(f"{simplifier}: expected {key}={value}")
+            errors.append(f"{path}: expected {key}={value}")
 
 subagents_path = root / "pi/.pi/agent/subagents.json"
 subagents = json.loads(subagents_path.read_text())

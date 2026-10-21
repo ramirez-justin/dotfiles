@@ -85,8 +85,12 @@ to independent verification.
 The parent inspects the actual diff, changed files, and verification output
 against the approved design, including unintended changes and missing tests.
 For meaningful changes, launch `verifier` for independent validation before
-claiming completion. Send justified corrections
-back to the single writer and reverify the final state.
+claiming completion. Brief verifier/Explore with finite completion claims or
+reconnaissance questions, curated existing evidence, the exact checks that
+agent owns (none for source-only recon), and an explicit finish condition.
+This scopes delegation, not required full suites, retries, or acceptance gates.
+Send justified corrections back to the single writer and reverify the final
+state.
 
 Use `verification-before-completion`. Report exact checks, their outcomes,
 and any remaining limitations; never claim success from stale or absent tests.

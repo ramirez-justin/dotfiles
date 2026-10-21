@@ -168,6 +168,29 @@ class CheckAgentTiersTests(unittest.TestCase):
         self.edit_agent("simplifier.md", "isolated: true", "isolated: false")
         self.assert_fails("expected isolated=true")
 
+    def test_rejects_inherited_reader_prompt_or_skills(self):
+        for name in ("verifier.md", "Explore.md"):
+            path = self.repo / AGENT / "agents" / name
+            original = path.read_text()
+            for key, invalid, expected in (
+                ("prompt_mode", "append", "replace"),
+                ("prompt_mode", None, "replace"),
+                ("skills", "true", "false"),
+                ("skills", None, "false"),
+            ):
+                with self.subTest(agent=name, key=key, invalid=invalid):
+                    lines = [
+                        line for line in original.splitlines()
+                        if not line.startswith(f"{key}:")
+                    ]
+                    if invalid is not None:
+                        lines.insert(1, f"{key}: {invalid}")
+                    path.write_text("\n".join(lines) + "\n")
+                    try:
+                        self.assert_fails(f"{name}: expected {key}={expected}")
+                    finally:
+                        path.write_text(original)
+
     def test_rejects_inherited_simplifier_prompt_or_skills(self):
         # Append mode or inherited skills would reintroduce the parent remit.
         for old, new, message in (

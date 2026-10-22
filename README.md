@@ -216,6 +216,60 @@ runs. The fixed table is `RULES` in `rules.ts`:
 
 Test: `mise exec -- bun test ./pi/.pi/agent/tests/tool-rules.test.ts`.
 
+## Pi Session Flow
+
+These global settings and extensions apply to every project through the
+`pi` Stow topic. Restart Pi after changing them.
+
+- **Automatic compaction:** `compaction.enabled` is `true` in
+  `pi/.pi/agent/settings.json` with native defaults (16384 reserved
+  tokens, 20000 recent tokens kept). Compaction happens in place in the
+  same session, including between a tool batch and the next model
+  request. Compaction makes additional summarization requests to the
+  current model, which use quota or billing depending on the provider.
+  Summaries are lossy, original entries stay stored, and a summary grants
+  no new authorization. Run `/compact [focus]` manually at any time.
+  Compaction does not stop running subagents. Set `enabled` to `false`
+  to return to manual-only compaction.
+- **Manual handoff:** `/handoff <next goal>` (interactive only) drafts
+  context for a new session from the current projected history, which
+  reflects compactions and context edits. It makes one extra request to
+  the current model with no tools; that request also uses quota or
+  billing and is lossy. You can cancel while it generates, then edit or
+  cancel the draft. Accepting opens a new session linked to the current
+  one, with the edited draft unsent in the editor. Nothing is submitted
+  automatically. Cancellation, failed, truncated, or blank output, and
+  unsafe state all leave the current session unchanged. If Pi's session
+  switch itself fails partway, Pi reports an extension error instead;
+  the active session may already have changed, and the original stays
+  available through `/resume`.
+- **Handoff guard:** before generation, after generation, and right
+  before switching, the guard requires an idle session with nothing
+  queued, no queued or running subagents, and no unread live subagent
+  results; ask Pi to collect results with `get_subagent_result`. It uses
+  the documented pi-subagents registry and blocks if that is missing or
+  incompatible. It cannot stop other trusted extensions from starting
+  work during their own switch handlers. The extension is adapted from
+  Pi's MIT-licensed example; see `extensions/handoff/LICENSE`.
+- **Failure-loop redirect:** after three consecutive identical turns in
+  which every tool call failed (same tools, arguments, errors, and
+  details), one visible note asks the model to change approach or report
+  the blocker. It only counts tool results marked as errors, not error
+  text or other stagnation, and it exempts `get_subagent_result` and
+  `lens_diagnostics` polling. It never rewrites errors, blocks tools, or
+  starts another run. Isolated subagents may not load it. It is advisory,
+  not a sandbox or permission rule.
+- **Scripted workflows off:** `workflowsEnabled` is `false` in
+  `pi/.pi/agent/subagents.json`, so `SubagentWorkflow` is not registered
+  while the ordinary `Agent` tool remains. To re-enable globally, set it
+  to `true` there and restart Pi. The `/agents` Settings toggle writes a
+  project-only `.pi/subagents.json` override, not this global file.
+- **Rollback:** revert the commit and restart Pi, or exclude one
+  extension with `"-extensions/<name>/index.ts"` in `extensions`.
+
+Tests: `failure-loop.test.ts`, `handoff.test.ts`, and
+`session-flow.test.ts` under `pi/.pi/agent/tests/`.
+
 ## Chalk and Pi
 
 Pi reaches Chalk through the hosted MCP server using personal credentials from

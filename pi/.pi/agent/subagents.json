@@ -7,5 +7,6 @@
   "disableDefaultAgents": false,
   "toolDescriptionMode": "compact",
   "fleetView": true,
-  "widgetMode": "background"
+  "widgetMode": "background",
+  "workflowsEnabled": false
 }

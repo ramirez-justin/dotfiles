@@ -30,10 +30,12 @@ required validation, tests, or smoke checks.
 
 ## Workflow Ownership
 
-- Local `writing-plans`/`executing-plans` own planning, approval handoff, and
-  execution; local prompts own review dispatch. Upstream Superpowers supplies
-  engineering practices only: ignore execution-method menus, `general-purpose`
-  reviewer dispatch, and file-only review gates.
+- Local `writing-plans`/`executing-plans` own formal planning, approval
+  handoff, and execution; local prompts own review dispatch. Small, clear,
+  low-risk edits may proceed directly with relevant checks; honor required,
+  requested, or started workflows and review gates. Upstream Superpowers
+  supplies engineering practices only: ignore execution-method menus,
+  `general-purpose` reviewer dispatch, and file-only review gates.
 - Meet design/plan approval gates in chat; no separate spec/plan file review
   required.
 - Only `ponytail-review` owns the `simplifier` checkpoint and its canonical

@@ -1,11 +1,28 @@
 ---
 name: executing-plans
 description: >-
-  Use when an approved implementation plan or build request is ready to run
-  through the local Pi single-writer workflow with verified outcomes.
+  Use when executing an approved formal implementation plan or a nontrivial
+  build request through the local Pi single-writer workflow.
 ---
 
 # Executing Plans
+
+## Scope and Triage
+
+Bounded, small, clear, low-risk work without a formal plan may proceed
+directly: work inline in the parent and run relevant checks. File changes alone
+do not require writer, simplifier, or verifier dispatch. Honor required,
+requested, or started formal workflows and review gates; never downgrade them
+to evade gates.
+
+Risk, not file type or count, controls routing. Ordinary docs and advice-only
+prompts qualify only without changes to safety, authorization, review,
+approval, or delegation controls; production or data behavior; public
+contracts; model-routing defaults; or other material risk. Use formal execution
+for such risk-bearing changes, even in one Markdown file. If direct work
+expands beyond this scope, escalate before continuing.
+
+The remaining sections apply to formal execution only.
 
 Announce that you are using the local executing-plans skill.
 This is the Pi execution control plane, not upstream Superpowers orchestration.

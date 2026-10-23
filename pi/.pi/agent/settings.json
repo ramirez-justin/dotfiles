@@ -10,6 +10,7 @@
   "compaction": {
     "enabled": true
   },
+  "showCacheMissNotices": true,
   "enableInstallTelemetry": false,
   "npmCommand": [
     "mise",

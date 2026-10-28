@@ -51,6 +51,9 @@ Durable workflow conventions for Justin's Pi sessions.
   destructive or irreversible changes from state-only moves before ticketing.
 - If Cortex cannot access Snowflake, use the key-pair fallback in the
   `snowflake` skill, not saved CLI profiles alone.
+- For Pi Anthropic OAuth refresh failures, tell Justin to run
+  `/login anthropic` inside Pi, then retry. Don't send him to
+  `claude auth login` or repeatedly retry the expired credential.
 - Justin's `aws-me` AWS session helper is a zsh alias; from Pi shell tools,
   invoke it through interactive zsh, for example
   `zsh -ic 'aws-me -- <command>'`.

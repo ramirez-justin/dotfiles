@@ -8,6 +8,11 @@ Stable facts for `github.com/gametimesf/gametime-data`.
 
 ## Facts
 
+- Use staging for infrastructure testing and qualification, not live data
+  ingestion. Live ingestion belongs in production.
+- Snowflake infrastructure remains human-apply only. Atlantis registration
+  does not establish automated Snowflake apply readiness or authorization.
+
 - Use `mlctl job logs <job-ref>` to retrieve Baseline/SageMaker notebook output,
   final counters, runtime warnings, and benchmark metrics. For resource-failure
   diagnosis, query CloudWatch in the workload account rather than assuming the

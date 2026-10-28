@@ -50,10 +50,18 @@ Durable preferences about Justin. This file is versioned in dotfiles.
   commands like `dbt parse` run through dbt Cloud, so do not skip them due to
   missing local `profiles.yml` or `dbt_packages/` alone.
 - Treat source data correctness as unverified unless it has been validated.
-- For data pipeline table writes, prefer deterministic keys and metadata columns
-  that support troubleshooting; overwrite modes should only replace rows for
-  source files processed in the current run unless explicitly specified.
+- For data pipeline table writes, prefer deterministic keys and metadata
+  columns that support troubleshooting; overwrite modes should only replace
+  rows for source files processed in the current run unless explicitly
+  specified.
 - Validate automated review suggestions before applying them. When Justin
   shares one with reservations, treat it as a request for technical feedback
   and tradeoffs, not approval to implement; avoid bot-driven churn unless the
   suggestion is technically justified.
+- In PR descriptions/comments and Linear text, use one unwrapped line per
+  paragraph/bullet; let viewers wrap. Hard wrapping is for repository Markdown.
+- Start PR descriptions with plain-language context for uninvolved readers:
+  what went wrong or why it matters, then details and verification.
+- Prefer inline comments about durable intent and constraints. Keep
+  short-lived PR references, rollout status, and other quickly stale context
+  in PR descriptions or tickets instead.

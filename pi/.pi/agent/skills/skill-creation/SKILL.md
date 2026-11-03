@@ -68,3 +68,13 @@ PY
 ```
 
 Replace `<skill-name>` with the actual skill directory name before running.
+
+From the dotfiles repository root, also run:
+
+```bash
+python3 pi/.pi/agent/bin/check-instruction-unicode.py
+```
+
+`mise run check` includes this check; see the script for roots, exclusions,
+and character categories.
+This is read-only hidden-character hygiene, not prompt-injection protection.

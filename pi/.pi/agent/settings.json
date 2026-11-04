@@ -37,6 +37,17 @@
       "prompts": [],
       "themes": []
     },
+    {
+      "source": "git:https://github.com/exploreomni/omni-agent-skills.git@a51880680b758871699a7e17d71795c2f1a02832",
+      "skills": [
+        "skills/omni-model-explorer/**",
+        "skills/omni-model-builder/**",
+        "skills/omni-query/**"
+      ],
+      "extensions": [],
+      "prompts": [],
+      "themes": []
+    },
     "npm:@zenobius/pi-rose-pine",
     "npm:pi-mcp-adapter",
     "npm:pi-powerline-footer",

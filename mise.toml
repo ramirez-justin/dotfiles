@@ -179,21 +179,41 @@ set -euo pipefail
 
 pi_npm_root="$HOME/.pi/agent/npm"
 
+# Exit 0: pass (or the single documented exception), 1: findings, 2: error.
+audit_gate() {
+    mise exec -- python3 "{{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py" gate --prefix "$pi_npm_root"
+}
+
 mise exec -- pi update --extensions
 
 if [ ! -f "$pi_npm_root/package.json" ]; then
     echo "Pi npm extension root not found at $pi_npm_root; skipping npm audit repair."
-elif mise exec -- npm audit --prefix "$pi_npm_root" --omit=peer --audit-level=high; then
-    echo "Pi extension npm audit passed."
 else
-    echo "Attempting safe npm audit repair for Pi extensions..."
-    mise exec -- npm audit fix --prefix "$pi_npm_root" --omit=peer --legacy-peer-deps
-    mise exec -- npm audit --prefix "$pi_npm_root" --omit=peer --audit-level=high
+    audit_status=0
+    audit_gate || audit_status=$?
+    if [ "$audit_status" -eq 1 ]; then
+        echo "Attempting safe npm audit repair for Pi extensions..."
+        # npm exits nonzero while unfixable findings remain; the gate decides.
+        if ! mise exec -- npm audit fix --prefix "$pi_npm_root" --omit=peer --legacy-peer-deps; then
+            echo "npm audit fix exited nonzero; rechecking with the audit gate." >&2
+        fi
+        audit_gate
+    elif [ "$audit_status" -ne 0 ]; then
+        exit "$audit_status"
+    fi
 fi
 
 mise run check
 mise exec -- pi --offline --list-models
 """
+
+[tasks.pi-audit-monitor]
+description = "Read-only check for a fix to the temporary Pi npm audit exception"
+run = 'mise exec -- python3 {{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py monitor --prefix "$HOME/.pi/agent/npm"'
+
+[tasks.pi-audit-monitor-install]
+description = "Install the Monday 09:00 local launchd job for pi-audit-monitor"
+run = "mise exec -- python3 {{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py install-launchd"
 
 [tasks.snowflake-ai-kit-install]
 description = "Install or update Snowflake AI Kit and verify the default Snowflake connection"

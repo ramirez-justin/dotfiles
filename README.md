@@ -23,7 +23,7 @@ Homebrew + 1Password.
 Topic-based layout — each folder mirrors `$HOME`. Stow creates symlinks from
 the repo into the live system.
 
-```
+```text
 dotfiles/
 ├── mise.toml        # all tasks — single entry point
 ├── Brewfile         # curated intentional installs
@@ -136,6 +136,43 @@ mise run submodule-update # update all submodules to latest
 
 dots                     # cd ~/Repositories/dotfiles
 ```
+
+## Pi npm Audit Exception
+
+`mise run pi-update` gates Pi extension packages with
+`pi/.pi/agent/bin/pi-npm-audit.py`. It runs `npm audit fix` (without
+`--force`) when the live audit finds high or critical issues, then rechecks.
+Audit errors, malformed output, and any other high or critical finding fail
+the update; moderate and lower findings are allowed.
+
+Temporary risk: the gate accepts only GHSA-mrhx-c7xc-m3w5 (Zod memory
+exhaustion on oversized input) in the Zod v3 copy nested under
+`context-mode`, while npm reports no compatible fix. Eligibility also
+requires that nested package's installed `package.json` to name `zod` with a
+valid major-3 version; another known major is an ordinary blocking finding,
+and missing, unreadable, or invalid evidence is an audit error. It prints a
+warning on every update and reports when the exception is obsolete. Remove
+the exception and the monitor once a fix lands.
+
+```bash
+mise run pi-audit-monitor          # read-only check; notifies on fix/error
+mise run pi-audit-monitor-install  # launchd job: Mondays 09:00 local time
+
+# Inspect schedule and last exit status; log is
+# ~/Library/Logs/pi-npm-audit-monitor.log
+launchctl print gui/$(id -u)/com.ramirez-justin.dotfiles.pi-npm-audit-monitor
+
+# Uninstall
+launchctl bootout gui/$(id -u)/com.ramirez-justin.dotfiles.pi-npm-audit-monitor
+rm ~/Library/LaunchAgents/com.ramirez-justin.dotfiles.pi-npm-audit-monitor.plist
+```
+
+The job runs resolved `python3` and `npm` paths directly, never through mise,
+so it cannot install tools; rerun the install task after a Node or Python
+major-version change. It never installs packages. It notifies when the
+advisory is gone, a compatible fix is reported, new high or critical findings
+appear, or the check itself fails. Missed runs while asleep run on wake; runs
+while powered off are skipped.
 
 ## Pi Planning and Execution
 
@@ -308,7 +345,7 @@ export TG_ROLE_ARN="arn:aws:iam::..."   # non-secret, machine-specific
 **Repo files are real. `~/.config/...` paths are symlinks pointing into the
 repo.**
 
-```
+```text
 ~/.config/tmux  →  ~/Repositories/dotfiles/tmux/.config/tmux  (real files here)
 ~/.zshrc        →  ~/Repositories/dotfiles/zsh/.zshrc          (real file here)
 ```

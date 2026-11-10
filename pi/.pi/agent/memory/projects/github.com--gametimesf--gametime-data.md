@@ -8,10 +8,17 @@ Stable facts for `github.com/gametimesf/gametime-data`.
 
 ## Facts
 
+- Gametime Datadog uses US5 (`api.us5.datadoghq.com`). Confirm the site before
+  interpreting authentication failures.
 - Use staging for infrastructure testing and qualification, not live data
   ingestion. Live ingestion belongs in production.
 - Snowflake infrastructure remains human-apply only. Atlantis registration
   does not establish automated Snowflake apply readiness or authorization.
+- For Contact Lens S3-to-RAW_DB ingestion, Justin chooses standard internal
+  ingestion controls and existing AWS IAM/RAW_DB RBAC, not bespoke
+  sensitive-data machinery or extra privacy approvals without a concrete
+  requirement. This does not relax credential/SOPS protections or authorize
+  exposing customer data in agent output or artifacts.
 
 - Use `mlctl job logs <job-ref>` to retrieve Baseline/SageMaker notebook output,
   final counters, runtime warnings, and benchmark metrics. For resource-failure

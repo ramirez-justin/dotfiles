@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gametime presentation template</title>
+<style>
+@font-face { font-family: Inter; src: local("Inter Regular"), local("Inter-Regular"), local("Inter"); font-weight: 100 900; }
+@font-face { font-family: Abridge; src: local("Abridge Bold"), local("Abridge-Bold"); font-weight: 700; }
+:root {
+  --page: #010314; --surface: #0a0d10; --card: #1c1c20;
+  --line: #313136; --text: #f9f9fa; --secondary: #dfe2e7;
+  --muted: #a3a8b5; --brand: #19ce85; --warning: #fac400;
+  --info: #669bc4; --on-accent: #010314;
+  --font-size: clamp(13px, min(1.05vw + .55vh, 2.4vh), 30px);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--page); color: var(--secondary);
+  font: var(--font-size)/1.45 Inter, system-ui, sans-serif; }
+main { height: 100dvh; display: flex; flex-direction: column; }
+.deck { flex: 1; min-height: 0; display: flex; align-items: center;
+  justify-content: center; padding: 1.2vh 2vw; }
+.slide { display: flex; flex-direction: column;
+  width: min(100%, calc((100dvh - 5.5rem) * 16 / 9));
+  aspect-ratio: 16 / 9; max-height: calc(100dvh - 5.5rem);
+  padding: 3.2% 4.6%; overflow: auto; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 16px; }
+.slide[hidden] { display: none; }
+.stage { margin-block: auto; display: grid; gap: 1.2em; }
+.stage > *, .head > * { margin: 0; }
+.head { display: grid; gap: .45em; }
+h1, h2 { font-family: Abridge, Inter, system-ui, sans-serif;
+  color: var(--text); line-height: 1.05; text-wrap: balance; }
+h1 { font-size: 3.3em; } h2 { font-size: 2.3em; }
+h3 { font-size: 1em; color: var(--text); margin: 0 0 .6em; }
+p { margin: 0 0 .7em; max-width: 68ch; }
+ul, ol { padding-left: 1.25em; margin: 0; }
+li { margin-bottom: .4em; max-width: 68ch; }
+b, strong { color: var(--text); }
+.eyebrow { font-size: .8em; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--brand); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6em;
+  align-items: center; }
+.grid > * { min-width: 0; }
+.card { padding: 1em 1.2em; background: var(--card);
+  border: 1px solid var(--line); border-radius: 12px; }
+.card > :last-child { margin-bottom: 0; }
+.badge { display: inline-block; font: 700 .75em/1.5 Inter, system-ui, sans-serif;
+  padding: .1em .6em; border-radius: 999px; color: var(--on-accent);
+  background: var(--brand); vertical-align: middle; }
+.pending { background: var(--warning); }
+.example { background: var(--info); }
+.logo { display: block; height: 3em; width: auto; }
+code, pre, kbd { font-family: ui-monospace, monospace; font-size: .85em; }
+code { background: var(--card); padding: .1em .3em; overflow-wrap: anywhere; }
+pre { background: var(--page); border: 1px solid var(--line);
+  padding: 1em; border-radius: 10px; overflow: auto; margin: 0; }
+pre code { padding: 0; background: none; font-size: 1em; }
+a { color: var(--brand); }
+figure { margin: 0; }
+figure img { display: block; width: auto; max-width: 100%; max-height: 22em;
+  margin-inline: auto; border: 1px solid var(--line); border-radius: 10px; }
+figcaption, .small { font-size: .8em; color: var(--muted); }
+figcaption { margin-top: .6em; }
+.image-slot { min-height: 15em; display: grid; place-items: center;
+  padding: 2em; border: 2px dashed var(--line); border-radius: 12px;
+  text-align: center; color: var(--muted); }
+.notes { display: none; margin-top: 1.4em; padding: 1em 1.2em;
+  background: var(--card); border: 1px dashed var(--muted); border-radius: 12px;
+  font-size: .85em; }
+body.notes-on .notes { display: block; margin-bottom: auto; }
+body.notes-on .stage { margin-bottom: 0; }
+.controls { display: flex; justify-content: center; align-items: center;
+  gap: .7rem; min-height: 4.2rem; padding: .5rem; font-size: 15px; }
+button { font: inherit; color: var(--text); background: var(--card);
+  border: 1px solid var(--line); border-radius: 999px; padding: .5em 1em;
+  min-height: 44px; cursor: pointer; }
+button:disabled { opacity: .4; cursor: default; }
+button[aria-pressed="true"] { background: var(--brand); color: var(--on-accent); }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+.slide:focus:not(:focus-visible) { outline: none; }
+#counter { min-width: 5em; text-align: center; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 1em; top: 1em; z-index: 5; background: var(--page); padding: .5em; }
+@media (prefers-reduced-motion: no-preference) {
+  .slide:not([hidden]) { animation: appear .2s ease-out; }
+  @keyframes appear { from { opacity: 0; transform: translateY(5px); } }
+}
+@media (max-width: 900px), (max-aspect-ratio: 4/3) {
+  :root { --font-size: clamp(14px, 2.6vw, 18px); }
+  .deck { align-items: flex-start; padding: .6rem; }
+  .slide { width: 100%; aspect-ratio: auto; max-height: none;
+    min-height: calc(100dvh - 6rem); padding: 1.4rem; }
+  .grid { grid-template-columns: 1fr; }
+  h1 { font-size: 2.5em; } h2 { font-size: 2em; }
+  .controls { flex-wrap: wrap; }
+}
+@media print {
+  @page { size: landscape; margin: 10mm; }
+  :root { --font-size: 11pt; --page: #fff; --surface: #fff;
+    --card: #f0f1f3; --text: #010314; --secondary: #26262b;
+    --muted: #4a4d58; --brand: #0d6e50; --line: #dfe2e7; }
+  html, body, main { height: auto; }
+  main, .deck { display: block; padding: 0; }
+  .controls, .skip { display: none !important; }
+  .slide, .slide[hidden] { display: flex !important; width: 100%;
+    max-height: none; min-height: 0; aspect-ratio: auto; overflow: visible;
+    border: 0; break-after: page; animation: none; }
+  .slide:last-child { break-after: auto; }
+  .grid { grid-template-columns: 1fr 1fr; }
+  pre { white-space: pre-wrap; }
+  .badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#controls">Skip to slide controls</a>
+<main>
+<div class="deck">
+<section class="slide" aria-label="Presentation title" data-title="Presentation title">
+  <div class="stage">
+    <img class="logo" src="gametime-ticket.png" alt="Gametime" width="136" height="160">
+    <p class="eyebrow">Internal presentation · template</p>
+    <h1>A clear promise for your audience</h1>
+    <div class="grid">
+      <p>Replace this with the outcome people should take away. Set the
+        audience, duration, and sharing boundary before drafting the slides.</p>
+      <div class="card"><h3>Agenda</h3><ol>
+        <li>Why it matters</li><li>Show the workflow</li><li>Questions</li>
+      </ol></div>
+    </div>
+  </div>
+  <aside class="notes" aria-label="Presenter notes">
+    <h3>Presenter setup</h3>
+    <p>Replace all sample content. Add time ranges and a demo fallback.
+      Arrow keys navigate; N toggles notes. Notes are visible on this slide,
+      not in a private presenter window. Hide them while screen-sharing.</p>
+    <p>Use browser fullscreen for presenting. Keep gametime-ticket.png beside
+      this HTML file, or embed it in the final private deck when appropriate.</p>
+  </aside>
+</section>
+<section class="slide" aria-label="Feature example" data-title="Feature example" hidden>
+  <div class="stage">
+    <header class="head"><p class="eyebrow"><span class="badge example">Example</span> Feature pattern</p>
+      <h2>Show the feature, then the boundary</h2></header>
+    <div class="grid">
+      <div><h3>Prompt or action</h3>
+        <pre><code>Explain the task and expected outcome.
+Prepare reviewable changes first.
+Keep execution behind its approval gate.</code></pre></div>
+      <div class="card"><h3>What to explain</h3><ul>
+        <li>Where the user starts</li><li>What success looks like</li>
+        <li>What this does not prove</li>
+      </ul></div>
+    </div>
+    <p class="small">Label unmerged behavior <span class="badge pending">Pending</span>.
+      Use real source/config examples, not invented production contracts.</p>
+  </div>
+  <aside class="notes" aria-label="Presenter notes"><h3>Evidence and fallback</h3>
+    <p>Record source paths, status checks, and unverified assumptions here.
+      Have a prepared result ready when a live run could exceed the slot.</p>
+  </aside>
+</section>
+<section class="slide" aria-label="Screenshot walkthrough example" data-title="Screenshot walkthrough" hidden>
+  <div class="stage">
+    <header class="head"><p class="eyebrow">Walkthrough pattern</p>
+      <h2>One visible step at a time</h2></header>
+    <div class="grid">
+      <ol><li>Orient the audience in the interface.</li>
+        <li>Point at the next action.</li><li>Explain the expected result.</li></ol>
+      <figure><div class="image-slot">Replace this area with a real,
+        approved screenshot.</div>
+        <figcaption>Use meaningful image alt text and an optional full-size link.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <aside class="notes" aria-label="Presenter notes"><h3>Screenshot checklist</h3>
+    <p>Remove secrets and personal data before capturing. Check UI versions,
+      runtime labels, legibility, and relative asset paths. Split long
+      procedures across slides instead of shrinking screenshots to thumbnails.</p>
+  </aside>
+</section>
+</div>
+<nav class="controls" id="controls" aria-label="Slide controls">
+  <button id="prev" type="button" aria-label="Previous slide">← Prev</button>
+  <span id="counter" role="status" aria-live="polite"></span>
+  <button id="next" type="button" aria-label="Next slide">Next →</button>
+  <button id="notes" type="button" aria-pressed="false" aria-keyshortcuts="N">Notes (N)</button>
+</nav>
+</main>
+<script>
+(() => {
+  "use strict";
+  const slides = [...document.querySelectorAll(".slide")];
+  const prev = document.getElementById("prev"), next = document.getElementById("next");
+  const counter = document.getElementById("counter"), notes = document.getElementById("notes");
+  let current = 0;
+  const hashIndex = () => {
+    if (!/^#[1-9]\d*$/.test(location.hash)) return null;
+    const n = Number(location.hash.slice(1));
+    return Number.isInteger(n) && n >= 1 ? n - 1 : null;
+  };
+  function show(index, focus = false) {
+    current = Math.min(Math.max(index, 0), slides.length - 1);
+    slides.forEach((slide, i) => {
+      slide.hidden = i !== current;
+      slide.setAttribute("aria-hidden", String(i !== current));
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    document.title = `${slides[current].dataset.title} · Gametime`;
+    prev.disabled = current === 0; next.disabled = current === slides.length - 1;
+    history.replaceState(null, "", `#${current + 1}`);
+    if (focus) slides[current].focus({ preventScroll: true });
+  }
+  function toggleNotes() {
+    notes.setAttribute("aria-pressed", String(document.body.classList.toggle("notes-on")));
+  }
+  slides.forEach((slide, i) => {
+    slide.id = `slide-${i + 1}`; slide.tabIndex = -1;
+    slide.setAttribute("role", "region");
+    slide.setAttribute("aria-roledescription", "slide");
+  });
+  prev.addEventListener("click", () => show(current - 1));
+  next.addEventListener("click", () => show(current + 1));
+  notes.addEventListener("click", toggleNotes);
+  document.querySelector(".skip").addEventListener("click", event => {
+    event.preventDefault();
+    document.querySelector("#controls button:not(:disabled)").focus();
+  });
+  addEventListener("hashchange", () => {
+    const index = hashIndex();
+    if (index !== null) show(index, true);
+  });
+  document.addEventListener("keydown", event => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.target.closest("input, textarea, select, [contenteditable]")) return;
+    switch (event.key) {
+      case "ArrowRight": case "PageDown": show(current + 1, true); break;
+      case "ArrowLeft": case "PageUp": show(current - 1, true); break;
+      case " ":
+        if (event.target.closest("button, a")) return;
+        show(current + (event.shiftKey ? -1 : 1), true); break;
+      case "Home": show(0, true); break;
+      case "End": show(slides.length - 1, true); break;
+      case "n": case "N": toggleNotes(); break;
+      default: return;
+    }
+    event.preventDefault();
+  });
+  show(hashIndex() ?? 0);
+})();
+</script>
+</body>
+</html>

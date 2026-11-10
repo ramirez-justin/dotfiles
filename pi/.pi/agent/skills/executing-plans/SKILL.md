@@ -102,10 +102,18 @@ to independent verification.
 The parent inspects the actual diff, changed files, and verification output
 against the approved design, including unintended changes and missing tests.
 For meaningful changes, launch `verifier` for independent validation before
-claiming completion. Brief verifier/Explore with finite completion claims or
-reconnaissance questions, curated existing evidence, the exact checks that
-agent owns (none for source-only recon), and an explicit finish condition.
-This scopes delegation, not required full suites, retries, or acceptance gates.
+claiming completion. Brief verifier/Explore with a finite claim-to-evidence
+checklist (or reconnaissance questions), curated existing evidence, exact
+gap-closing checks that agent owns (none for source-only recon), and an
+explicit finish condition. Reuse fresh evidence only after independently
+inspecting its provenance and applicability to the final state, scope,
+commands, and environment; never rely on an agent summary alone.
+Run only uncovered checks; do not build duplicate harnesses or archive copies
+when existing tests or validated evidence cover the claim. This scopes
+delegation, not required full suites, retries, or acceptance gates. Stop when
+the checklist is addressed and report remaining gaps. Evidence stays
+append-only during the run; the verifier must not delete or clean up evidence
+or workspaces. The parent owns cleanup under existing authorization rules.
 Send justified corrections back to the single writer and reverify the final
 state.
 

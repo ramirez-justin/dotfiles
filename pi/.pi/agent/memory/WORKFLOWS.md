@@ -9,10 +9,10 @@ Durable workflow conventions for Justin's Pi sessions.
 
 ## Conventions
 
-- Before opening/updating Python PRs, inspect the active CI workflow. Run its
-  exact code-quality command with the same cwd, tool version, and final
-  changed-file set. Subdirectory runs or local pre-commit results are not
-  equivalent evidence.
+- Before implementation, inspect CI and verify compatible test/lint tools.
+  Before PRs, run exact CI commands with matching cwd, versions, and final
+  changed files; pre-commit is not equivalent. Reuse fresh evidence unless
+  changes or a concrete uncertainty require rerunning checks.
 - Entry points: `/brainstorm` design; `/write-plan` multi-step planning;
   `/execute-plan` approved plans; `/debug` unexpected behavior; `/tdd`
   feature/bug-fix tests; `/finish` final verification; `/code-review`

@@ -224,6 +224,37 @@ runs. The fixed table is `RULES` in `rules.ts`:
 
 Test: `mise exec -- bun test ./pi/.pi/agent/tests/tool-rules.test.ts`.
 
+## Pi MCP Confirmations
+
+Linear and Notion use the installed MCP adapter's native `approveTools`
+confirmation dialogs for reviewed mutation-name patterns in
+`pi/.pi/agent/mcp-adapter.json`. Reads stay prompt-free; full-change previews
+and approval in chat remain required.
+
+The dialog truncates argument previews at 500 characters. Prefer **Allow
+once**. **Allow for session** grants the matching tool definition and arguments
+and can persist on session branches across resume/navigation. **Allow server
+for this session** grants all tools and arguments on that server; this broad
+grant clears on reload, session replacement/resume, or branch navigation.
+Fresh unapproved headless writes matching the patterns block.
+
+Unknown unmatched tool names, trusted project overrides, other approval
+brokers, shell/CLI paths, and other servers are outside this guarantee.
+Recheck the cached tool inventory and add behavior cases when a tool update
+exposes an unreviewed mutation.
+
+`namespaceProxyTools: false` omits the five redundant `mcp__<server>`
+shortcuts. Use the main `mcp` gateway or direct tools instead; both keep their
+existing approval checks. Agent `mcp:<server>` references that need those
+shortcuts will not resolve. Restore the default by removing this setting.
+
+Run `/reload` or start a new session to activate config changes. To roll back
+confirmation gating, restore/remove only the Linear and Notion `approveTools`
+fields and reload.
+Rollback removes this extra gate, not the prose approval requirements.
+
+Test: `mise exec -- bun test ./pi/.pi/agent/tests/mcp-approval.test.ts`.
+
 ## Pi Session Flow
 
 These global settings and extensions apply to every project through the

@@ -1,6 +1,7 @@
 {
   "settings": {
-    "autoAuth": true
+    "autoAuth": true,
+    "namespaceProxyTools": false
   },
   "mcpServers": {
     "context7": {
@@ -15,12 +16,47 @@
     "linear": {
       "url": "https://mcp.linear.app/mcp",
       "auth": "oauth",
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "approveTools": [
+        "prepare_*",
+        "create_*",
+        "save_*",
+        "delete_*",
+        "retire_*",
+        "restore_*",
+        "share_*",
+        "unshare_*",
+        "mark_*",
+        "resolve_*",
+        "submit_*",
+        "update_*",
+        "merge_*"
+      ]
     },
     "notion": {
       "url": "https://mcp.notion.com/mcp",
       "auth": "oauth",
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "approveTools": [
+        "notion-create-*",
+        "notion-update-*",
+        "notion-delete-*",
+        "notion-restore-*",
+        "notion-convert-*",
+        "notion-upload-*",
+        "notion-complete-*",
+        "notion-move-*",
+        "notion-duplicate-*",
+        "notion-set-*",
+        "notion-resolve-*",
+        "notion-spawn-*",
+        "notion-stop-*",
+        "notion-send-*",
+        "notion-calendar-create-*",
+        "notion-calendar-update-*",
+        "notion-calendar-cancel-*",
+        "notion-link-*"
+      ]
     },
     "gmail": {
       "url": "https://gmailmcp.googleapis.com/mcp/v1",

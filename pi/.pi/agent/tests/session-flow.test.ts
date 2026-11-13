@@ -208,12 +208,12 @@ describe("native compaction", () => {
 		const sessionId = session.sessionId;
 		const start = requests.length;
 		try {
-			// Faux usage reports each prompt as input and cache write, so native
-			// usage-based totals are about twice the prompt (P). Old ~20k + tail
-			// ~21k: after tools, 2*P(old) + tail ~ 64k exceeds the trigger. The
-			// tail exceeds keepRecentTokens (20k), so the old prompt is summarized;
-			// afterwards 2*P(summary + tail) ~ 46k stays below the trigger.
-			await session.prompt(`SCENARIO:compact OLD-CONTEXT ${"o".repeat(80_000)}`);
+			// Faux usage counts prompt tokens once, across input and cache fields.
+			// Old ~35k stays below the ~54k trigger; adding the ~21k tool result
+			// crosses it. The result exceeds keepRecentTokens (20k), so the old
+			// prompt is summarized while the result remains. Summary + result
+			// then stays below the trigger.
+			await session.prompt(`SCENARIO:compact OLD-CONTEXT ${"o".repeat(140_000)}`);
 			await session.waitForIdle();
 			const run = requests.slice(start);
 			expect(run.map((request) => request.kind)).toEqual(["main", "summary", "main"]);

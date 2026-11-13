@@ -20,7 +20,7 @@ const AGENT = "pi/.pi/agent";
 const PROJECT = "projects/github.com--ramirez-justin--dotfiles.md";
 const AGENTS_TEXT = "Aé中😀\n"; // 11 bytes, 5 code points.
 const MEMORY_RENDER = 438; // Opening/closing wrapper plus three sources.
-const CATALOG_BASE = 467; // Native catalog text for one skill "a", "D".
+const CATALOG_BASE = 403; // Pi 1.5.2 catalog text for one skill "a", "D".
 // Unresolved tag: YAML emits a process warning containing the source.
 const WARNING_TAG = "description: !unknown FAKE_WARNING_SENTINEL";
 const temp = realpathSync(mkdtempSync(join(tmpdir(), "context-footprint-")));

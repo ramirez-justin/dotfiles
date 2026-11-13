@@ -179,7 +179,7 @@ set -euo pipefail
 
 pi_npm_root="$HOME/.pi/agent/npm"
 
-# Exit 0: pass (or the single documented exception), 1: findings, 2: error.
+# Exit 0: no high or critical findings, 1: findings, 2: error.
 audit_gate() {
     mise exec -- python3 "{{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py" gate --prefix "$pi_npm_root"
 }
@@ -206,14 +206,6 @@ fi
 mise run check
 mise exec -- pi --offline --list-models
 """
-
-[tasks.pi-audit-monitor]
-description = "Read-only check for a fix to the temporary Pi npm audit exception"
-run = 'mise exec -- python3 {{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py monitor --prefix "$HOME/.pi/agent/npm"'
-
-[tasks.pi-audit-monitor-install]
-description = "Install the Monday 09:00 local launchd job for pi-audit-monitor"
-run = "mise exec -- python3 {{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py install-launchd"
 
 [tasks.snowflake-ai-kit-install]
 description = "Install or update Snowflake AI Kit and verify the default Snowflake connection"

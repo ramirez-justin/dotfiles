@@ -75,7 +75,7 @@ class PiUpdateTests(unittest.TestCase):
             (True, {}, [update, audit]),
             (True, {"AUDIT_RC": 1}, [update, audit, fix, audit]),
             # npm audit fix exits nonzero when unfixable findings remain; the
-            # final gate (exception-aware) decides.
+            # final gate decides whether all blocking findings are resolved.
             (True, {"AUDIT_RC": 1, "FIX_RC": 1}, [update, audit, fix, audit]),
         ]:
             with self.subTest(npm_root=npm_root, statuses=statuses):
@@ -102,16 +102,9 @@ class PiUpdateTests(unittest.TestCase):
                 self.assertEqual(code, status)
                 self.assertEqual(commands, ["exec -- pi update --extensions", GATE])
 
-    def test_monitor_tasks_call_read_only_monitor_and_installer(self):
-        script = "{{config_root}}/pi/.pi/agent/bin/pi-npm-audit.py"
-        self.assertIn(
-            f'{script} monitor --prefix "$HOME/.pi/agent/npm"',
-            TASKS["pi-audit-monitor"]["run"],
-        )
-        self.assertNotIn("audit fix", TASKS["pi-audit-monitor"]["run"])
-        self.assertIn(
-            f"{script} install-launchd", TASKS["pi-audit-monitor-install"]["run"]
-        )
+    def test_obsolete_monitor_tasks_are_removed(self):
+        self.assertNotIn("pi-audit-monitor", TASKS)
+        self.assertNotIn("pi-audit-monitor-install", TASKS)
 
     def test_failed_tests_stop_before_startup_check(self):
         code, commands = self.run_update(CHECK_RC=8)

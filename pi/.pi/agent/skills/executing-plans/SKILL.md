@@ -76,6 +76,16 @@ Do not substitute an agent's completion summary for evidence.
 
 ## Mandatory Final-Diff Simplicity Checkpoint
 
+When a local commit is already authorized, finish implementation checks and
+required cleanup, then commit before capturing the final diff. If hooks change
+content, rerun affected checks and finish the commit before capture. Review
+the resulting HEAD and, if publication is authorized, publish that same
+commit. Under that authorization, commit corrections before recapturing, too;
+the checkpoint still applies to changes.
+This is ordering guidance, not commit or publication permission. Without
+commit authorization, keep the working-tree checkpoint; do not create a
+commit. Pushes, PRs, merges, and external actions retain their approval gates.
+
 Before independent verification or completion, freeze the sole writer and run
 the `ponytail-review` checkpoint (`../ponytail-review/SKILL.md`) with
 `capture-diff`: an explicit base covering all implementation changes, the

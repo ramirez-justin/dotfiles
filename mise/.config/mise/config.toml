@@ -1,5 +1,5 @@
 [tools]
-node = "22"
+node = "24"
 python = "3.12"
 "go:github.com/lox/notion-cli" = "latest"
 "npm:@earendil-works/pi-coding-agent" = "latest"

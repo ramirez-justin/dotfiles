@@ -34,9 +34,9 @@ source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 [[ -f "$HOME/.zsh/agent-secrets.zsh" ]] &&
     source "$HOME/.zsh/agent-secrets.zsh"
 [[ -f "$HOME/.pi/agent/env.zsh" ]] && source "$HOME/.pi/agent/env.zsh"
-# Pi requires Node 22+ and extensions with native modules are installed there.
-# Run Pi with the same Node ABI to avoid native module mismatch errors.
-pi() { mise exec node@22.19.0 -- command pi "$@" }
+# Keep Pi and its native extensions on Node 24, including outside dotfiles.
+# context-mode requires Node 24.15.0 or newer.
+pi() { mise exec node@24 -- command pi "$@" }
 if [[ "$CLAUDECODE" != "1" ]]; then
     eval "$(zoxide init --cmd cd zsh)"
 fi

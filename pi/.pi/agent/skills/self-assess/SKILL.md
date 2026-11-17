@@ -1,9 +1,8 @@
 ---
 name: self-assess
 description: >-
-  Review how a recent task was handled when the user explicitly requests
-  self-assessment. Identify avoidable overhead and propose concrete,
-  evidence-backed improvements.
+  Collect session evidence and request an independent improvement review when
+  the user explicitly requests self-assessment of a recent task.
 disable-model-invocation: true
 metadata:
   status: stable
@@ -11,50 +10,78 @@ metadata:
 
 # Self-assess
 
-Assess the recent task, not the entire Pi configuration.
+Coordinate an evidence-backed improvement discussion about the recent task,
+not a broad Pi configuration audit or an assessment of your own performance.
 
-Use the user's request, feedback, observable actions, diffs, and recorded
-check/review results. Do not reconstruct unavailable history.
+## Collect evidence
 
-## Assess
+Assemble a bounded, neutral brief from existing session evidence:
 
-- Did the delivered outcome address the user's actual need?
-  Passing tests or creating artifacts alone does not establish usefulness.
-- Which claims are supported, and what remains uncertain?
-- What complexity, repetition, or effort was avoidable?
-- What concrete change would address a supported finding, if any?
-  Removing work or clarifying the goal may be better than adding machinery.
+- User intent, constraints, and corrections.
+- Observed actions and delivered outcome versus the requested outcome.
+- Successful checks and review results, plus failures and repetition.
+- Source references and known gaps, including unavailable history.
+- Material disconfirming evidence, not just examples favoring a change.
 
-Ground conclusions in specific evidence. Do not invent shortcomings,
-assign scores, or force a recommendation.
+Distinguish direct observations from others' reports and inference. Do not
+preselect a diagnosis, reconstruct unavailable history, or include secrets,
+private transcript dumps, or raw prompts. Passing checks alone does not
+establish that the outcome met the user's need.
 
-Turn supported findings into a concrete proposal, not just a general lesson.
-Prefer tightening an existing relevant artifact over adding new machinery.
+## Request independent review
 
-## Report
+Make exactly one fresh `Agent` call using the existing role:
 
-Keep the report brief:
+- `subagent_type: reviewer`
+- `inherit_context: false`
+- `isolated: true`
+- `run_in_background: false`
 
-- Outcome: what was delivered versus needed.
-- Evidence and gaps: what is known and unconfirmed.
-- Avoidable overhead: specific examples, or none.
-- Proposed improvement: the highest-value concrete change, or none.
-  Include:
-  - Target: the specific file, skill, prompt, or workflow to change.
-  - Change: exactly what to alter; do not invent an unknown target path.
-  - Evidence: the observed problem this addresses.
-  - Benefit: the expected practical improvement.
+Use the role's configured model and reasoning defaults without overrides.
+Supply the brief explicitly; do not assume access to the parent conversation.
+Include the goal, constraints, evidence, source references, known gaps, and
+this finite finish condition: return one concise report identifying supported
+actionable improvements or no change after bounded investigation.
 
-If proposing a change, ask whether the user wants it applied. Invoking this
-skill does not authorize implementing its recommendations.
+In the reviewer prompt, require:
+
+- Read-only, hypothesis-directed checks of relevant local sources only.
+  No broad configuration audit, rerunning checks, external calls, or nested
+  agents. Reuse existing evidence; label unavailable evidence explicitly.
+- Its own nine-field JSON reporting contract in
+  `~/.pi/agent/agents/reviewer.md`, not a replacement schema. Do not invent
+  snapshot identities when none is supplied.
+- Supported workflow improvements may be non-blocking `suggestions`; do not
+  fabricate correctness defects to justify them. Prefer an existing relevant
+  target over new machinery, and allow no change.
+
+Check the returned contract, completion state, actual coverage/check evidence,
+and gaps before using it. If the reviewer is unavailable, the report is
+malformed or incomplete, or required evidence is missing, report the limits
+and stop.
+Do not automatically retry, launch another agent, or fall back to self-grading.
+A fresh reviewer is another perspective, not objective proof.
+
+## Discuss the result
+
+Summarize at most one highest-value actionable recommendation, or no change:
+
+- Target: the exact existing file, skill, prompt, or workflow; do not invent it.
+- Change: what to alter.
+- Evidence: the supported observation it addresses.
+- Benefit: the expected practical improvement.
+- Uncertainty: remaining gaps, contrary evidence, and limits.
+
+Do not force a recommendation or assign numeric session scores. Ask for user
+approval before any separate implementation under existing workflows.
+Invoking this skill authorizes neither its recommendations nor automatic
+planner or implementer dispatch.
 
 ## Boundaries
 
-Read-only: do not edit files, update memory, change configuration, or
-contact external services.
+Remain read-only: no file edits, memory updates, configuration writes, or
+external services. Do not replay sessions or run model experiments.
 
-Reuse existing evidence. Do not automatically rerun checks or dispatch
-agents. Report missing evidence rather than inventing it.
-
-This supplements discussion; it does not replace /finish, independent
-review, or required verification.
+This is improvement discussion, not completion verification, evaluation
+results, or proof of measured improvement. It does not replace `/finish`,
+required verification, or independent correctness and simplicity reviews.

@@ -13,14 +13,14 @@ tier_extension = root / "pi/.pi/agent/extensions/model-tiers.ts"
 
 expected = {
     "AdvancedPlan.md": ("tiers/tier-1", "max"),
-    "Explore.md": ("tiers/tier-4", "max"),
+    "Explore.md": ("tiers/tier-5", "max"),
     "implementer.md": ("tiers/tier-1", "high"),
     "oracle.md": ("tiers/tier-1", "max"),
     "Plan.md": ("tiers/tier-2", "xhigh"),
     "researcher.md": ("tiers/tier-3", "high"),
     "reviewer.md": ("tiers/tier-2", "max"),
     "simplifier.md": ("tiers/tier-3", "max"),
-    "verifier.md": ("tiers/tier-3", "max"),
+    "verifier.md": ("tiers/tier-4", "max"),
     "worker.md": ("tiers/tier-2", "high"),
 }
 
@@ -137,7 +137,7 @@ sources = [
 ]
 required_sources = {
     "git:https://github.com/obra/superpowers.git",
-    "npm:pi-claude-code-provider",
+    "npm:pi-claude-bridge",
 }
 for source in sorted(required_sources):
     if source not in sources:
@@ -148,8 +148,13 @@ for source in sources:
         "git:https://github.com/obra/superpowers.git@"
     ):
         errors.append(f"{settings_path}: Superpowers must be unpinned")
-    if source and source.startswith("npm:pi-claude-code-provider@"):
-        errors.append(f"{settings_path}: Claude provider must be unpinned")
+    if source and source.startswith("npm:pi-claude-bridge@"):
+        errors.append(f"{settings_path}: Claude bridge must be unpinned")
+    if source and source.split("@", 1)[0] == "npm:pi-claude-code-provider":
+        errors.append(
+            f"{settings_path}: pi-claude-code-provider is mothballed; "
+            "use npm:pi-claude-bridge"
+        )
 
 # Require the explicit allowlist so broad globs, omitted filters, or a
 # duplicate package entry cannot silently restore upstream orchestration.
@@ -196,7 +201,7 @@ for name in ("writing-plans", "executing-plans", "ponytail-review"):
 
 required_defaults = {
     "defaultProvider": "openai-codex",
-    "defaultModel": "gpt-6.1-sol",
+    "defaultModel": "gpt-6.2-sol",
     "defaultThinkingLevel": "medium",
 }
 for key, value in required_defaults.items():

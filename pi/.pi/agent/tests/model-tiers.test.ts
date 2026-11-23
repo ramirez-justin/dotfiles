@@ -97,7 +97,7 @@ type Respond = (messages: { role: string; content: unknown }[]) => unknown;
 
 async function createParent(respond?: Respond) {
 	const { createFauxCore, fauxAssistantMessage } = ai;
-	const ids = ["parent", "model-1", "model-2", "model-3", "model-4"];
+	const ids = ["parent", "model-1", "model-2", "model-3", "model-4", "model-5"];
 	const faux = createFauxCore({ api: "fixture-api", provider: "fixture" });
 	faux.setResponses(
 		Array.from({ length: 50 }, () => (context, options, _state, model) => {
@@ -220,6 +220,7 @@ describe("model tier aliases", () => {
 			"tier-2",
 			"tier-3",
 			"tier-4",
+			"tier-5",
 		]);
 	});
 
@@ -303,6 +304,7 @@ describe("model tier aliases", () => {
 			"tier-2": "fixture/model-2",
 			"tier-3": "fixture/model-3",
 			"tier-4": "fixture/model-4",
+			"tier-5": "fixture/model-5",
 		});
 		const runner = await import(join(SUBAGENTS, "src/agent-runner.ts"));
 		const types = await import(join(SUBAGENTS, "src/agent-types.ts"));
@@ -381,8 +383,8 @@ describe("bounded reader contracts", () => {
 	}
 
 	for (const [name, tier, turns] of [
-		["verifier", "tier-3", 16],
-		["Explore", "tier-4", 12],
+		["verifier", "tier-4", 16],
+		["Explore", "tier-5", 12],
 	] as const) {
 		test(`${name} keeps its model, effort, tools and pinned turn limit`, async () => {
 			const agent = await loadReader(name);

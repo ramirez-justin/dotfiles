@@ -1,6 +1,7 @@
 {
-  "tier-1": "anthropic/claude-opus-5-5",
-  "tier-2": "openai-codex/gpt-6.1-sol",
-  "tier-3": "anthropic/claude-sonnet-5-5",
-  "tier-4": "openai-codex/gpt-6-luna"
+  "tier-1": "claude-bridge/claude-opus-5-5",
+  "tier-2": "openai-codex/gpt-6.2-sol",
+  "tier-3": "claude-bridge/claude-sonnet-5-5",
+  "tier-4": "openai-codex/gpt-6.1-terra",
+  "tier-5": "openai-codex/gpt-6-luna"
 }

@@ -1,8 +1,8 @@
 ---
 description: Evidence-focused validation agent.
-display_name: Verifier (Tier 3)
+display_name: Verifier (Tier 4)
 tools: read, grep, find, bash
-model: tiers/tier-3
+model: tiers/tier-4
 thinking: max
 max_turns: 16
 prompt_mode: replace

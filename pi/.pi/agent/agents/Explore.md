@@ -1,8 +1,8 @@
 ---
 description: Fast read-only codebase reconnaissance.
-display_name: Explore (Tier 4)
+display_name: Explore (Tier 5)
 tools: read, grep, find, bash
-model: tiers/tier-4
+model: tiers/tier-5
 thinking: max
 max_turns: 12
 prompt_mode: replace

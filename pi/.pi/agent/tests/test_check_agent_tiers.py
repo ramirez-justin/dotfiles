@@ -89,6 +89,12 @@ class CheckAgentTiersTests(unittest.TestCase):
         lines += [f"tiers {tier}" for tier in aliases]
         Path(self.env["CATALOG"]).write_text("\n".join(lines))
 
+    def edit_packages(self, edit):
+        path = self.repo / AGENT / "settings.json"
+        settings = json.loads(path.read_text())
+        settings["packages"] = edit(settings["packages"])
+        path.write_text(json.dumps(settings))
+
     def edit_agent(self, name, old, new):
         path = self.repo / AGENT / "agents" / name
         text = path.read_text()
@@ -114,6 +120,13 @@ class CheckAgentTiersTests(unittest.TestCase):
         result = self.run_checker()
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_rejects_previous_default_model(self):
+        path = self.repo / AGENT / "settings.json"
+        settings = json.loads(path.read_text())
+        settings["defaultModel"] = "gpt-6.1-sol"
+        path.write_text(json.dumps(settings))
+        self.assert_fails("expected defaultModel=gpt-6.2-sol, got gpt-6.1-sol")
+
     def test_accepts_mapping_only_upgrade(self):
         mapping = {**self.mapping(), "tier-2": "openai-codex/gpt-7-sol"}
         self.write_mapping(mapping)
@@ -131,19 +144,24 @@ class CheckAgentTiersTests(unittest.TestCase):
         self.assertIn("worker.md: expected model tiers/tier-2", result.stderr)
         self.assertIn("Plan.md: expected thinking xhigh", result.stderr)
 
-    def test_rejects_review_agent_drift_back_to_tier_4(self):
-        for name in ("simplifier.md", "verifier.md"):
+    def test_rejects_reader_and_reviewer_tier_drift(self):
+        for name, tier, drifted in (
+            ("simplifier.md", "tier-3", "tier-4"),
+            ("verifier.md", "tier-4", "tier-3"),
+            ("Explore.md", "tier-5", "tier-4"),
+        ):
             with self.subTest(name):
-                self.edit_agent(name, "model: tiers/tier-3", "model: tiers/tier-4")
-                self.assert_fails(f"{name}: expected model tiers/tier-3")
-                self.edit_agent(name, "model: tiers/tier-4", "model: tiers/tier-3")
+                old, new = f"model: tiers/{tier}", f"model: tiers/{drifted}"
+                self.edit_agent(name, old, new)
+                self.assert_fails(f"{name}: expected model tiers/{tier}")
+                self.edit_agent(name, new, old)
 
     def test_rejects_invalid_mapping(self):
         mapping = self.mapping()
         for name, invalid in {
             "list": [],
-            "missing tier": {k: v for k, v in mapping.items() if k != "tier-4"},
-            "extra tier": {**mapping, "tier-5": "anthropic/claude-opus-5-5"},
+            "missing tier": {k: v for k, v in mapping.items() if k != "tier-5"},
+            "extra tier": {**mapping, "tier-6": "anthropic/claude-opus-5-5"},
             "non-string": {**mapping, "tier-1": 7},
             "no provider": {**mapping, "tier-1": "claude-opus-5-5"},
             "virtual": {**mapping, "tier-1": "tiers/tier-2"},
@@ -161,8 +179,46 @@ class CheckAgentTiersTests(unittest.TestCase):
 
     def test_rejects_unregistered_alias(self):
         mapping = self.mapping()
-        self.set_catalog(mapping.values(), aliases=["tier-1", "tier-2", "tier-3"])
-        self.assert_fails("Pi model catalog does not contain tiers/tier-4")
+        aliases = ["tier-1", "tier-2", "tier-3", "tier-4"]
+        self.set_catalog(mapping.values(), aliases=aliases)
+        self.assert_fails("Pi model catalog does not contain tiers/tier-5")
+
+    def test_requires_unpinned_claude_bridge(self):
+        bridge = "npm:pi-claude-bridge"
+        for name, edit, message in (
+            (
+                "missing",
+                lambda packages: [p for p in packages if p != bridge],
+                f"missing package {bridge}",
+            ),
+            (
+                "pinned",
+                lambda packages: [
+                    f"{bridge}@0.13.0" if p == bridge else p for p in packages
+                ],
+                "Claude bridge must be unpinned",
+            ),
+        ):
+            with self.subTest(name):
+                original = (self.repo / AGENT / "settings.json").read_text()
+                self.edit_packages(edit)
+                try:
+                    self.assert_fails(message)
+                finally:
+                    (self.repo / AGENT / "settings.json").write_text(original)
+
+    def test_rejects_mothballed_claude_provider(self):
+        for source in (
+            "npm:pi-claude-code-provider",
+            "npm:pi-claude-code-provider@0.6.0",
+        ):
+            with self.subTest(source):
+                original = (self.repo / AGENT / "settings.json").read_text()
+                self.edit_packages(lambda packages, s=source: [*packages, s])
+                try:
+                    self.assert_fails("pi-claude-code-provider is mothballed")
+                finally:
+                    (self.repo / AGENT / "settings.json").write_text(original)
 
     def test_retains_unrelated_validation(self):
         self.edit_agent("simplifier.md", "isolated: true", "isolated: false")

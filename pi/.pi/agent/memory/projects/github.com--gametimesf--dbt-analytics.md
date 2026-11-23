@@ -12,6 +12,13 @@ Stable facts for `github.com/gametimesf/dbt-analytics`.
   available there. Staging models are the cleaned, ready-to-use interface;
   avoid reaching around them to raw sources or legacy core models for fields
   that staging already exposes.
+- Name staging models `stg_<source>__<table>` and let
+  `macros/utils/general/generate_alias_name.sql` derive the production alias
+  from the final `__` segment. Keep `__` out of a base model's table suffix
+  (for example, `archive_page_report`) to avoid collisions in `SOURCE_DB`.
+  Declare raw source names as they exist in Snowflake (for example,
+  `archive__page_report`); use `identifier` only for an intentional mapping
+  between different logical and physical source names.
 - Data API models should preserve staging-only lineage. For event-to-performer
   mapping, prefer `stg_mongo__events` and extract primary/secondary performer
   IDs there instead of depending on legacy core `mongo__events`.

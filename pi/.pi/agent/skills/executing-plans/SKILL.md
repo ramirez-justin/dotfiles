@@ -18,9 +18,17 @@ to evade gates.
 Risk, not file type or count, controls routing. Ordinary docs and advice-only
 prompts qualify only without changes to safety, authorization, review,
 approval, or delegation controls; production or data behavior; public
-contracts; model-routing defaults; or other material risk. Use formal execution
-for such risk-bearing changes, even in one Markdown file. If direct work
-expands beyond this scope, escalate before continuing.
+contracts; model-routing defaults (except for the substitution below); or
+other material risk. Use formal execution for such risk-bearing changes, even
+in one Markdown file. If direct work expands beyond this scope, escalate
+before continuing.
+
+An approved, reversible substitution of an existing model ID may proceed
+inline only if the provider, routing rules, permissions, and fallback remain
+unchanged and there is no other material risk. Verify that the target model
+resolves and run focused regression checks. Adding tiers, reassigning roles
+to tiers, or changing providers, routing rules, or fallback requires formal
+execution.
 
 The remaining sections apply to formal execution only.
 
@@ -35,6 +43,10 @@ Critically check scope, assumptions, dependencies, safety, and verification.
 Resolve harmless implementation details from evidence without interrupting the
 user. Ask for plan approval only if it has not already been given. Revisit
 approval for a substantial departure, not ordinary internal mechanics.
+
+For review-driven additions, distinguish required deliverable fixes, temporary
+workarounds, and optional shared debt. Recommend the smallest necessary change
+before extending scope.
 
 Use an existing workspace by default. Use `using-git-worktrees` only when
 isolation materially helps or the user requests it; do not require a worktree

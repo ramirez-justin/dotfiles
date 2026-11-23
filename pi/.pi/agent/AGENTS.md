@@ -72,14 +72,20 @@ required validation, tests, or smoke checks.
 ## Delegation
 
 - Work directly on small, clear tasks. Delegate only when it improves coverage,
-  reasoning, or context management; do not duplicate delegated work.
+  reasoning, or context management; do not duplicate delegated work. Run
+  independent tasks in parallel when useful.
+- Brief each delegate with a bounded outcome, relevant evidence already
+  gathered, constraints, and an explicit finish condition.
 - Select roles and model/reasoning defaults using configured agent definitions.
   Per-call overrides need a task-specific reason.
 - If delegating writes, use one writer for approved work. Do not edit their
   worktree concurrently.
-- Keep correctness and simplicity reviews independent; independently validate
-  meaningful changes before claiming completion.
-- The parent owns scope, approvals, actual-diff review, and user-facing claims.
+- Reuse applicable evidence unless a state change, evidence gap, or required
+  gate warrants repeating a check. Keep correctness and simplicity reviews
+  independent; independently validate meaningful changes before claiming
+  completion.
+- The parent remains accountable for scope, approvals, actual-diff review,
+  decisions and tradeoffs, and user-facing claims.
 
 ### Architecture Planning Gate
 

@@ -44,6 +44,9 @@ dotfiles/
 └── marimo/          # → ~/.config/marimo/
 ```
 
+See [agent test guardrails](docs/agent-test-guardrails.md) for the test-scope
+check and periodic pruning prompt.
+
 ## Fresh Machine Bootstrap
 
 ```bash

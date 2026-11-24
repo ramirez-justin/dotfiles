@@ -43,6 +43,22 @@ required validation, tests, or smoke checks.
   execution, and code review. Callers state timing/scope; correctness review
   stays independent.
 
+## Test Scope and Approval
+
+- Do not test what the compiler or type checker already enforces. Runtime
+  validation at an external boundary is a separate behavior worth testing.
+- Add tests only to protect observable behavior, a contract, or a concrete
+  regression. Do not chase coverage or duplicate implementation details.
+- Prefer a few focused flows and distinct edge cases. Extend an existing test
+  when it fits; avoid repeating assertions that catch the same failure.
+- Before changing the suite, state which behavior is at risk and what existing
+  tests miss. Get explicit approval for new test files or for a dedicated test
+  step that names those files. Feature approval alone does not authorize them.
+  Respect any stricter repository rules for editing existing tests.
+- Show that a new regression test fails for the expected reason before the fix
+  and passes after it. For new behavior or when replay is impractical, use a
+  targeted mutation or controlled reversal. Report any verification gap.
+
 ## Repository Context
 
 - Before making changes, read applicable `AGENTS.md`, `CLAUDE.md`,
